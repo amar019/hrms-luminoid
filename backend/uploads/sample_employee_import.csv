@@ -1,0 +1,4 @@
+email,firstName,lastName,role,department,designation,employeeId,workLocation,employmentType,dateOfBirth,joinDate,phone,address,managerEmail,emergencyContactName,emergencyContactPhone,emergencyContactRelation
+john.doe@company.com,John,Doe,EMPLOYEE,IT,Software Developer,EMP001,Head Office,FULL_TIME,1990-01-15,2024-01-01,+1234567890,"123 Main St, City, State",manager@company.com,Jane Doe,+1234567891,Spouse
+jane.smith@company.com,Jane,Smith,EMPLOYEE,HR,HR Specialist,EMP002,Head Office,FULL_TIME,1988-05-20,2024-01-15,+1234567892,"456 Oak Ave, City, State",hr@company.com,John Smith,+1234567893,Spouse
+mike.johnson@company.com,Mike,Johnson,MANAGER,IT,Team Lead,EMP003,Head Office,FULL_TIME,1985-03-10,2024-02-01,+1234567894,"789 Pine St, City, State",,Sarah Johnson,+1234567895,Wife

@@ -1,0 +1,343 @@
+import React, { useState, useEffect } from 'react';
+import { Card, Form, Button, Alert, Row, Col } from 'react-bootstrap';
+import { toast } from 'react-toastify';
+import api from '../utils/api';
+
+const ApplyLeave = () => {
+  const [formData, setFormData] = useState({
+    leaveTypeId: '',
+    startDate: '',
+    endDate: '',
+    isHalfDay: false,
+    halfDayType: 'FIRST_HALF',
+    reason: ''
+  });
+  const [leaveTypes, setLeaveTypes] = useState([]);
+  const [balances, setBalances] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchLeaveTypes();
+    fetchBalances();
+  }, []);
+
+  const fetchLeaveTypes = async () => {
+    try {
+      const response = await api.get('/api/leave-types?active=true');
+      setLeaveTypes(response.data);
+    } catch (error) {
+      console.error('Error fetching leave types:', error);
+    }
+  };
+
+  const fetchBalances = async () => {
+    try {
+      const response = await api.get('/api/leave-balances');
+      setBalances(response.data);
+    } catch (error) {
+      console.error('Error fetching balances:', error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      await api.post('/api/leave-requests', formData);
+      toast.success(
+        <div className="d-flex align-items-center">
+          <i className="fas fa-check-circle me-2"></i>
+          Leave request submitted successfully!
+        </div>
+      );
+      setFormData({
+        leaveTypeId: '',
+        startDate: '',
+        endDate: '',
+        isHalfDay: false,
+        halfDayType: 'FIRST_HALF',
+        reason: ''
+      });
+      fetchBalances();
+    } catch (error) {
+      setError(error.response?.data?.message || 'Error submitting leave request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const getAvailableBalance = (leaveTypeId) => {
+    const balance = balances.find(b => b.leaveTypeId?._id === leaveTypeId);
+    return balance ? balance.available : 0;
+  };
+
+  const calculateDays = () => {
+    if (!formData.startDate || !formData.endDate) return 0;
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    return formData.isHalfDay ? 0.5 : days;
+  };
+
+  const selectedLeaveType = leaveTypes.find(type => type._id === formData.leaveTypeId);
+  const selectedBalance = balances.find(b => b.leaveTypeId?._id === formData.leaveTypeId);
+  const requestedDays = calculateDays();
+  const availableDays = selectedBalance ? selectedBalance.available : 0;
+  const willBeOverdrawn = requestedDays > availableDays;
+
+  return (
+    <div className="fade-in-up">
+      <div className="page-header">
+        <h1 className="page-title">
+          <i className="fas fa-plus-circle me-3 text-success"></i>
+          Apply for Leave
+        </h1>
+        <p className="text-muted mb-0">Submit a new leave request for approval</p>
+      </div>
+      
+      <Row>
+        <Col lg={8}>
+          <Card className="mb-4">
+            <Card.Header className="d-flex align-items-center">
+              <i className="fas fa-edit me-2 text-primary"></i>
+              Leave Request Form
+            </Card.Header>
+            <Card.Body>
+              {error && (
+                <Alert variant="danger" className="d-flex align-items-center">
+                  <i className="fas fa-exclamation-triangle me-2"></i>
+                  {error}
+                </Alert>
+              )}
+              
+              <Form onSubmit={handleSubmit}>
+                <Form.Group className="mb-4">
+                  <Form.Label className="d-flex align-items-center fw-semibold">
+                    <i className="fas fa-tags me-2 text-primary"></i>
+                    Leave Type
+                  </Form.Label>
+                  <Form.Select
+                    name="leaveTypeId"
+                    value={formData.leaveTypeId}
+                    onChange={handleChange}
+                    required
+                    className="form-control-lg"
+                  >
+                    <option value="">Select leave type</option>
+                    {leaveTypes.map(type => (
+                      <option key={type._id} value={type._id}>
+                        {type.name} (Available: {getAvailableBalance(type._id)} days)
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-4">
+                      <Form.Label className="d-flex align-items-center fw-semibold">
+                        <i className="fas fa-calendar-alt me-2 text-success"></i>
+                        Start Date
+                      </Form.Label>
+                      <Form.Control
+                        type="date"
+                        name="startDate"
+                        value={formData.startDate}
+                        onChange={handleChange}
+                        required
+                        className="form-control-lg"
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-4">
+                      <Form.Label className="d-flex align-items-center fw-semibold">
+                        <i className="fas fa-calendar-check me-2 text-danger"></i>
+                        End Date
+                      </Form.Label>
+                      <Form.Control
+                        type="date"
+                        name="endDate"
+                        value={formData.endDate}
+                        onChange={handleChange}
+                        required
+                        className="form-control-lg"
+                        min={formData.startDate || new Date().toISOString().split('T')[0]}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                <Form.Group className="mb-4">
+                  <Form.Check
+                    type="checkbox"
+                    name="isHalfDay"
+                    label="Half Day Leave"
+                    checked={formData.isHalfDay}
+                    onChange={handleChange}
+                    className="fw-semibold"
+                  />
+                </Form.Group>
+
+                {formData.isHalfDay && (
+                  <Form.Group className="mb-4">
+                    <Form.Label className="fw-semibold">Half Day Type</Form.Label>
+                    <Form.Select
+                      name="halfDayType"
+                      value={formData.halfDayType}
+                      onChange={handleChange}
+                      className="form-control-lg"
+                    >
+                      <option value="FIRST_HALF">First Half (Morning)</option>
+                      <option value="SECOND_HALF">Second Half (Afternoon)</option>
+                    </Form.Select>
+                  </Form.Group>
+                )}
+
+                <Form.Group className="mb-4">
+                  <Form.Label className="d-flex align-items-center fw-semibold">
+                    <i className="fas fa-comment-alt me-2 text-info"></i>
+                    Reason for Leave
+                  </Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={4}
+                    name="reason"
+                    value={formData.reason}
+                    onChange={handleChange}
+                    placeholder="Please provide a detailed reason for your leave request..."
+                    required
+                  />
+                </Form.Group>
+
+                {formData.startDate && formData.endDate && (
+                  <Alert 
+                    variant={willBeOverdrawn ? 'warning' : 'info'} 
+                    className="d-flex align-items-center"
+                  >
+                    <i className={`fas fa-${willBeOverdrawn ? 'exclamation-triangle' : 'info-circle'} me-2`}></i>
+                    <div>
+                      <strong>Leave Summary:</strong> {requestedDays} days requested
+                      {willBeOverdrawn && selectedLeaveType?.lopEnabled && (
+                        <div className="mt-1">
+                          <small>⚠️ This will result in {requestedDays - availableDays} days of Loss of Pay (LOP)</small>
+                        </div>
+                      )}
+                    </div>
+                  </Alert>
+                )}
+
+                <div className="d-flex gap-3">
+                  <Button 
+                    type="submit" 
+                    variant="primary" 
+                    size="lg"
+                    disabled={loading || (willBeOverdrawn && !selectedLeaveType?.lopEnabled)}
+                    className="d-flex align-items-center"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="loading-spinner me-2"></div>
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-paper-plane me-2"></i>
+                        Submit Leave Request
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    variant="outline-secondary" 
+                    size="lg"
+                    onClick={() => {
+                      setFormData({
+                        leaveTypeId: '',
+                        startDate: '',
+                        endDate: '',
+                        isHalfDay: false,
+                        halfDayType: 'FIRST_HALF',
+                        reason: ''
+                      });
+                      setError('');
+                    }}
+                  >
+                    <i className="fas fa-undo me-2"></i>
+                    Reset Form
+                  </Button>
+                </div>
+              </Form>
+            </Card.Body>
+          </Card>
+        </Col>
+        
+        <Col lg={4}>
+          <Card className="sticky-top" style={{top: '20px'}}>
+            <Card.Header className="d-flex align-items-center">
+              <i className="fas fa-chart-pie me-2 text-success"></i>
+              Your Leave Balances
+            </Card.Header>
+            <Card.Body>
+              {balances.length > 0 ? (
+                <div className="space-y-3">
+                  {balances.map(balance => (
+                    <div key={balance._id} className="p-3 rounded" style={{backgroundColor: '#f8fafc'}}>
+                      <div className="d-flex align-items-center justify-content-between mb-2">
+                        <div className="d-flex align-items-center">
+                          <div 
+                            className="rounded-circle me-2"
+                            style={{
+                              width: '12px',
+                              height: '12px',
+                              backgroundColor: balance.leaveTypeId?.color
+                            }}
+                          ></div>
+                          <strong className="text-dark">{balance.leaveTypeId?.name}</strong>
+                        </div>
+                      </div>
+                      <div className="row text-center">
+                        <div className="col-4">
+                          <div className="fw-bold text-success fs-5">{balance.available}</div>
+                          <small className="text-muted">Available</small>
+                        </div>
+                        <div className="col-4">
+                          <div className="fw-bold text-primary">{balance.used}</div>
+                          <small className="text-muted">Used</small>
+                        </div>
+                        <div className="col-4">
+                          <div className="fw-bold text-warning">{balance.pending}</div>
+                          <small className="text-muted">Pending</small>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <i className="fas fa-calendar-times text-muted fs-1 mb-3"></i>
+                  <p className="text-muted mb-0">No leave balances found</p>
+                </div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
+};
+
+export default ApplyLeave;
