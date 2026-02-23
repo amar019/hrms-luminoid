@@ -13,7 +13,19 @@ const fileSchema = new mongoose.Schema({
   targetUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // For employee files
   isPublic: { type: Boolean, default: false },
   description: String,
-  requiresAcknowledgment: { type: Boolean, default: false }
+  requiresAcknowledgment: { type: Boolean, default: false },
+  isLocked: { type: Boolean, default: false }, // For employee document submission lock
+  
+  // Document Verification Status
+  verificationStatus: { 
+    type: String, 
+    enum: ['UNVERIFIED', 'VERIFIED', 'EXPIRED', 'INVALID'], 
+    default: 'UNVERIFIED' 
+  },
+  verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  verifiedAt: Date,
+  expiryDate: Date,
+  verificationNotes: String
 }, { timestamps: true });
 
 module.exports = mongoose.model('File', fileSchema);

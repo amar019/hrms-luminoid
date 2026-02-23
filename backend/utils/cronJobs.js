@@ -3,7 +3,9 @@ const { accrueBalances, carryForward } = require('../controllers/leaveBalanceCon
 const Holiday = require('../models/Holiday');
 const LeaveRequest = require('../models/LeaveRequest');
 const User = require('../models/User');
+const Attendance = require('../models/Attendance');
 const { sendHolidayNotification, sendLeaveReminderNotification } = require('./emailService');
+const moment = require('moment-timezone');
 
 // Monthly accrual on 1st of every month at 00:00
 cron.schedule('0 0 1 * *', async () => {
@@ -78,6 +80,42 @@ cron.schedule('0 10 * * *', async () => {
     }
   } catch (error) {
     console.error('Error in leave reminder job:', error);
+  }
+});
+
+// Auto checkout - runs daily at 11:00 PM
+cron.schedule('0 23 * * *', async () => {
+  console.log('Running auto checkout for employees who forgot to check out...');
+  
+  const today = moment.tz('Asia/Kolkata').startOf('day').toDate();
+  
+  try {
+    const attendanceRecords = await Attendance.find({
+      date: today,
+      checkIn: { $exists: true },
+      checkOut: { $exists: false },
+      status: { $in: ['Present', 'Late'] },
+      isDeleted: { $ne: true }
+    });
+    
+    if (attendanceRecords.length > 0) {
+      const autoCheckoutTime = moment.tz('Asia/Kolkata')
+        .set({ hour: 18, minute: 0, second: 0, millisecond: 0 })
+        .toDate();
+      
+      for (const record of attendanceRecords) {
+        record.checkOut = autoCheckoutTime;
+        record.isAutoCheckout = true;
+        record.notes = record.notes 
+          ? `${record.notes} | Auto checkout at 6:00 PM` 
+          : 'Auto checkout at 6:00 PM';
+        await record.save();
+      }
+      
+      console.log(`Auto checked out ${attendanceRecords.length} employees at 6:00 PM`);
+    }
+  } catch (error) {
+    console.error('Error in auto checkout job:', error);
   }
 });
 

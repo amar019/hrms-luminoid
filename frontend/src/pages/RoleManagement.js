@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Modal, Form, Badge, Alert } from 'react-bootstrap';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import PermissionGuard from '../components/PermissionGuard';
 
 const RoleManagement = () => {
@@ -58,7 +59,17 @@ const RoleManagement = () => {
   };
 
   const handleDelete = async (roleId) => {
-    if (window.confirm('Are you sure you want to delete this role?')) {
+    const result = await Swal.fire({
+      title: 'Delete Role?',
+      text: 'This action cannot be undone!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
       try {
         await api.delete(`/api/permissions/roles/${roleId}`);
         toast.success('Role deleted successfully');
