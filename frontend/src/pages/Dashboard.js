@@ -57,12 +57,6 @@ const Dashboard = () => {
     fetchHolidays();
     fetchFavorites();
     fetchFiles();
-
-    // Auto-refresh announcements every 3 seconds
-    const announcementInterval = setInterval(fetchAnnouncements, 3000);
-
-    return () => clearInterval(announcementInterval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role]);
 
   const fetchDashboardData = async () => {
@@ -264,42 +258,46 @@ const Dashboard = () => {
         <Row className="mb-4">
           <Col>
             <Card
-              className="modern-card quote-card"
+              className="border-0 shadow-sm"
               style={{
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                border: "none",
+                background: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
+                borderRadius: '16px'
               }}
             >
-              <Card.Body className="text-center text-white py-4">
-                <i
-                  className="fas fa-quote-left fa-2x mb-3"
-                  style={{ opacity: 0.7 }}
-                ></i>
-                <h5
-                  className="mb-3"
-                  style={{
-                    fontStyle: "italic",
-                    fontWeight: 300,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  "{dashboardData.motivationalQuote.quote}"
-                </h5>
-                <div className="d-flex align-items-center justify-content-center mb-2">
-                  <small style={{ opacity: 0.9, fontWeight: 500 }}>
-                    - {dashboardData.motivationalQuote.author}
-                  </small>
-                </div>
-                <div className="d-flex align-items-center justify-content-center">
+              <Card.Body className="p-4">
+                <div className="d-flex align-items-center gap-4">
                   <div
-                    className="bg-white rounded-circle p-2 me-2 d-flex align-items-center justify-content-centere"
-                    style={{ width: "32px", height: "32px" }}
+                    className="d-flex align-items-center justify-content-center flex-shrink-0"
+                    style={{
+                      width: '70px',
+                      height: '70px',
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      borderRadius: '14px',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)'
+                    }}
                   >
-                    <i className="fas fa-heart text-danger"></i>
+                    <i className="fas fa-quote-right text-white" style={{ fontSize: '1.8rem', opacity: 0.9 }}></i>
                   </div>
-                  <small style={{ opacity: 0.9 }}>
-                    Stay motivated and have a great day!
-                  </small>
+                  <div className="flex-grow-1">
+                    <p
+                      className="mb-2 text-white"
+                      style={{
+                        fontSize: '1.1rem',
+                        fontWeight: 500,
+                        lineHeight: 1.6,
+                        letterSpacing: '0.3px'
+                      }}
+                    >
+                      {dashboardData.motivationalQuote.quote}
+                    </p>
+                    <div className="d-flex align-items-center gap-2">
+                      <div style={{ width: '35px', height: '2px', background: 'rgba(255, 255, 255, 0.5)' }}></div>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)' }}>
+                        {dashboardData.motivationalQuote.author}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </Card.Body>
             </Card>
@@ -835,10 +833,335 @@ const Dashboard = () => {
             </Col>
           </Row>
 
-          {/* Birthdays & New Hires */}
+          {/* Overview Stats */}
+          <Row className="mb-4">
+            <Col md={3}>
+              <Card className="modern-card hover-lift h-100">
+                <Card.Body className="text-center">
+                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#6366f1' }}>
+                    <i className="fas fa-users"></i>
+                  </div>
+                  <div className="stats-number">{dashboardData.totalEmployees}</div>
+                  <p className="stats-label mb-1">Total Employees</p>
+                  <div className="d-flex justify-content-center align-items-center gap-2">
+                    <small className="text-success">
+                      <i className="fas fa-check-circle me-1"></i>
+                      {dashboardData.activeEmployees} Active
+                    </small>
+                    <small className="text-success">
+                      <i className="fas fa-arrow-up me-1"></i>
+                      +5%
+                    </small>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="modern-card hover-lift h-100">
+                <Card.Body className="text-center">
+                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#f59e0b' }}>
+                    <i className="fas fa-user-clock"></i>
+                  </div>
+                  <div className="stats-number">{dashboardData.employeesOnLeaveToday}</div>
+                  <p className="stats-label mb-1">On Leave Today</p>
+                  <small className="text-muted d-flex justify-content-center align-items-center gap-1">
+                    Currently absent
+                    {dashboardData.employeesOnLeaveToday > 0 && (
+                      <span className="text-info">
+                        <i className="fas fa-arrow-down ms-1"></i>
+                        -2 vs yesterday
+                      </span>
+                    )}
+                  </small>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="modern-card hover-lift h-100">
+                <Card.Body className="text-center">
+                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#06b6d4' }}>
+                    <i className="fas fa-clock"></i>
+                  </div>
+                  <div className="stats-number">{dashboardData.pendingApprovals}</div>
+                  <p className="stats-label mb-1">Pending Approvals</p>
+                  <div className="d-flex justify-content-center align-items-center gap-2">
+                    <small className="text-warning">
+                      <i className="fas fa-exclamation-circle me-1"></i>
+                      Needs attention
+                    </small>
+                    {dashboardData.pendingApprovals > 0 && (
+                      <small className="text-danger">
+                        <i className="fas fa-arrow-up"></i>
+                        +3
+                      </small>
+                    )}
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="modern-card hover-lift h-100">
+                <Card.Body className="text-center">
+                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#ef4444' }}>
+                    <i className="fas fa-file-alt"></i>
+                  </div>
+                  <div className="stats-number">{dashboardData.pendingDocVerifications || 0}</div>
+                  <p className="stats-label mb-1">Pending Verifications</p>
+                  <small className="text-muted">Documents to verify</small>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Department Distribution */}
           <Row className="mb-4">
             <Col md={6}>
-              <Card className="card-scrollable">
+              <Card className="modern-card h-100">
+                <Card.Header className="d-flex justify-content-between align-items-center">
+                  <span>
+                    <i className="fas fa-sitemap me-2 text-primary"></i>
+                    Department Distribution
+                  </span>
+                  <Badge bg="primary" className="badge-modern">
+                    {dashboardData.totalEmployees} Total
+                  </Badge>
+                </Card.Header>
+                <Card.Body>
+                  {dashboardData.departmentStats?.length > 0 ? (
+                    <Row className="g-2">
+                      {dashboardData.departmentStats.map((dept, index) => {
+                        const colors = [
+                          { bg: '#667eea', light: '#e0e7ff' },
+                          { bg: '#f093fb', light: '#fce7f3' },
+                          { bg: '#4facfe', light: '#dbeafe' },
+                          { bg: '#43e97b', light: '#d1fae5' },
+                          { bg: '#fa709a', light: '#ffe4e6' },
+                          { bg: '#30cfd0', light: '#cffafe' },
+                          { bg: '#a8edea', light: '#ccfbf1' },
+                          { bg: '#ff9a9e', light: '#fecaca' },
+                          { bg: '#ffecd2', light: '#fed7aa' },
+                          { bg: '#ff6e7f', light: '#fecdd3' }
+                        ];
+                        const color = colors[index % colors.length];
+                        
+                        return (
+                          <Col xs={6} key={index}>
+                            <div
+                              className="text-center p-2 rounded"
+                              style={{
+                                backgroundColor: color.light,
+                                border: `2px solid ${color.bg}20`,
+                                transition: 'all 0.3s ease',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => toast.info(`${dept._id}: ${dept.count} employees`)}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-3px)';
+                                e.currentTarget.style.boxShadow = `0 4px 8px ${color.bg}30`;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                              title={`Click to view ${dept._id} details`}
+                            >
+                              <div
+                                className="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center"
+                                style={{
+                                  width: '35px',
+                                  height: '35px',
+                                  backgroundColor: color.bg
+                                }}
+                              >
+                                <i className="fas fa-users text-white" style={{ fontSize: '0.875rem' }}></i>
+                              </div>
+                              <div className="fw-bold mb-0" style={{ fontSize: '1.25rem', color: color.bg }}>
+                                {dept.count}
+                              </div>
+                              <div className="text-muted" style={{ fontSize: '0.75rem', fontWeight: '600' }}>
+                                <div className="text-truncate" title={dept._id || 'Unassigned'}>
+                                  {dept._id || 'Unassigned'}
+                                </div>
+                              </div>
+                            </div>
+                          </Col>
+                        );
+                      })}
+                    </Row>
+                  ) : (
+                    <div className="text-center py-4">
+                      <i className="fas fa-sitemap text-muted fs-1 mb-3" style={{ color: '#94a3b8' }}></i>
+                      <p className="text-muted mb-0">No department data</p>
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={6}>
+              <Card className="modern-card h-100">
+                <Card.Header>
+                  <i className="fas fa-bullhorn me-2 text-info"></i>
+                  Latest Announcements
+                </Card.Header>
+                <Card.Body className="p-0">
+                  <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '1rem' }}>
+                    {announcements.length > 0 ? (
+                      announcements.slice(0, 5).map((ann) => (
+                        <div
+                          key={ann._id}
+                          className="d-flex align-items-start mb-3 pb-3 border-bottom"
+                        >
+                          <div
+                            className="rounded d-flex align-items-center justify-content-center text-white me-2"
+                            style={{
+                              backgroundColor:
+                                ann.priority === "HIGH"
+                                  ? "#ef4444"
+                                  : ann.priority === "MEDIUM"
+                                    ? "#f59e0b"
+                                    : "#3b82f6",
+                              width: "35px",
+                              height: "35px",
+                              minWidth: "35px",
+                              fontSize: '0.875rem'
+                            }}
+                          >
+                            <i className="fas fa-bullhorn"></i>
+                          </div>
+                          <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                            <div className="d-flex justify-content-between align-items-start mb-1">
+                              <h6 className="mb-0 text-truncate" style={{ fontSize: '0.9rem' }}>{ann.title}</h6>
+                              <Badge
+                                bg={
+                                  ann.priority === "HIGH"
+                                    ? "danger"
+                                    : ann.priority === "MEDIUM"
+                                      ? "warning"
+                                      : "info"
+                                }
+                                className="ms-2"
+                                style={{ fontSize: '0.7rem' }}
+                              >
+                                {ann.priority}
+                              </Badge>
+                            </div>
+                            <p className="text-muted mb-1" style={{ fontSize: '0.8rem', lineHeight: '1.4' }}>
+                              {ann.content}
+                            </p>
+                            <small className="text-muted" style={{ fontSize: '0.7rem' }}>
+                              <i className="fas fa-clock me-1"></i>
+                              {new Date(ann.createdAt).toLocaleDateString()}
+                            </small>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-4">
+                        <i className="fas fa-bullhorn text-muted fs-1 mb-3" style={{ color: '#94a3b8' }}></i>
+                        <p className="text-muted mb-0">No announcements</p>
+                      </div>
+                    )}
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Recent Activities */}
+          <Row className="mb-4">
+            <Col md={6}>
+              <Card className="modern-card h-100">
+                <Card.Header>
+                  <i className="fas fa-history me-2 text-success"></i>
+                  Recent Activities
+                </Card.Header>
+                <Card.Body style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  {dashboardData.recentActivities?.length > 0 ? (
+                    dashboardData.recentActivities.map((activity) => (
+                      <div key={activity._id} className="d-flex align-items-center mb-3 pb-3 border-bottom">
+                        <div
+                          className="rounded-circle d-flex align-items-center justify-content-center me-3"
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            backgroundColor: '#f3f4f6'
+                          }}
+                        >
+                          <i className="fas fa-calendar-alt text-primary"></i>
+                        </div>
+                        <div className="flex-grow-1">
+                          <div className="fw-semibold">
+                            {activity.userId?.firstName} {activity.userId?.lastName}
+                          </div>
+                          <small className="text-muted">
+                            Applied for {activity.leaveTypeId?.name} - {activity.days} days
+                          </small>
+                        </div>
+                        {getStatusBadge(activity.status)}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted mb-0">No recent activities</p>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={6}>
+              <Card className="modern-card h-100">
+                <Card.Header className="d-flex align-items-center">
+                  <i className="fas fa-chart-bar me-2 text-info"></i>
+                  Leave Statistics
+                </Card.Header>
+                <Card.Body>
+                  {dashboardData.leaveStats?.map((stat) => {
+                    const total = dashboardData.leaveStats.reduce((sum, s) => sum + s.count, 0);
+                    const percentage = total > 0 ? Math.round((stat.count / total) * 100) : 0;
+                    return (
+                      <div key={stat._id} className="mb-3">
+                        <div className="d-flex justify-content-between align-items-center mb-1">
+                          <span className="fw-semibold">
+                            <i
+                              className={`fas fa-${getStatusIcon(stat._id)} me-2`}
+                              style={{ color: '#6366f1' }}
+                            ></i>
+                            {stat._id.replace("_", " ")}
+                          </span>
+                          <span>
+                            <Badge
+                              bg="light"
+                              text="dark"
+                              className="me-1 badge-modern"
+                            >
+                              {stat.count} requests
+                            </Badge>
+                            <Badge bg="primary" className="badge-modern">
+                              {stat.totalDays} days
+                            </Badge>
+                          </span>
+                        </div>
+                        <div className="progress" style={{ height: '8px', backgroundColor: '#e2e8f0' }}>
+                          <div
+                            className="progress-bar"
+                            style={{
+                              width: `${percentage}%`,
+                              backgroundColor: '#6366f1',
+                              transition: 'width 0.6s ease'
+                            }}
+                            title={`${percentage}% of total requests`}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Birthdays, New Hires & Holidays */}
+          <Row className="mb-4">
+            <Col md={4}>
+              <Card className="card-scrollable h-100">
                 <Card.Header>
                   <i className="fas fa-birthday-cake me-2 text-warning"></i>
                   Upcoming Birthdays
@@ -848,120 +1171,128 @@ const Dashboard = () => {
                     dashboardData.upcomingBirthdays.map((emp) => (
                       <div
                         key={emp._id}
-                        className="d-flex justify-content-between align-items-center mb-2"
+                        className="d-flex align-items-center mb-3 p-2 rounded"
+                        style={{ backgroundColor: '#fef3c7', border: '1px solid #fbbf24' }}
                       >
-                        <div>
-                          <strong>
+                        <div
+                          className="rounded-circle d-flex align-items-center justify-content-center me-3"
+                          style={{
+                            width: '45px',
+                            height: '45px',
+                            backgroundColor: '#f59e0b',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            fontSize: '1.1rem'
+                          }}
+                        >
+                          {emp.firstName?.charAt(0)}{emp.lastName?.charAt(0)}
+                        </div>
+                        <div className="flex-grow-1">
+                          <div className="fw-bold">
                             {emp.firstName} {emp.lastName}
-                          </strong>
-                          <br />
+                          </div>
                           <small className="text-muted">{emp.department}</small>
                         </div>
-                        <Badge bg="warning">
-                          {new Date(emp.dateOfBirth).toLocaleDateString()}
-                        </Badge>
+                        <div className="text-end">
+                          <Badge bg="warning" className="mb-1">
+                            {new Date(emp.dateOfBirth).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </Badge>
+                          <div>
+                            <Button size="sm" variant="outline-warning" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                              <i className="fas fa-gift me-1"></i>Wish
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-muted mb-0">No upcoming birthdays</p>
+                    <p className="text-muted mb-0 text-center py-3">No upcoming birthdays</p>
                   )}
                 </Card.Body>
               </Card>
             </Col>
-            <Col md={6}>
-              <Card className="card-scrollable">
+            <Col md={4}>
+              <Card className="card-scrollable h-100">
                 <Card.Header>
-                  <i className="fas fa-user-plus me-2 text-success"></i>New
-                  Hires (Last 30 days)
+                  <i className="fas fa-user-plus me-2 text-success"></i>New Hires (Last 30 days)
                 </Card.Header>
                 <Card.Body>
                   {dashboardData.newHires?.length > 0 ? (
                     dashboardData.newHires.map((emp) => (
                       <div
                         key={emp._id}
-                        className="d-flex justify-content-between align-items-center mb-2"
+                        className="d-flex align-items-center mb-3 p-2 rounded"
+                        style={{ backgroundColor: '#d1fae5', border: '1px solid #10b981' }}
                       >
-                        <div>
-                          <strong>
+                        <div
+                          className="rounded-circle d-flex align-items-center justify-content-center me-3"
+                          style={{
+                            width: '45px',
+                            height: '45px',
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            fontSize: '1.1rem'
+                          }}
+                        >
+                          {emp.firstName?.charAt(0)}{emp.lastName?.charAt(0)}
+                        </div>
+                        <div className="flex-grow-1">
+                          <div className="fw-bold">
                             {emp.firstName} {emp.lastName}
-                          </strong>
-                          <br />
+                          </div>
                           <small className="text-muted">{emp.department}</small>
                         </div>
-                        <Badge bg="success">
-                          {new Date(emp.joinDate).toLocaleDateString()}
-                        </Badge>
+                        <div className="text-end">
+                          <Badge bg="success" className="mb-1">
+                            {new Date(emp.joinDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </Badge>
+                          <div>
+                            <Button size="sm" variant="outline-success" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                              <i className="fas fa-hand-wave me-1"></i>Welcome
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-muted mb-0">No new hires</p>
+                    <p className="text-muted mb-0 text-center py-3">No new hires</p>
                   )}
                 </Card.Body>
               </Card>
             </Col>
-          </Row>
-          <Row className="mb-4">
-            <Col md={3}>
-              <div className="stats-card text-center h-100">
-                <div
-                  className="stats-icon mx-auto"
-                  style={{ backgroundColor: "#6366f1" }}
-                >
-                  <i className="fas fa-users"></i>
-                </div>
-                <div className="stats-number">
-                  {dashboardData.totalEmployees}
-                </div>
-                <p className="stats-label mb-0">Total Employees</p>
-              </div>
-            </Col>
-            <Col md={3}>
-              <div className="stats-card text-center h-100">
-                <div
-                  className="stats-icon mx-auto"
-                  style={{ backgroundColor: "#06b6d4" }}
-                >
-                  <i className="fas fa-clock"></i>
-                </div>
-                <div className="stats-number">
-                  {dashboardData.pendingApprovals}
-                </div>
-                <p className="stats-label mb-0">Pending Approvals</p>
-              </div>
-            </Col>
-            <Col md={6}>
-              <Card className="modern-card h-100">
-                <Card.Header className="d-flex align-items-center">
-                  <i className="fas fa-chart-bar me-2 text-info"></i>
-                  Leave Statistics
+            <Col md={4}>
+              <Card className="card-scrollable h-100">
+                <Card.Header>
+                  <i className="fas fa-calendar-alt me-2 text-info"></i>
+                  Upcoming Holidays
                 </Card.Header>
                 <Card.Body>
-                  {dashboardData.leaveStats?.map((stat) => (
-                    <div
-                      key={stat._id}
-                      className="d-flex justify-content-between align-items-center mb-2"
-                    >
-                      <span className="fw-semibold">
-                        <i
-                          className={`fas fa-${getStatusIcon(stat._id)} me-2`}
-                          style={{ color: "#6366f1" }}
-                        ></i>
-                        {stat._id.replace("_", " ")}:
-                      </span>
-                      <span>
+                  {holidays
+                    .filter((h) => new Date(h.date) >= new Date())
+                    .slice(0, 5)
+                    .map((holiday) => (
+                      <div
+                        key={holiday._id}
+                        className="d-flex justify-content-between align-items-center mb-2 p-2 rounded"
+                        style={{ backgroundColor: '#dbeafe', border: '1px solid #3b82f6' }}
+                      >
+                        <div className="flex-grow-1">
+                          <div className="fw-bold">{holiday.name}</div>
+                          <small className="text-muted">
+                            {new Date(holiday.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </small>
+                        </div>
                         <Badge
-                          bg="light"
-                          text="dark"
-                          className="me-1 badge-modern"
+                          bg={holiday.type === "FESTIVAL" ? "warning" : holiday.type === "NATIONAL" ? "danger" : "info"}
                         >
-                          {stat.count} requests
+                          {holiday.type}
                         </Badge>
-                        <Badge bg="primary" className="badge-modern">
-                          {stat.totalDays} days
-                        </Badge>
-                      </span>
-                    </div>
-                  ))}
+                      </div>
+                    ))}
+                  {holidays.filter((h) => new Date(h.date) >= new Date()).length === 0 && (
+                    <p className="text-muted mb-0 text-center py-3">No upcoming holidays</p>
+                  )}
                 </Card.Body>
               </Card>
             </Col>

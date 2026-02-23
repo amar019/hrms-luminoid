@@ -13,11 +13,13 @@ import {
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
 import { toast } from "react-toastify";
+import Swal from 'sweetalert2';
 
 const Files = () => {
   const { user } = useAuth();
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [fileForm, setFileForm] = useState({
     type: "ORGANIZATION",
@@ -33,6 +35,13 @@ const Files = () => {
   const [showAckModal, setShowAckModal] = useState(false);
   const [ackComments, setAckComments] = useState("");
   const [selectedFileForAck, setSelectedFileForAck] = useState(null);
+  const [isLocked, setIsLocked] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [selectedFileForVerify, setSelectedFileForVerify] = useState(null);
+  const [verifyForm, setVerifyForm] = useState({
+    verificationStatus: 'VERIFIED'
+  });
 
   useEffect(() => {
     fetchFiles();
@@ -45,6 +54,16 @@ const Files = () => {
     try {
       const response = await api.get("/api/files");
       setFiles(response.data);
+      
+      // Check if employee's documents are locked
+      if (user?.role === 'EMPLOYEE') {
+        const myDocs = response.data.filter(f => 
+          f.type === 'EMPLOYEE' && 
+          f.targetUserId === user.id && 
+          f.uploadedBy._id === user.id
+        );
+        setIsLocked(myDocs.some(doc => doc.isLocked));
+      }
     } catch (error) {
       console.error("Error fetching files:", error);
       toast.error("Error fetching files");
@@ -64,6 +83,7 @@ const Files = () => {
 
   const handleFileUpload = async (e) => {
     e.preventDefault();
+    setUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
@@ -90,18 +110,30 @@ const Files = () => {
       fetchFiles();
       toast.success("File uploaded successfully");
     } catch (error) {
-      toast.error("Error uploading file");
+      toast.error(error.response?.data?.message || "Error uploading file");
+    } finally {
+      setUploading(false);
     }
   };
 
   const handleDeleteFile = async (fileId) => {
-    if (window.confirm("Are you sure you want to delete this file?")) {
+    const result = await Swal.fire({
+      title: 'Delete File?',
+      text: 'This action cannot be undone!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
       try {
         await api.delete(`/api/files/${fileId}`);
         fetchFiles();
         toast.success("File deleted successfully");
       } catch (error) {
-        toast.error("Error deleting file");
+        toast.error(error.response?.data?.message || "Error deleting file");
       }
     }
   };
@@ -152,10 +184,126 @@ const Files = () => {
     }
   };
 
+  const handleSubmitDocuments = async () => {
+    const result = await Swal.fire({
+      title: 'Submit Documents?',
+      text: 'Once submitted, you cannot upload/edit/delete. Continue?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, submit!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.post('/api/files/submit-my-documents');
+        fetchFiles();
+        toast.success('Documents submitted successfully');
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Error submitting documents');
+      }
+    }
+  };
+
+  const handleUnlockDocuments = async (employeeId) => {
+    const result = await Swal.fire({
+      title: 'Unlock Documents?',
+      text: "This will allow the employee to edit their documents again.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#0d6efd',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, unlock!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.put(`/api/files/unlock/${employeeId}`);
+        fetchFiles();
+        toast.success('Documents unlocked');
+      } catch (error) {
+        toast.error('Error unlocking documents');
+      }
+    }
+  };
+
+  const handleOpenModal = () => {
+    if (user?.role === 'EMPLOYEE') {
+      setFileForm({ 
+        type: 'EMPLOYEE', 
+        category: '', 
+        description: '', 
+        isPublic: false, 
+        targetUserId: user.id, 
+        requiresAcknowledgment: false 
+      });
+    } else {
+      // Reset form for HR/Admin
+      setFileForm({
+        type: 'ORGANIZATION',
+        category: '',
+        description: '',
+        isPublic: true,
+        targetUserId: '',
+        requiresAcknowledgment: false,
+      });
+    }
+    setShowModal(true);
+  };
+
+  const getVerificationBadge = (status) => {
+    const badges = {
+      UNVERIFIED: <Badge bg="secondary"><i className="fas fa-question me-1"></i>Unverified</Badge>,
+      VERIFIED: <Badge bg="success"><i className="fas fa-check-circle me-1"></i>Verified</Badge>,
+      EXPIRED: <Badge bg="warning"><i className="fas fa-exclamation-triangle me-1"></i>Expired</Badge>,
+      INVALID: <Badge bg="danger"><i className="fas fa-times-circle me-1"></i>Invalid</Badge>
+    };
+    return badges[status] || badges.UNVERIFIED;
+  };
+
+  const handleVerifyDocument = async (file) => {
+    setSelectedFileForVerify(file);
+    setVerifyForm({
+      verificationStatus: file.verificationStatus || 'VERIFIED'
+    });
+    setShowVerifyModal(true);
+  };
+
+  const submitVerification = async () => {
+    try {
+      await api.put(`/api/files/${selectedFileForVerify._id}/verify`, verifyForm);
+      setShowVerifyModal(false);
+      setSelectedFileForVerify(null);
+      setVerifyForm({ verificationStatus: 'VERIFIED' });
+      fetchFiles();
+      toast.success('Document verification updated');
+    } catch (error) {
+      toast.error('Error updating verification');
+    }
+  };
+
   const organizationFiles = files.filter(
     (file) => file.type === "ORGANIZATION"
   );
   const employeeFiles = files.filter((file) => file.type === "EMPLOYEE");
+
+  // Filter files based on search term (for HR/Admin)
+  const filterFiles = (fileList) => {
+    if (!searchTerm || user?.role === 'EMPLOYEE') return fileList;
+    
+    const term = searchTerm.toLowerCase();
+    return fileList.filter(file => {
+      const uploaderName = `${file.uploadedBy?.firstName || ''} ${file.uploadedBy?.lastName || ''}`.toLowerCase();
+      const targetEmployee = employees.find(emp => emp._id === file.targetUserId);
+      const targetName = targetEmployee ? `${targetEmployee.firstName} ${targetEmployee.lastName}`.toLowerCase() : '';
+      
+      return uploaderName.includes(term) || targetName.includes(term) || file.name.toLowerCase().includes(term);
+    });
+  };
+
+  const filteredOrgFiles = filterFiles(organizationFiles);
+  const filteredEmpFiles = filterFiles(employeeFiles);
 
   if (loading) {
     return (
@@ -183,11 +331,31 @@ const Files = () => {
             Manage organization and employee files
           </p>
         </div>
-        {["HR", "ADMIN"].includes(user?.role) && (
-          <Button variant="primary" onClick={() => setShowModal(true)}>
-            <i className="fas fa-upload me-2"></i>Upload File
-          </Button>
-        )}
+        <div className="d-flex gap-2 align-items-center">
+          {user?.role === 'EMPLOYEE' && !isLocked && (
+            <>
+              <Button variant="primary" onClick={handleOpenModal}>
+                <i className="fas fa-upload me-2"></i>Upload My Documents
+              </Button>
+              {employeeFiles.filter(f => f.uploadedBy._id === user.id).length > 0 && (
+                <Button variant="success" onClick={handleSubmitDocuments}>
+                  <i className="fas fa-lock me-2"></i>Submit Documents
+                </Button>
+              )}
+            </>
+          )}
+          {user?.role === 'EMPLOYEE' && isLocked && (
+            <div className="alert alert-info mb-0 py-2 px-3">
+              <i className="fas fa-lock me-2"></i>
+              Documents submitted. Contact HR to make changes.
+            </div>
+          )}
+          {['HR', 'ADMIN'].includes(user?.role) && (
+            <Button variant="primary" onClick={handleOpenModal}>
+              <i className="fas fa-upload me-2"></i>Upload File
+            </Button>
+          )}
+        </div>
       </div>
 
       <Nav variant="tabs" className="mb-4">
@@ -215,20 +383,42 @@ const Files = () => {
         <Col>
           <Card className="modern-table-wrapper">
             <Card.Header>
-              <h5 className="mb-0">
-                <i
-                  className={`fas fa-${
-                    activeTab === "organization" ? "building" : "user"
-                  } me-2`}
-                ></i>
-                {activeTab === "organization" ? "Organization" : "Employee"}{" "}
-                Documents
-              </h5>
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">
+                  <i
+                    className={`fas fa-${
+                      activeTab === "organization" ? "building" : "user"
+                    } me-2`}
+                  ></i>
+                  {activeTab === "organization" ? "Organization" : "Employee"}{" "}
+                  Documents
+                </h5>
+                {['HR', 'ADMIN'].includes(user?.role) && (
+                  <div className="d-flex align-items-center gap-2">
+                    <Form.Control
+                      type="text"
+                      placeholder="Search by name or employee..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      style={{ width: '300px' }}
+                    />
+                    {searchTerm && (
+                      <Button 
+                        variant="outline-secondary" 
+                        size="sm"
+                        onClick={() => setSearchTerm('')}
+                      >
+                        <i className="fas fa-times"></i>
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
             </Card.Header>
             <Card.Body className="p-0">
               {(activeTab === "organization"
-                ? organizationFiles
-                : employeeFiles
+                ? filteredOrgFiles
+                : filteredEmpFiles
               ).length > 0 ? (
                 <div className="table-responsive">
                   <Table className="table">
@@ -238,15 +428,18 @@ const Files = () => {
                         <th>Category</th>
                         <th>Size</th>
                         <th>Uploaded By</th>
+                        {activeTab === "employee" && ['HR', 'ADMIN'].includes(user?.role) && (
+                          <th>Target Employee</th>
+                        )}
                         <th>Date</th>
-                        <th>Status</th>
+                        <th>Verification</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(activeTab === "organization"
-                        ? organizationFiles
-                        : employeeFiles
+                        ? filteredOrgFiles
+                        : filteredEmpFiles
                       ).map((file) => (
                         <tr key={file._id}>
                           <td>
@@ -283,34 +476,42 @@ const Files = () => {
                               </small>
                             </div>
                           </td>
+                          {activeTab === "employee" && ['HR', 'ADMIN'].includes(user?.role) && (
+                            <td>
+                              <div className="fw-semibold">
+                                {employees.find(emp => emp._id === file.targetUserId)?.firstName}{" "}
+                                {employees.find(emp => emp._id === file.targetUserId)?.lastName}
+                              </div>
+                            </td>
+                          )}
                           <td>
                             <span className="text-muted">
                               {new Date(file.createdAt).toLocaleDateString()}
                             </span>
                           </td>
                           <td>
-                            {/* {console.log('File:', file.name, 'requiresAcknowledgment:', file.requiresAcknowledgment, 'isAcknowledged:', file.isAcknowledged)} */}
-                            {file.requiresAcknowledgment ? (
-                              file.isAcknowledged ? (
-                                <Badge bg="success" className="px-3 py-2">
-                                  <i className="fas fa-check me-1"></i>
-                                  Acknowledged
-                                </Badge>
-                              ) : (
-                                <Badge bg="warning" className="px-3 py-2">
-                                  <i className="fas fa-clock me-1"></i>
-                                  Pending
-                                </Badge>
-                              )
-                            ) : (
-                              <Badge bg="secondary" className="px-3 py-2">
-                                <i className="fas fa-info me-1"></i>
-                                No Action Required
-                              </Badge>
-                            )}
+                            <div>
+                              {getVerificationBadge(file.verificationStatus)}
+                              {file.verifiedBy && (
+                                <div className="mt-1">
+                                  <small className="text-muted">
+                                    <i className="fas fa-user-check me-1"></i>
+                                    {file.verifiedBy.firstName} {file.verifiedBy.lastName}
+                                  </small>
+                                </div>
+                              )}
+                              {file.verificationNotes && (
+                                <div className="mt-1">
+                                  <small className="text-muted fst-italic">
+                                    <i className="fas fa-sticky-note me-1"></i>
+                                    {file.verificationNotes}
+                                  </small>
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td>
-                            <div className="d-flex gap-1">
+                            <div className="d-flex gap-1 flex-wrap">
                               <Button
                                 size="sm"
                                 variant="outline-primary"
@@ -324,18 +525,43 @@ const Files = () => {
                                 <i className="fas fa-download me-1"></i>
                                 Download
                               </Button>
-                              {file.requiresAcknowledgment &&
-                                !file.isAcknowledged && (
+                              {['HR', 'ADMIN'].includes(user?.role) && (
+                                <>
+                                  {file.type === 'EMPLOYEE' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline-success"
+                                      onClick={() => handleVerifyDocument(file)}
+                                      title="Verify Document"
+                                    >
+                                      <i className="fas fa-check-circle me-1"></i>
+                                      Verify
+                                    </Button>
+                                  )}
+                                  {file.isLocked && file.type === 'EMPLOYEE' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline-secondary"
+                                      onClick={() => handleUnlockDocuments(file.targetUserId)}
+                                      title="Unlock for employee to edit"
+                                    >
+                                      <i className="fas fa-lock-open me-1"></i>
+                                      Unlock
+                                    </Button>
+                                  )}
                                   <Button
                                     size="sm"
-                                    variant="success"
-                                    onClick={() => handleAcknowledge(file)}
+                                    variant="outline-danger"
+                                    onClick={() => handleDeleteFile(file._id)}
                                   >
-                                    <i className="fas fa-check me-1"></i>
-                                    Acknowledge
+                                    <i className="fas fa-trash me-1"></i>
+                                    Delete
                                   </Button>
-                                )}
-                              {["HR", "ADMIN"].includes(user?.role) && (
+                                </>
+                              )}
+                              {user?.role === 'EMPLOYEE' && 
+                                !file.isLocked && 
+                                file.uploadedBy._id === user.id && (
                                 <Button
                                   size="sm"
                                   variant="outline-danger"
@@ -389,6 +615,7 @@ const Files = () => {
                     onChange={(e) =>
                       setFileForm({ ...fileForm, type: e.target.value })
                     }
+                    disabled={user?.role === 'EMPLOYEE'}
                   >
                     <option value="ORGANIZATION">Organization File</option>
                     <option value="EMPLOYEE">Employee File</option>
@@ -411,7 +638,7 @@ const Files = () => {
                   />
                 </Form.Group>
               </Col>
-              {fileForm.type === "EMPLOYEE" && (
+              {fileForm.type === "EMPLOYEE" && user?.role !== 'EMPLOYEE' && (
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>Target Employee</Form.Label>
@@ -478,11 +705,18 @@ const Files = () => {
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
+            <Button variant="secondary" onClick={() => setShowModal(false)} disabled={uploading}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit">
-              Upload File
+            <Button variant="primary" type="submit" disabled={uploading}>
+              {uploading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Uploading...
+                </>
+              ) : (
+                'Upload File'
+              )}
             </Button>
           </Modal.Footer>
         </Form>
@@ -521,6 +755,45 @@ const Files = () => {
           <Button variant="success" onClick={submitAcknowledgment}>
             <i className="fas fa-check me-2"></i>
             Acknowledge Document
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Verification Modal */}
+      <Modal show={showVerifyModal} onHide={() => setShowVerifyModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Verify Document</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="bg-light p-3 rounded mb-3">
+            <strong>{selectedFileForVerify?.name}</strong>
+            {selectedFileForVerify?.description && (
+              <div className="text-muted mt-1">
+                {selectedFileForVerify.description}
+              </div>
+            )}
+          </div>
+          
+          <Form.Group className="mb-3">
+            <Form.Label>Verification Status</Form.Label>
+            <Form.Select
+              value={verifyForm.verificationStatus}
+              onChange={(e) => setVerifyForm({ verificationStatus: e.target.value })}
+            >
+              <option value="UNVERIFIED">Unverified</option>
+              <option value="VERIFIED">Verified</option>
+              <option value="EXPIRED">Expired</option>
+              <option value="INVALID">Invalid</option>
+            </Form.Select>
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowVerifyModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={submitVerification}>
+            <i className="fas fa-certificate me-2"></i>
+            Update Verification
           </Button>
         </Modal.Footer>
       </Modal>

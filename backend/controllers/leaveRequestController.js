@@ -441,6 +441,52 @@ const checkConflicts = async (req, res) => {
   }
 };
 
+const getEmployeeDetails = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const user = await User.findById(employeeId).select('firstName lastName email department role joinDate');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Get leave balances
+    const currentYear = new Date().getFullYear();
+    const balances = await LeaveBalance.find({ userId: employeeId, year: currentYear })
+      .populate('leaveTypeId', 'name color');
+
+    // Get all leave requests
+    const leaves = await LeaveRequest.find({ userId: employeeId })
+      .populate('leaveTypeId', 'name color')
+      .sort({ startDate: -1 });
+
+    // Calculate present days (days not on leave in current year)
+    const yearStart = new Date(currentYear, 0, 1);
+    const today = new Date();
+    const totalDays = Math.ceil((today - yearStart) / (1000 * 60 * 60 * 24));
+    const approvedLeaves = leaves.filter(l => 
+      l.status === 'HR_APPROVED' && 
+      l.startDate.getFullYear() === currentYear
+    );
+    const leaveDays = approvedLeaves.reduce((sum, l) => sum + l.days, 0);
+    const presentDays = totalDays - leaveDays;
+
+    res.json({
+      employee: user,
+      balances,
+      leaves,
+      stats: {
+        presentDays,
+        totalLeaves: leaves.length,
+        approvedLeaves: leaves.filter(l => l.status === 'HR_APPROVED').length,
+        pendingLeaves: leaves.filter(l => l.status === 'PENDING' || l.status === 'MANAGER_APPROVED').length
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   applyLeave,
   getLeaveRequests,
@@ -449,5 +495,6 @@ module.exports = {
   cancelLeave,
   getTeamCalendar,
   testLeaveReminder,
-  checkConflicts
+  checkConflicts,
+  getEmployeeDetails
 };

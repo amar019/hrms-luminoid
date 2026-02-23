@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Badge, Card } from 'react-bootstrap';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import api from '../utils/api';
 
 const LeaveTypes = () => {
@@ -73,7 +74,17 @@ const LeaveTypes = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this leave type?')) {
+    const result = await Swal.fire({
+      title: 'Delete Leave Type?',
+      text: 'This action cannot be undone!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
       try {
         await api.delete(`/api/leave-types/${id}`);
         toast.success('Leave type deleted successfully');

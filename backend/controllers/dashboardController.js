@@ -197,9 +197,11 @@ const motivationalQuotes = [
   { quote: "Courage is knowing what not to fear.", author: "Plato" }
 ];
 
-const getRandomQuote = () => {
-  const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
-  return randomQuote;
+const getDailyQuote = () => {
+  const today = new Date();
+  const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+  const index = dayOfYear % motivationalQuotes.length;
+  return motivationalQuotes[index];
 };
 
 const getEmployeeDashboard = async (req, res) => {
@@ -272,7 +274,7 @@ const getEmployeeDashboard = async (req, res) => {
     }).populate('uploadedBy', 'firstName lastName').sort({ createdAt: -1 }).limit(10);
 
     res.json({
-      motivationalQuote: getRandomQuote(),
+      motivationalQuote: getDailyQuote(),
       balances: balancesWithAvailable,
       upcomingLeaves,
       recentLeaves,
@@ -350,7 +352,7 @@ const getManagerDashboard = async (req, res) => {
     ]);
 
     res.json({
-      motivationalQuote: getRandomQuote(),
+      motivationalQuote: getDailyQuote(),
       teamMembers,
       pendingApprovals,
       teamCalendar,
@@ -368,7 +370,44 @@ const getHRDashboard = async (req, res) => {
     const next30Days = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     // Organization-wide stats
-    const totalEmployees = await User.countDocuments({ isActive: true, role: 'EMPLOYEE' });
+    const totalEmployees = await User.countDocuments({ isActive: true });
+    const activeEmployees = await User.countDocuments({ isActive: true, role: 'EMPLOYEE' });
+    const inactiveEmployees = await User.countDocuments({ isActive: false });
+
+    // Employees on leave today
+    const employeesOnLeaveToday = await LeaveRequest.countDocuments({
+      status: { $in: ['MANAGER_APPROVED', 'HR_APPROVED'] },
+      startDate: { $lte: currentDate },
+      endDate: { $gte: currentDate }
+    });
+
+    // Department-wise distribution
+    const departmentStats = await User.aggregate([
+      { $match: { isActive: true } },
+      { $group: { _id: '$department', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Gender distribution
+    const genderStats = await User.aggregate([
+      { $match: { isActive: true } },
+      { $group: { _id: '$gender', count: { $sum: 1 } } }
+    ]);
+
+    // Pending document verifications
+    const pendingDocVerifications = await File.countDocuments({
+      type: 'EMPLOYEE',
+      verificationStatus: { $in: ['UNVERIFIED', null] }
+    });
+
+    // Average tenure calculation
+    const employees = await User.find({ isActive: true, joinDate: { $exists: true } }).select('joinDate');
+    const avgTenure = employees.length > 0 
+      ? employees.reduce((sum, emp) => {
+          const tenure = (currentDate - new Date(emp.joinDate)) / (1000 * 60 * 60 * 24 * 365);
+          return sum + tenure;
+        }, 0) / employees.length
+      : 0;
     
     const leaveStats = await LeaveRequest.aggregate([
       {
@@ -468,15 +507,30 @@ const getHRDashboard = async (req, res) => {
       joinDate: { $gte: new Date(currentDate.getTime() - 30 * 24 * 60 * 60 * 1000) }
     }).select('firstName lastName joinDate department').sort({ joinDate: -1 });
 
+    // Recent activities (last 10 leave requests)
+    const recentActivities = await LeaveRequest.find()
+      .populate('userId', 'firstName lastName')
+      .populate('leaveTypeId', 'name')
+      .sort({ createdAt: -1 })
+      .limit(10);
+
     res.json({
-      motivationalQuote: getRandomQuote(),
+      motivationalQuote: getDailyQuote(),
       totalEmployees,
+      activeEmployees,
+      inactiveEmployees,
+      employeesOnLeaveToday,
+      departmentStats,
+      genderStats,
+      pendingDocVerifications,
+      avgTenure: Math.round(avgTenure * 10) / 10,
       leaveStats,
       monthlyTrends,
       leaveTypeUsage,
       pendingApprovals,
       upcomingBirthdays: birthdaysInRange,
-      newHires
+      newHires,
+      recentActivities
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

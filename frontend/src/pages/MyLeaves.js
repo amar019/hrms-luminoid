@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Badge, Button, Form, Row, Col, Card } from 'react-bootstrap';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import api from '../utils/api';
 
 const MyLeaves = () => {
@@ -46,7 +47,17 @@ const MyLeaves = () => {
   };
 
   const handleCancel = async (id) => {
-    if (window.confirm('Are you sure you want to cancel this leave request?')) {
+    const result = await Swal.fire({
+      title: 'Cancel Leave Request?',
+      text: 'This action cannot be undone!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, cancel it!'
+    });
+
+    if (result.isConfirmed) {
       try {
         await api.put(`/api/leave-requests/${id}/cancel`);
         toast.success('Leave request cancelled successfully');
