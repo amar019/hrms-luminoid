@@ -29,9 +29,6 @@ const checkIn = async (req, res) => {
 
     const today = moment.tz("Asia/Kolkata").startOf("day").toDate();
 
-    console.log("today:", today);
-    console.log("today IST:", moment(today).tz("Asia/Kolkata").format());
-
     if (!location || !location.latitude || !location.longitude) {
       return res.status(400).json({
         message: "Location permission is required to check in",
@@ -67,7 +64,7 @@ const checkIn = async (req, res) => {
     }
 
     attendance.checkIn = new Date();
-    attendance.status = "Present";
+    // Status will be determined by pre-save hook based on check-in time
     attendance.location = {
       checkInLocation: location,
     };
@@ -217,14 +214,16 @@ const checkOut = async (req, res) => {
 
 const getAttendance = async (req, res) => {
   try {
-    const { startDate, endDate, userId, page = 1, limit = 30 } = req.query;
+    const { startDate, endDate, userId, page = 1, limit = 30, includeDeleted } = req.query;
     const filter = {};
 
+    // Role-based filtering
     if (req.user.role === "EMPLOYEE") {
       filter.userId = req.user.id;
-    } else if (userId) {
+    } else if (userId && userId !== "all" && userId.trim() !== "") {
       filter.userId = userId;
     }
+    // If userId is empty, "all", or not provided for admin/hr/manager, show all employees
 
     if (startDate && endDate) {
       filter.date = {
@@ -233,8 +232,17 @@ const getAttendance = async (req, res) => {
       };
     }
 
+    // Exclude deleted records by default (only show if includeDeleted=true and user is ADMIN/HR)
+    if (includeDeleted === 'true' && ['ADMIN', 'HR'].includes(req.user.role)) {
+      // Show all records including deleted
+    } else {
+      filter.isDeleted = { $ne: true };
+    }
+
     const attendance = await Attendance.find(filter)
       .populate("userId", "firstName lastName email")
+      .populate("lastEditedBy", "firstName lastName")
+      .populate("deletedBy", "firstName lastName")
       .sort({ date: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -260,9 +268,45 @@ const getTodayStatus = async (req, res) => {
     // Allow managers/HR/Admin to query another user's today status via ?userId=
     if (
       req.query.userId &&
+      req.query.userId !== "all" &&
+      req.query.userId.trim() !== "" &&
       ["MANAGER", "HR", "ADMIN"].includes(req.user.role)
     ) {
       userId = req.query.userId;
+    } else if (
+      (!req.query.userId || req.query.userId === "all" || req.query.userId.trim() === "") &&
+      ["MANAGER", "HR", "ADMIN"].includes(req.user.role)
+    ) {
+      // For "All" option, return aggregated data
+      const allAttendance = await Attendance.find({
+        date: today,
+        isDeleted: { $ne: true }
+      }).populate("userId", "firstName lastName email");
+
+      // Get total active employees count
+      const totalActiveEmployees = await User.countDocuments({ isActive: true });
+
+      const summary = {
+        totalEmployees: totalActiveEmployees,
+        checkedIn: allAttendance.filter(a => a.checkIn).length,
+        checkedOut: allAttendance.filter(a => a.checkOut).length,
+        totalHours: allAttendance.reduce((sum, a) => sum + (a.totalHours || 0), 0),
+        statusCounts: allAttendance.reduce((acc, a) => {
+          acc[a.status] = (acc[a.status] || 0) + 1;
+          return acc;
+        }, {})
+      };
+
+      return res.json({
+        isAggregated: true,
+        summary,
+        hasCheckedIn: false,
+        hasCheckedOut: false,
+        checkInTime: null,
+        checkOutTime: null,
+        totalHours: summary.totalHours,
+        status: "Multiple"
+      });
     }
 
     const attendance = await Attendance.findOne({
@@ -286,19 +330,31 @@ const getTodayStatus = async (req, res) => {
 
 const getAttendanceReport = async (req, res) => {
   try {
-    const { month, year, userId } = req.query;
-    const currentMonth = month || moment().month() + 1;
-    const currentYear = year || moment().year();
+    const { month, year, userId, startDate, endDate } = req.query;
+    
+    let start, end;
+    
+    // If startDate and endDate are provided, use them
+    if (startDate && endDate) {
+      start = moment(startDate).startOf("day").toDate();
+      end = moment(endDate).endOf("day").toDate();
+    } else {
+      // Otherwise, use month and year (backward compatibility)
+      const currentMonth = month || moment().month() + 1;
+      const currentYear = year || moment().year();
+      start = moment(`${currentYear}-${currentMonth}-01`).startOf("month").toDate();
+      end = moment(`${currentYear}-${currentMonth}-01`).endOf("month").toDate();
+    }
 
-    const startDate = moment(`${currentYear}-${currentMonth}-01`)
-      .startOf("month")
-      .toDate();
-    const endDate = moment(`${currentYear}-${currentMonth}-01`)
-      .endOf("month")
-      .toDate();
-
-    const filter = { date: { $gte: startDate, $lte: endDate } };
-    if (userId) filter.userId = userId;
+    const filter = { date: { $gte: start, $lte: end }, isDeleted: { $ne: true } };
+    
+    // Role-based filtering
+    if (req.user.role === "EMPLOYEE") {
+      filter.userId = req.user.id;
+    } else if (userId && userId !== "all") {
+      filter.userId = userId;
+    }
+    // If userId is "all" or empty for admin/hr/manager, show all employees
 
     const attendance = await Attendance.find(filter)
       .populate("userId", "firstName lastName email")
@@ -372,6 +428,111 @@ const getPayrollReport = async (req, res) => {
   }
 };
 
+const editAttendance = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { checkIn, checkOut, status, totalHours, editReason } = req.body;
+
+    if (!editReason || editReason.trim().length < 10) {
+      return res.status(400).json({ message: "Edit reason is required (minimum 10 characters)" });
+    }
+
+    const attendance = await Attendance.findById(id);
+    if (!attendance) {
+      return res.status(404).json({ message: "Attendance record not found" });
+    }
+
+    if (checkIn) attendance.checkIn = new Date(checkIn);
+    if (checkOut) attendance.checkOut = new Date(checkOut);
+    if (status) attendance.status = status;
+    if (totalHours !== undefined) attendance.totalHours = totalHours;
+    
+    attendance.lastEditedBy = req.user.id;
+    attendance.lastEditedAt = new Date();
+    attendance.editReason = editReason;
+    attendance.isManualEntry = true;
+
+    await attendance.save();
+
+    const updatedRecord = await Attendance.findById(id)
+      .populate("userId", "firstName lastName email")
+      .populate("lastEditedBy", "firstName lastName");
+
+    res.json({ message: "Attendance updated successfully", attendance: updatedRecord });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteAttendance = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { deletionReason } = req.body;
+
+    if (!deletionReason || deletionReason.trim().length < 10) {
+      return res.status(400).json({ message: "Deletion reason is required (minimum 10 characters)" });
+    }
+
+    const attendance = await Attendance.findById(id);
+    if (!attendance) {
+      return res.status(404).json({ message: "Attendance record not found" });
+    }
+
+    attendance.isDeleted = true;
+    attendance.deletedBy = req.user.id;
+    attendance.deletedAt = new Date();
+    attendance.deletionReason = deletionReason;
+
+    await attendance.save();
+
+    res.json({ message: "Attendance deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const runAutoCheckout = async (req, res) => {
+  try {
+    const today = moment.tz('Asia/Kolkata').startOf('day').toDate();
+    
+    const attendanceRecords = await Attendance.find({
+      date: today,
+      checkIn: { $exists: true },
+      checkOut: { $exists: false },
+      status: { $in: ['Present', 'Late'] },
+      isDeleted: { $ne: true }
+    });
+    
+    if (attendanceRecords.length === 0) {
+      return res.json({ message: 'No employees to auto checkout', count: 0 });
+    }
+    
+    const autoCheckoutTime = moment.tz('Asia/Kolkata')
+      .set({ hour: 18, minute: 0, second: 0, millisecond: 0 })
+      .toDate();
+    
+    for (const record of attendanceRecords) {
+      record.checkOut = autoCheckoutTime;
+      record.isAutoCheckout = true;
+      record.notes = record.notes 
+        ? `${record.notes} | Auto checkout at 6:00 PM` 
+        : 'Auto checkout at 6:00 PM';
+      await record.save();
+    }
+    
+    res.json({ 
+      message: `Auto checked out ${attendanceRecords.length} employees at 6:00 PM`,
+      count: attendanceRecords.length
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+
+
 module.exports = {
   checkIn,
   checkOut,
@@ -380,4 +541,7 @@ module.exports = {
   getAttendanceReport,
   getPayrollReport,
   markHolidayAttendance,
+  editAttendance,
+  deleteAttendance,
+  runAutoCheckout
 };

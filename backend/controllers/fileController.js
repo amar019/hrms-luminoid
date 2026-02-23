@@ -12,12 +12,13 @@ const getFiles = async (req, res) => {
     if (req.user.role === 'EMPLOYEE') {
       query.$or = [
         { type: 'ORGANIZATION', isPublic: true },
-        { type: 'EMPLOYEE', targetUserId: req.user.id }
+        { type: 'EMPLOYEE', targetUserId: req.user.id, uploadedBy: req.user.id }
       ];
     }
 
     const files = await File.find(query)
       .populate('uploadedBy', 'firstName lastName')
+      .populate('verifiedBy', 'firstName lastName')
       .sort({ createdAt: -1 });
 
     // Get acknowledgment status for current user
@@ -50,6 +51,34 @@ const uploadFile = async (req, res) => {
       return res.status(400).json({ message: 'File type is required' });
     }
 
+    // Employee validation
+    if (req.user.role === 'EMPLOYEE') {
+      // Employee can only upload EMPLOYEE type for themselves
+      if (req.body.type !== 'EMPLOYEE') {
+        return res.status(403).json({ message: 'Employees can only upload employee documents' });
+      }
+      
+      // Check if already locked
+      const lockedDocs = await File.findOne({ 
+        targetUserId: req.user.id, 
+        uploadedBy: req.user.id, 
+        isLocked: true 
+      });
+      
+      if (lockedDocs) {
+        return res.status(403).json({ message: 'Your documents are submitted. Contact HR to reopen.' });
+      }
+      
+      // Validate file type (PDF/JPG/PNG only)
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+      if (!allowedTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ message: 'Only PDF, JPG, PNG files allowed' });
+      }
+      
+      // Force targetUserId to be themselves
+      req.body.targetUserId = req.user.id;
+    }
+
     const s3Key = `files/${Date.now()}-${req.file.originalname}`;
     
     const uploadParams = {
@@ -74,7 +103,8 @@ const uploadFile = async (req, res) => {
       targetUserId: req.body.targetUserId,
       isPublic: req.body.isPublic === 'true',
       description: req.body.description,
-      requiresAcknowledgment: req.body.requiresAcknowledgment === 'true'
+      requiresAcknowledgment: req.body.requiresAcknowledgment === 'true',
+      expiryDate: req.body.expiryDate || null
     });
 
     await file.save();
@@ -130,6 +160,18 @@ const deleteFile = async (req, res) => {
   try {
     const file = await File.findById(req.params.id);
     if (!file) return res.status(404).json({ message: 'File not found' });
+
+    // Employee validation
+    if (req.user.role === 'EMPLOYEE') {
+      // Check if employee owns the file
+      if (file.uploadedBy.toString() !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      // Check if document is locked
+      if (file.isLocked) {
+        return res.status(403).json({ message: 'Cannot delete submitted documents' });
+      }
+    }
 
     const deleteParams = {
       Bucket: process.env.AWS_S3_BUCKET,
@@ -195,11 +237,64 @@ const getAcknowledgments = async (req, res) => {
   }
 };
 
+//for employeee can add their own documents for only once
+
+const submitMyDocuments = async (req, res) => {
+  try {
+    const result = await File.updateMany(
+      { targetUserId: req.user.id, uploadedBy: req.user.id, isLocked: false },
+      { isLocked: true }
+    );
+    res.json({ message: 'Documents submitted and locked', count: result.modifiedCount });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const unlockEmployeeDocuments = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    await File.updateMany(
+      { targetUserId: employeeId, isLocked: true },
+      { isLocked: false }
+    );
+    res.json({ message: 'Documents unlocked' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const verifyDocument = async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const { verificationStatus, expiryDate, verificationNotes } = req.body;
+
+    const file = await File.findById(fileId);
+    if (!file) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    file.verificationStatus = verificationStatus;
+    file.verifiedBy = req.user.id;
+    file.verifiedAt = new Date();
+    if (expiryDate) file.expiryDate = expiryDate;
+    if (verificationNotes) file.verificationNotes = verificationNotes;
+
+    await file.save();
+    res.json({ message: 'Document verification updated', file });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getFiles,
   uploadFile,
   downloadFile,
   deleteFile,
   acknowledgeDocument,
-  getAcknowledgments
+  getAcknowledgments,
+  submitMyDocuments,
+  unlockEmployeeDocuments,
+  verifyDocument
 };

@@ -240,6 +240,13 @@ const getEmployeeDirectory = async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit);
     
+    // Add employeeId at root level for frontend compatibility
+    profiles = profiles.map(profile => {
+      const profileObj = profile.toObject ? profile.toObject() : profile;
+      profileObj.employeeId = profileObj.professionalInfo?.employeeId || profileObj.workInfo?.employeeId || '';
+      return profileObj;
+    });
+    
     if (search) {
       profiles = profiles.filter(profile => 
         profile.userId.firstName.toLowerCase().includes(search.toLowerCase()) ||
@@ -272,6 +279,7 @@ const getEmployeeDirectory = async (req, res) => {
       const userProfiles = users.map(u => ({
         _id: u._id,
         userId: u,
+        employeeId: '',
         workInfo: {},
         professionalInfo: {}
       }));
