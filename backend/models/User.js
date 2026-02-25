@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema({
   roleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
   customPermissions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Permission' }],
   managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  department: String,
+  department: { type: mongoose.Schema.Types.Mixed },
   designation: String,
   joinDate: { type: Date, default: null },
   dateOfBirth: { type: Date, default: null },

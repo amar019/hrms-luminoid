@@ -70,6 +70,12 @@ const Layout = ({ children }) => {
       );
     }
 
+    if (user?.role === 'ADMIN') {
+      items.push(
+        { path: '/departments', label: 'Departments', icon: 'fas fa-sitemap', roles: ['ADMIN'] }
+      );
+    }
+
     // Add Files for all users to view
     items.push(
       { path: '/files', label: 'Files & Documents', icon: 'fas fa-folder-open', roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },

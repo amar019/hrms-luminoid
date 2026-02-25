@@ -28,6 +28,7 @@ import Expenses from './pages/Expenses';
 import Assets from './pages/Assets';
 import Reports from './pages/Reports';
 import EmployeeImport from './pages/EmployeeImport';
+import Departments from './pages/Departments';
 
 function App() {
   return (
@@ -162,6 +163,14 @@ function App() {
               <ProtectedRoute roles={['HR', 'ADMIN']}>
                 <Layout>
                   <EmployeeImport />
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/departments" element={
+              <ProtectedRoute roles={['ADMIN']}>
+                <Layout>
+                  <Departments />
                 </Layout>
               </ProtectedRoute>
             } />

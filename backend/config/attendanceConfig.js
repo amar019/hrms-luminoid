@@ -14,7 +14,7 @@ module.exports = {
   DEFAULT_BREAK_MINUTES: 60, // 1 hour lunch break
   
   // Auto checkout
-  AUTO_CHECKOUT_TIME: { hour: 18, minute: 0 }, // 6:00 PM
+  AUTO_CHECKOUT_TIME: { hour: 18, minute: 30 }, // 6:30 PM
   
   // Overtime
   OVERTIME_THRESHOLD: 8, // Hours after which overtime is calculated
