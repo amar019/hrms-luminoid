@@ -1,4 +1,5 @@
 const express = require('express');
+const multer = require('multer');
 const {
   createDepartment,
   getAllDepartments,
@@ -6,18 +7,40 @@ const {
   updateDepartment,
   deleteDepartment,
   assignEmployee,
-  bulkAssignEmployees
+  bulkAssignEmployees,
+  bulkStatusChange,
+  bulkDelete,
+  transferEmployees,
+  addGoal,
+  updateGoal,
+  addGoalComment,
+  updateMilestone,
+  uploadDocument,
+  importDepartments,
+  getHierarchy
 } = require('../controllers/departmentController');
 const { auth, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
+const upload = multer({ dest: 'uploads/' });
+
 router.post('/', auth, authorize('ADMIN'), createDepartment);
 router.get('/', auth, getAllDepartments);
+router.get('/hierarchy', auth, getHierarchy);
 router.get('/:id', auth, getDepartmentById);
 router.put('/:id', auth, authorize('ADMIN'), updateDepartment);
 router.delete('/:id', auth, authorize('ADMIN'), deleteDepartment);
 router.post('/assign', auth, authorize('ADMIN', 'HR'), assignEmployee);
 router.post('/bulk-assign', auth, authorize('ADMIN', 'HR'), bulkAssignEmployees);
+router.post('/bulk-status', auth, authorize('ADMIN'), bulkStatusChange);
+router.post('/bulk-delete', auth, authorize('ADMIN'), bulkDelete);
+router.post('/transfer', auth, authorize('ADMIN', 'HR'), transferEmployees);
+router.post('/:id/goals', auth, authorize('ADMIN', 'HR'), addGoal);
+router.put('/:id/goals/:goalId', auth, authorize('ADMIN', 'HR'), updateGoal);
+router.post('/:id/goals/:goalId/comments', auth, authorize('ADMIN', 'HR', 'MANAGER'), addGoalComment);
+router.put('/:id/goals/:goalId/milestones/:milestoneId', auth, authorize('ADMIN', 'HR', 'MANAGER'), updateMilestone);
+router.post('/:id/documents', auth, authorize('ADMIN', 'HR'), uploadDocument);
+router.post('/import', auth, authorize('ADMIN'), upload.single('file'), importDepartments);
 
 module.exports = router;

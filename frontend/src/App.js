@@ -29,6 +29,7 @@ import Assets from './pages/Assets';
 import Reports from './pages/Reports';
 import EmployeeImport from './pages/EmployeeImport';
 import Departments from './pages/Departments';
+import DepartmentDetails from './pages/DepartmentDetails';
 
 function App() {
   return (
@@ -171,6 +172,14 @@ function App() {
               <ProtectedRoute roles={['ADMIN']}>
                 <Layout>
                   <Departments />
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/departments/:id" element={
+              <ProtectedRoute roles={['ADMIN', 'HR', 'MANAGER']}>
+                <Layout>
+                  <DepartmentDetails />
                 </Layout>
               </ProtectedRoute>
             } />

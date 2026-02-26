@@ -32,8 +32,15 @@ const Layout = ({ children }) => {
     
     pathnames.forEach((name, index) => {
       const path = `/${pathnames.slice(0, index + 1).join('/')}`;
+      let displayName = name.charAt(0).toUpperCase() + name.slice(1).replace('-', ' ');
+      
+      // Handle department detail pages - show "Department Details" instead of ID
+      if (pathnames[index - 1] === 'departments' && name.length === 24) {
+        displayName = 'Department Details';
+      }
+      
       breadcrumbs.push({
-        name: name.charAt(0).toUpperCase() + name.slice(1).replace('-', ' '),
+        name: displayName,
         path
       });
     });

@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 const Announcements = () => {
   const { user } = useAuth();
   const [announcements, setAnnouncements] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const Announcements = () => {
     content: '',
     priority: 'MEDIUM',
     targetRoles: [],
+    targetDepartments: [],
     expiryDate: ''
   });
 
@@ -31,12 +33,36 @@ const Announcements = () => {
     }
   };
 
+  const fetchDepartments = async () => {
+    try {
+      const response = await api.get('/api/departments');
+      setDepartments(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
+
   useEffect(() => {
     fetchAnnouncements();
+    fetchDepartments();
     const interval = setInterval(fetchAnnouncements, 3000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleDepartmentChange = (deptId, checked) => {
+    if (checked) {
+      setFormData({
+        ...formData,
+        targetDepartments: [...formData.targetDepartments, deptId]
+      });
+    } else {
+      setFormData({
+        ...formData,
+        targetDepartments: formData.targetDepartments.filter(d => d !== deptId)
+      });
+    }
+  };
 
   const handleRoleChange = (role, checked) => {
     if (checked) {
@@ -67,7 +93,7 @@ const Announcements = () => {
       
       // Close modal immediately
       setShowModal(false);
-      setFormData({ title: '', content: '', priority: 'MEDIUM', targetRoles: [], expiryDate: '' });
+      setFormData({ title: '', content: '', priority: 'MEDIUM', targetRoles: [], targetDepartments: [], expiryDate: '' });
       toast.success('Announcement created successfully');
       
       // Send to server in background
@@ -282,7 +308,7 @@ const Announcements = () => {
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Target Roles</Form.Label>
+                  <Form.Label><i className="fas fa-user-tag me-2"></i>Target Roles</Form.Label>
                   <div>
                     {['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'].map(role => (
                       <Form.Check
@@ -301,7 +327,28 @@ const Announcements = () => {
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Expiry Date (Optional)</Form.Label>
+                  <Form.Label><i className="fas fa-building me-2"></i>Target Departments</Form.Label>
+                  <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #dee2e6', borderRadius: '4px', padding: '8px' }}>
+                    {departments.map(dept => (
+                      <Form.Check
+                        key={dept._id}
+                        type="checkbox"
+                        label={dept.name}
+                        checked={formData.targetDepartments.includes(dept._id)}
+                        onChange={(e) => handleDepartmentChange(dept._id, e.target.checked)}
+                      />
+                    ))}
+                  </div>
+                  <Form.Text className="text-muted">
+                    Leave empty to target all departments
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+            </Row>
+            <Row>
+              <Col md={12}>
+                <Form.Group className="mb-3">
+                  <Form.Label><i className="fas fa-clock me-2"></i>Expiry Date (Optional)</Form.Label>
                   <Form.Control
                     type="date"
                     value={formData.expiryDate}
