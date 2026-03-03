@@ -83,8 +83,8 @@ cron.schedule('0 10 * * *', async () => {
   }
 });
 
-// Auto checkout - runs daily at 11:00 PM
-cron.schedule('0 23 * * *', async () => {
+// Auto checkout - runs daily at 6:30 PM
+cron.schedule('30 18 * * *', async () => {
   console.log('Running auto checkout for employees who forgot to check out...');
   
   const today = moment.tz('Asia/Kolkata').startOf('day').toDate();
@@ -100,19 +100,19 @@ cron.schedule('0 23 * * *', async () => {
     
     if (attendanceRecords.length > 0) {
       const autoCheckoutTime = moment.tz('Asia/Kolkata')
-        .set({ hour: 18, minute: 0, second: 0, millisecond: 0 })
+        .set({ hour: 18, minute: 30, second: 0, millisecond: 0 })
         .toDate();
       
       for (const record of attendanceRecords) {
         record.checkOut = autoCheckoutTime;
         record.isAutoCheckout = true;
         record.notes = record.notes 
-          ? `${record.notes} | Auto checkout at 6:00 PM` 
-          : 'Auto checkout at 6:00 PM';
+          ? `${record.notes} | Auto checkout at 6:30 PM` 
+          : 'Auto checkout at 6:30 PM';
         await record.save();
       }
       
-      console.log(`Auto checked out ${attendanceRecords.length} employees at 6:00 PM`);
+      console.log(`Auto checked out ${attendanceRecords.length} employees at 6:30 PM`);
     }
   } catch (error) {
     console.error('Error in auto checkout job:', error);
