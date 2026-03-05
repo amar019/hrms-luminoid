@@ -514,7 +514,41 @@ exports.getHierarchy = async (req, res) => {
   }
 };
 
+exports.getEmployeesForTransfer = async (req, res) => {
+  try {
+    const users = await User.find({ isActive: true })
+      .select('firstName lastName email department designation')
+      .sort({ firstName: 1 });
+    
+    res.json({ success: true, data: users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 async function updateEmployeeCount(departmentId) {
   const count = await User.countDocuments({ department: departmentId });
   await Department.findByIdAndUpdate(departmentId, { employeeCount: count });
 }
+
+exports.removeEmployeeFromDepartment = async (req, res) => {
+  try {
+    const { id, empId } = req.params;
+    
+    const user = await User.findByIdAndUpdate(
+      empId,
+      { $unset: { department: 1 } },
+      { new: true }
+    );
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Employee not found' });
+    }
+    
+    await updateEmployeeCount(id);
+    
+    res.json({ success: true, message: 'Employee removed from department' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

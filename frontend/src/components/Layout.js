@@ -5,7 +5,15 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { 
+  MdDashboard, MdAccessTime, MdEventAvailable, MdCalendarToday, 
+  MdPeople, MdSettings, MdCampaign, MdBarChart, MdAccountTree,
+  MdFolder, MdPerson, MdReceipt, MdLaptop, MdNotifications,
+  MdBrightness4, MdBrightness7, MdMenu, MdLogout, MdHome,
+  MdTask, MdCheckCircle, MdAddCircle, MdBusiness, MdAssignment
+} from 'react-icons/md';
 import '../styles/glassmorphism-navbar.css';
+import '../styles/modern-layout.css';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -15,8 +23,28 @@ const Layout = ({ children }) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [pendingCount, setPendingCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const markAsRead = async () => {
+    setNotifications([]);
+    setPendingCount(0);
+    setShowNotifications(false);
+    
+    // Show success feedback
+    const toast = document.createElement('div');
+    toast.innerHTML = 'All notifications cleared!';
+    toast.style.cssText = 'position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:1rem 1.5rem;border-radius:12px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-weight:600;';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  };
+
+  const clearSingleNotification = (notifId, e) => {
+    e.stopPropagation();
+    setNotifications(prev => prev.filter(n => n._id !== notifId));
+    setPendingCount(prev => Math.max(0, prev - 1));
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -34,7 +62,7 @@ const Layout = ({ children }) => {
   useEffect(() => {
     if (['MANAGER', 'HR', 'ADMIN'].includes(user?.role)) {
       fetchPendingCount();
-      const interval = setInterval(fetchPendingCount, 60000); // Refresh every minute
+      const interval = setInterval(fetchPendingCount, 30000); // Refresh every 30 seconds
       return () => clearInterval(interval);
     }
   }, [user]);
@@ -43,12 +71,31 @@ const Layout = ({ children }) => {
     try {
       const res = await api.get('/api/leave-requests/pending');
       const pending = res.data || [];
-      setPendingCount(pending.length);
-      setNotifications(pending.slice(0, 5)); // Get top 5 for dropdown
+      const newCount = pending.length;
+      
+      // Show notification if count increased
+      if (newCount > pendingCount && pendingCount > 0) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('New Leave Request', {
+            body: `You have ${newCount} pending approval(s)`,
+            icon: '/favicon.ico'
+          });
+        }
+      }
+      
+      setPendingCount(newCount);
+      setNotifications(pending.slice(0, 5));
     } catch (error) {
       console.error('Error fetching pending count:', error);
     }
   };
+
+  // Request notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   const getBreadcrumbs = () => {
     const pathnames = location.pathname.split('/').filter(x => x);
@@ -74,49 +121,48 @@ const Layout = ({ children }) => {
 
   const getMenuItems = () => {
     const items = [
-      { path: '/dashboard', label: 'Dashboard', icon: 'fas fa-tachometer-alt', roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },
-      { path: '/attendance', label: 'Attendance', icon: 'fas fa-clock', roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] }
+      { path: '/dashboard', label: 'Dashboard', icon: MdDashboard, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },
+      { path: '/attendance', label: 'Attendance', icon: MdAccessTime, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] }
     ];
 
     if (user?.role === 'EMPLOYEE') {
       items.push(
-        { path: '/apply-leave', label: 'Apply Leave', icon: 'fas fa-plus-circle', roles: ['EMPLOYEE'] },
-        { path: '/my-leaves', label: 'My Leaves', icon: 'fas fa-calendar-check', roles: ['EMPLOYEE'] }
+        { path: '/apply-leave', label: 'Apply Leave', icon: MdAddCircle, roles: ['EMPLOYEE'] },
+        { path: '/my-leaves', label: 'My Leaves', icon: MdEventAvailable, roles: ['EMPLOYEE'] }
       );
     }
 
     if (['MANAGER', 'HR', 'ADMIN'].includes(user?.role)) {
       items.push(
-        { path: '/approvals', label: 'Pending Approvals', icon: 'fas fa-tasks', roles: ['MANAGER', 'HR', 'ADMIN'] },
-        { path: '/team-calendar', label: 'Team Calendar', icon: 'fas fa-calendar-alt', roles: ['MANAGER', 'HR', 'ADMIN'] },
-        { path: '/employee-directory', label: 'Employee Directory', icon: 'fas fa-users', roles: ['MANAGER', 'HR', 'ADMIN'] }
+        { path: '/approvals', label: 'Pending Approvals', icon: MdCheckCircle, roles: ['MANAGER', 'HR', 'ADMIN'] },
+        { path: '/team-calendar', label: 'Team Calendar', icon: MdCalendarToday, roles: ['MANAGER', 'HR', 'ADMIN'] },
+        { path: '/employee-directory', label: 'Employee Directory', icon: MdPeople, roles: ['MANAGER', 'HR', 'ADMIN'] }
       );
     }
 
     if (['HR', 'ADMIN'].includes(user?.role)) {
       items.push(
-        { path: '/leave-types', label: 'Leave Types', icon: 'fas fa-cogs', roles: ['HR', 'ADMIN'] },
-        { path: '/announcements', label: 'Announcements', icon: 'fas fa-bullhorn', roles: ['HR', 'ADMIN'] },
-        { path: '/reports', label: 'Reports', icon: 'fas fa-chart-bar', roles: ['HR', 'ADMIN'] }
+        { path: '/leave-types', label: 'Leave Types', icon: MdSettings, roles: ['HR', 'ADMIN'] },
+        { path: '/announcements', label: 'Announcements', icon: MdCampaign, roles: ['HR', 'ADMIN'] },
+        { path: '/reports', label: 'Reports', icon: MdBarChart, roles: ['HR', 'ADMIN'] }
       );
     }
 
     if (user?.role === 'ADMIN') {
       items.push(
-        { path: '/departments', label: 'Departments', icon: 'fas fa-sitemap', roles: ['ADMIN'] }
+        { path: '/departments', label: 'Departments', icon: MdAccountTree, roles: ['ADMIN'] }
       );
     }
 
-    // Add Files for all users to view
     items.push(
-      { path: '/files', label: 'Files & Documents', icon: 'fas fa-folder-open', roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },
-      { path: '/profile', label: 'My Profile', icon: 'fas fa-user-circle', roles: ['EMPLOYEE', 'MANAGER', 'HR'] },
-      { path: '/expenses', label: 'Expenses', icon: 'fas fa-receipt', roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] }
+      { path: '/files', label: 'Files & Documents', icon: MdFolder, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },
+      { path: '/profile', label: 'My Profile', icon: MdPerson, roles: ['EMPLOYEE', 'MANAGER', 'HR'] },
+      { path: '/expenses', label: 'Expenses', icon: MdReceipt, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] }
     );
 
     if (['HR', 'ADMIN'].includes(user?.role)) {
       items.push(
-        { path: '/assets', label: 'Asset Management', icon: 'fas fa-laptop', roles: ['HR', 'ADMIN'] }
+        { path: '/assets', label: 'Asset Management', icon: MdLaptop, roles: ['HR', 'ADMIN'] }
       );
     }
 
@@ -128,7 +174,7 @@ const Layout = ({ children }) => {
       <div className="sidebar-brand text-white">
         <div className="d-flex align-items-center justify-content-between">
           <div className="d-flex align-items-center">
-            <i className="fas fa-building me-2 fs-4"></i>
+            <MdBusiness size={28} className="me-2" />
             {(!sidebarCollapsed || isMobile) && (
               <div>
                 <h5 className="mb-0">HRMS Pro</h5>
@@ -151,7 +197,7 @@ const Layout = ({ children }) => {
       <div className="text-white p-3 border-bottom border-secondary">
         <div className="d-flex align-items-center">
           <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
-               style={{width: '40px', height: '40px'}}>
+               style={{width: '40px', height: '40px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: '2px solid rgba(255, 255, 255, 0.3)'}}>
             <i className="fas fa-user text-white"></i>
           </div>
           {(!sidebarCollapsed || isMobile) && (
@@ -167,17 +213,20 @@ const Layout = ({ children }) => {
       </div>
       
       <Nav className="flex-column py-3">
-        {getMenuItems().map(item => (
-          <LinkContainer key={item.path} to={item.path}>
-            <Nav.Link 
-              className="text-white-50 d-flex align-items-center"
-              onClick={() => isMobile && setShowMobileSidebar(false)}
-            >
-              <i className={`${item.icon} me-3`}></i>
-              {(!sidebarCollapsed || isMobile) && <span>{item.label}</span>}
-            </Nav.Link>
-          </LinkContainer>
-        ))}
+        {getMenuItems().map(item => {
+          const IconComponent = item.icon;
+          return (
+            <LinkContainer key={item.path} to={item.path}>
+              <Nav.Link 
+                className="text-white-50 d-flex align-items-center"
+                onClick={() => isMobile && setShowMobileSidebar(false)}
+              >
+                <IconComponent size={20} className="me-3" />
+                {(!sidebarCollapsed || isMobile) && <span>{item.label}</span>}
+              </Nav.Link>
+            </LinkContainer>
+          );
+        })}
         <Nav.Link 
           className="text-white-50 d-flex align-items-center mt-3" 
           onClick={() => {
@@ -186,7 +235,7 @@ const Layout = ({ children }) => {
           }}
           style={{ cursor: 'pointer' }}
         >
-          <i className="fas fa-sign-out-alt me-3"></i>
+          <MdLogout size={20} className="me-3" />
           {(!sidebarCollapsed || isMobile) && <span>Logout</span>}
         </Nav.Link>
       </Nav>
@@ -199,26 +248,54 @@ const Layout = ({ children }) => {
 
       {/* Mobile Header */}
       {isMobile && (
-        <Navbar bg="primary" variant="dark" className="mobile-header">
+        <Navbar variant="dark" className="mobile-header" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'}}>
           <Button 
             variant="link" 
             className="text-white p-0 me-3"
             onClick={() => setShowMobileSidebar(true)}
           >
-            <i className="fas fa-bars fs-4"></i>
+            <MdMenu size={24} />
           </Button>
           <Navbar.Brand className="mb-0">
-            <i className="fas fa-building me-2"></i>
+            <MdBusiness size={24} className="me-2" />
             HRMS Pro
           </Navbar.Brand>
-          <Button 
-            variant="link" 
-            className="text-white p-0 ms-auto"
-            onClick={logout}
-            title="Logout"
-          >
-            <i className="fas fa-sign-out-alt fs-5"></i>
-          </Button>
+          <div className="d-flex align-items-center gap-2">
+            {['MANAGER', 'HR', 'ADMIN'].includes(user?.role) && (
+              <Button 
+                variant="link" 
+                className="text-white p-0 position-relative"
+                onClick={() => setShowNotifications(true)}
+              >
+                <MdNotifications size={22} className={pendingCount > 0 ? 'notification-bell-animate' : ''} />
+                {pendingCount > 0 && (
+                  <Badge 
+                    bg="danger" 
+                    pill 
+                    className="badge-pulse"
+                    style={{
+                      position: 'absolute',
+                      top: '-5px',
+                      right: '-5px',
+                      fontSize: '9px',
+                      minWidth: '16px',
+                      height: '16px'
+                    }}
+                  >
+                    {pendingCount > 9 ? '9+' : pendingCount}
+                  </Badge>
+                )}
+              </Button>
+            )}
+            <Button 
+              variant="link" 
+              className="text-white p-0"
+              onClick={logout}
+              title="Logout"
+            >
+              <MdLogout size={22} />
+            </Button>
+          </div>
         </Navbar>
       )}
 
@@ -243,6 +320,84 @@ const Layout = ({ children }) => {
         </Offcanvas.Body>
       </Offcanvas>
 
+      {/* Mobile Notifications */}
+      <Offcanvas 
+        show={showNotifications} 
+        onHide={() => setShowNotifications(false)}
+        placement="end"
+        className="mobile-notification-panel"
+      >
+        <Offcanvas.Header closeButton style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white', borderBottom: 'none'}}>
+          <Offcanvas.Title className="d-flex align-items-center gap-2 w-100">
+            <MdNotifications size={24} />
+            <span className="fw-bold">Leave Requests</span>
+            {pendingCount > 0 && (
+              <Badge bg="light" text="dark" className="ms-auto badge-pulse">{pendingCount}</Badge>
+            )}
+          </Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body className="p-0">
+          {notifications.length > 0 ? (
+            <>
+              <div className="notification-list">
+                {notifications.map((notif) => (
+                  <div 
+                    key={notif._id} 
+                    onClick={() => { navigate('/approvals'); setShowNotifications(false); }}
+                    className="notification-card"
+                  >
+                    <div className="d-flex align-items-start gap-3">
+                      <div className="notification-icon-wrapper">
+                        <MdCalendarToday size={22} />
+                      </div>
+                      <div className="flex-grow-1">
+                        <div className="fw-bold mb-1" style={{color: '#1e293b'}}>
+                          {notif.userId?.firstName} {notif.userId?.lastName}
+                        </div>
+                        <div className="text-muted mb-1" style={{fontSize: '0.875rem'}}>
+                          {notif.leaveTypeId?.name} • {notif.days} day(s)
+                        </div>
+                        <div className="notification-time">
+                          {new Date(notif.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                      </div>
+                      <Button 
+                        variant="link" 
+                        className="p-1 text-danger" 
+                        onClick={(e) => clearSingleNotification(notif._id, e)}
+                        style={{minWidth: '32px', fontSize: '1.2rem', lineHeight: 1}}
+                        title="Clear"
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="notification-actions">
+                <div className="d-grid gap-2">
+                  <button className="btn btn-mark-read" onClick={markAsRead}>
+                    <MdCheckCircle size={20} className="me-2" />
+                    Mark All as Read
+                  </button>
+                  <button className="btn btn-view-all" onClick={() => { navigate('/approvals'); setShowNotifications(false); }}>
+                    View All Approvals ({pendingCount})
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="empty-notification-state">
+              <div className="empty-icon-wrapper">
+                <MdCheckCircle size={50} style={{color: '#10b981'}} />
+              </div>
+              <h5 className="fw-bold mb-2" style={{color: '#1e293b'}}>All Caught Up!</h5>
+              <p className="text-muted">No pending leave requests at the moment</p>
+            </div>
+          )}
+        </Offcanvas.Body>
+      </Offcanvas>
+
       {/* Main Content */}
       <div className={`main-content ${isMobile ? 'mobile' : sidebarCollapsed ? 'collapsed' : ''}`}>
 
@@ -263,17 +418,18 @@ const Layout = ({ children }) => {
               </div>
               
               <div className="navbar-actions">
-                <div className="action-icon" title="Theme" onClick={toggleTheme} style={{cursor: 'pointer'}}>
-                  <i className={`fas fa-${theme === 'light' ? 'moon' : 'sun'}`}></i>
+                <div className="action-icon" title="My Tasks" onClick={() => navigate(user?.role === 'EMPLOYEE' ? '/tasks' : '/task-management')} style={{cursor: 'pointer'}}>
+                  <MdAssignment size={22} />
                 </div>
                 {['MANAGER', 'HR', 'ADMIN'].includes(user?.role) && (
                   <Dropdown align="end">
                     <Dropdown.Toggle as="div" className="action-icon" style={{position: 'relative', cursor: 'pointer'}}>
-                      <i className="fas fa-bell"></i>
+                      <MdNotifications size={22} />
                       {pendingCount > 0 && (
                         <Badge 
                           bg="danger" 
                           pill 
+                          className="badge-pulse"
                           style={{
                             position: 'absolute',
                             top: '-5px',
@@ -293,8 +449,8 @@ const Layout = ({ children }) => {
                     <Dropdown.Menu className="notification-dropdown" style={{minWidth: '320px', maxHeight: '400px', overflowY: 'auto'}}>
                       <Dropdown.Header>
                         <div className="d-flex justify-content-between align-items-center">
-                          <span className="fw-bold">Notifications</span>
-                          <Badge bg="primary" pill>{pendingCount}</Badge>
+                          <span className="fw-bold">Leave Requests</span>
+                          <Badge bg="warning" pill>{pendingCount}</Badge>
                         </div>
                       </Dropdown.Header>
                       {notifications.length > 0 ? (
@@ -307,7 +463,7 @@ const Layout = ({ children }) => {
                             >
                               <div className="d-flex align-items-start">
                                 <div className="me-2" style={{color: '#f59e0b'}}>
-                                  <i className="fas fa-calendar-alt"></i>
+                                  <MdCalendarToday size={18} />
                                 </div>
                                 <div className="flex-grow-1" style={{fontSize: '0.875rem'}}>
                                   <div className="fw-semibold">
@@ -320,18 +476,39 @@ const Layout = ({ children }) => {
                                     {new Date(notif.startDate).toLocaleDateString()}
                                   </small>
                                 </div>
+                                <Button 
+                                  variant="link" 
+                                  size="sm" 
+                                  className="p-1 text-danger" 
+                                  onClick={(e) => clearSingleNotification(notif._id, e)}
+                                  style={{fontSize: '1.2rem', lineHeight: 1}}
+                                  title="Clear"
+                                >
+                                  ×
+                                </Button>
                               </div>
                             </Dropdown.Item>
                           ))}
                           <Dropdown.Divider />
-                          <Dropdown.Item onClick={() => navigate('/approvals')} className="text-center text-primary fw-semibold">
-                            View All ({pendingCount})
+                          <div className="px-3 pb-2">
+                            <Button 
+                              variant="outline-warning" 
+                              size="sm" 
+                              className="w-100 mb-2" 
+                              onClick={(e) => { e.stopPropagation(); markAsRead(); }}
+                            >
+                              <MdCheckCircle size={16} className="me-1" />
+                              Mark All as Read
+                            </Button>
+                          </div>
+                          <Dropdown.Item onClick={() => navigate('/approvals')} className="text-center fw-semibold" style={{color: '#f59e0b'}}>
+                            View All Approvals ({pendingCount})
                           </Dropdown.Item>
                         </>
                       ) : (
                         <div className="text-center py-4 text-muted">
-                          <i className="fas fa-check-circle fs-3 mb-2 d-block"></i>
-                          <small>No pending approvals</small>
+                          <MdCheckCircle size={48} className="mb-2 d-block mx-auto" style={{color: '#10b981'}} />
+                          <small>No pending leave requests</small>
                         </div>
                       )}
                     </Dropdown.Menu>
@@ -355,7 +532,7 @@ const Layout = ({ children }) => {
                   </Dropdown.Toggle>
                   <Dropdown.Menu className="profile-dropdown" style={{minWidth: '220px'}}>
                     <Dropdown.Header style={{
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%) !important',
+                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                       color: 'white',
                       padding: '1.5rem 1rem',
                       borderRadius: '16px 16px 0 0'
@@ -380,29 +557,24 @@ const Layout = ({ children }) => {
                         <div className="mt-1">
                           <Badge style={{
                             background: 'rgba(255, 255, 255, 0.95)',
-                            color: '#059669'
+                            color: '#d97706'
                           }}>{user?.role}</Badge>
                         </div>
                       </div>
                     </Dropdown.Header>
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={() => navigate('/profile')}>
-                      <i className="fas fa-user me-2"></i>My Profile
+                      <MdPerson size={18} className="me-2" />My Profile
                     </Dropdown.Item>
                     <Dropdown.Item onClick={() => navigate('/attendance')}>
-                      <i className="fas fa-clock me-2"></i>Attendance
+                      <MdAccessTime size={18} className="me-2" />Attendance
                     </Dropdown.Item>
                     <Dropdown.Item onClick={() => navigate('/my-leaves')}>
-                      <i className="fas fa-calendar-check me-2"></i>My Leaves
-                    </Dropdown.Item>
-                    <Dropdown.Divider />
-                    <Dropdown.Item onClick={toggleTheme}>
-                      <i className={`fas fa-${theme === 'light' ? 'moon' : 'sun'} me-2`}></i>
-                      {theme === 'light' ? 'Dark' : 'Light'} Mode
+                      <MdEventAvailable size={18} className="me-2" />My Leaves
                     </Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={logout} className="text-danger">
-                      <i className="fas fa-sign-out-alt me-2"></i>Logout
+                      <MdLogout size={18} className="me-2" />Logout
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
@@ -414,6 +586,39 @@ const Layout = ({ children }) => {
             {children}
           </div>
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        {isMobile && (
+          <div className="mobile-bottom-nav">
+            <div className="nav-item" onClick={() => navigate('/dashboard')}>
+              <MdHome size={24} />
+              <span>Home</span>
+            </div>
+            <div className="nav-item" onClick={() => navigate('/attendance')}>
+              <MdAccessTime size={24} />
+              <span>Attendance</span>
+            </div>
+            <div className="nav-item nav-item-center" onClick={() => navigate(user?.role === 'EMPLOYEE' ? '/tasks' : '/task-management')}>
+              <div className="center-icon">
+                <MdTask size={24} />
+                {pendingCount > 0 && (
+                  <Badge 
+                    bg="danger" 
+                    pill 
+                    className="task-badge"
+                  >
+                    {pendingCount > 99 ? '99+' : pendingCount}
+                  </Badge>
+                )}
+              </div>
+              <span>Tasks</span>
+            </div>
+            <div className="nav-item" onClick={() => navigate('/profile')}>
+              <MdPerson size={24} />
+              <span>Profile</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

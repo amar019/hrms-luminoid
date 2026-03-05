@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Modal, Form, Table, Badge, Container, Row, Col, Pagination } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import { SkeletonTable } from '../components/Skeleton';
 
 const Departments = () => {
@@ -35,6 +35,7 @@ const Departments = () => {
   const [transferData, setTransferData] = useState({ employeeIds: [], fromDepartmentId: '', toDepartmentId: '' });
   const [importFile, setImportFile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
@@ -51,8 +52,9 @@ const Departments = () => {
     }
     if (filterStatus) filtered = filtered.filter(d => d.status === filterStatus);
     if (filterLocation) filtered = filtered.filter(d => d.location === filterLocation);
+    if (filterHead) filtered = filtered.filter(d => d.departmentHead?._id === filterHead);
     setFilteredDepartments(filtered);
-  }, [departments]);
+  }, [departments, searchTerm, filterStatus, filterLocation, filterHead]);
 
   const fetchDepartments = async () => {
     try {
@@ -74,7 +76,7 @@ const Departments = () => {
       setTotalPages(res.data.pagination.pages);
     } catch (error) {
       console.error('Error fetching departments:', error);
-      toast.error('Failed to load departments');
+      Swal.fire('Error', 'Failed to load departments', 'error');
     } finally {
       setLoading(false);
     }
@@ -82,7 +84,7 @@ const Departments = () => {
 
   const fetchEmployees = async () => {
     try {
-      const res = await api.get('/api/employees');
+      const res = await api.get('/api/departments/employees-for-transfer');
       setEmployees(res.data.data || res.data);
     } catch (error) {
       console.error('Error fetching employees:', error);
@@ -91,121 +93,167 @@ const Departments = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       if (selectedDept) {
         await api.put(`/api/departments/${selectedDept._id}`, formData);
-        toast.success('Department updated successfully');
+        Swal.fire('Updated!', 'Department updated successfully', 'success');
       } else {
         await api.post('/api/departments', formData);
-        toast.success('Department created successfully');
+        Swal.fire('Created!', 'Department created successfully', 'success');
       }
       fetchDepartments();
       resetForm();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error saving department');
+      Swal.fire('Error', error.response?.data?.message || 'Error saving department', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this department?')) return;
-    try {
-      await api.delete(`/api/departments/${id}`);
-      toast.success('Department deleted successfully');
-      fetchDepartments();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Error deleting department');
+    const result = await Swal.fire({
+      title: 'Delete Department?',
+      text: 'This action cannot be undone',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it'
+    });
+    
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/api/departments/${id}`);
+        Swal.fire('Deleted!', 'Department deleted successfully', 'success');
+        fetchDepartments();
+      } catch (error) {
+        Swal.fire('Error', error.response?.data?.message || 'Error deleting department', 'error');
+      }
     }
   };
 
   const handleAssign = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       await api.post('/api/departments/assign', assignData);
-      toast.success('Employee assigned successfully');
+      Swal.fire('Success!', 'Employee assigned successfully', 'success');
       setShowAssignModal(false);
       setAssignData({ employeeId: '', departmentId: '' });
       fetchDepartments();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error assigning employee');
+      Swal.fire('Error', error.response?.data?.message || 'Error assigning employee', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleBulkAssign = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       await api.post('/api/departments/bulk-assign', bulkData);
-      toast.success(`${bulkData.employeeIds.length} employees assigned successfully`);
+      Swal.fire('Success!', `${bulkData.employeeIds.length} employees assigned successfully`, 'success');
       setShowBulkModal(false);
       setBulkData({ employeeIds: [], departmentId: '' });
       fetchDepartments();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error in bulk assignment');
+      Swal.fire('Error', error.response?.data?.message || 'Error in bulk assignment', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleBulkStatusChange = async (status) => {
     if (selectedRows.length === 0) {
-      toast.warning('Please select departments first');
+      Swal.fire('Warning', 'Please select departments first', 'warning');
       return;
     }
     try {
       await api.post('/api/departments/bulk-status', { departmentIds: selectedRows, status });
-      toast.success(`${selectedRows.length} departments updated`);
+      Swal.fire('Updated!', `${selectedRows.length} departments updated`, 'success');
       setSelectedRows([]);
       fetchDepartments();
     } catch (error) {
-      toast.error('Error updating departments');
+      Swal.fire('Error', 'Error updating departments', 'error');
     }
   };
 
   const handleBulkDelete = async () => {
     if (selectedRows.length === 0) {
-      toast.warning('Please select departments first');
+      Swal.fire('Warning', 'Please select departments first', 'warning');
       return;
     }
-    if (!window.confirm(`Delete ${selectedRows.length} departments?`)) return;
-    try {
-      await api.post('/api/departments/bulk-delete', { departmentIds: selectedRows });
-      toast.success(`${selectedRows.length} departments deleted`);
-      setSelectedRows([]);
-      fetchDepartments();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Error deleting departments');
+    const result = await Swal.fire({
+      title: 'Delete Departments?',
+      text: `Delete ${selectedRows.length} departments?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete them'
+    });
+    
+    if (result.isConfirmed) {
+      try {
+        await api.post('/api/departments/bulk-delete', { departmentIds: selectedRows });
+        Swal.fire('Deleted!', `${selectedRows.length} departments deleted`, 'success');
+        setSelectedRows([]);
+        fetchDepartments();
+      } catch (error) {
+        Swal.fire('Error', error.response?.data?.message || 'Error deleting departments', 'error');
+      }
     }
   };
 
   const handleTransfer = async (e) => {
     e.preventDefault();
+    if (transferData.fromDepartmentId === transferData.toDepartmentId) {
+      Swal.fire('Error', 'Source and target departments cannot be the same', 'error');
+      return;
+    }
+    if (transferData.employeeIds.length === 0) {
+      Swal.fire('Error', 'Please select at least one employee', 'error');
+      return;
+    }
+    setSubmitting(true);
     try {
       await api.post('/api/departments/transfer', transferData);
-      toast.success(`${transferData.employeeIds.length} employees transferred`);
+      Swal.fire('Success!', `${transferData.employeeIds.length} employee(s) transferred successfully`, 'success');
       setShowTransferModal(false);
       setTransferData({ employeeIds: [], fromDepartmentId: '', toDepartmentId: '' });
       fetchDepartments();
+      fetchEmployees();
     } catch (error) {
-      toast.error('Error transferring employees');
+      Swal.fire('Error', error.response?.data?.message || 'Error transferring employees', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleImport = async (e) => {
     e.preventDefault();
     if (!importFile) {
-      toast.warning('Please select a file');
+      Swal.fire('Warning', 'Please select a file', 'warning');
       return;
     }
+    setSubmitting(true);
     try {
       const formData = new FormData();
       formData.append('file', importFile);
       const res = await api.post('/api/departments/import', formData);
-      toast.success(`Imported ${res.data.results.success.length} departments`);
+      Swal.fire('Success!', `Imported ${res.data.results.success.length} departments`, 'success');
       if (res.data.results.errors.length > 0) {
-        toast.warning(`${res.data.results.errors.length} errors occurred`);
+        Swal.fire('Warning', `${res.data.results.errors.length} errors occurred`, 'warning');
       }
       setShowImportModal(false);
       setImportFile(null);
       fetchDepartments();
     } catch (error) {
-      toast.error('Error importing departments');
+      Swal.fire('Error', 'Error importing departments', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -272,21 +320,21 @@ const Departments = () => {
     a.href = url;
     a.download = `departments_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    toast.success('Report exported successfully');
+    Swal.fire('Success!', 'Report exported successfully', 'success');
     setShowExportModal(false);
   };
 
-  const uniqueLocations = [...new Set(departments.map(d => d.location).filter(Boolean))];
+  const uniqueLocations = [...new Set(departments.map(d => d.location).filter(Boolean))].sort();
 
   return (
     <Container fluid className="p-4" style={{ background: '#f8f9fa', minHeight: '100vh' }}>
       <style>{`
         .dept-header {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
           border-radius: 16px;
           padding: 32px;
           margin-bottom: 24px;
-          box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+          box-shadow: 0 10px 30px rgba(30, 58, 138, 0.3);
         }
         .dept-card {
           border: none;
@@ -296,7 +344,7 @@ const Departments = () => {
           background: white;
         }
         .dept-table thead {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
           color: white;
         }
         .dept-table thead th {
@@ -321,105 +369,105 @@ const Departments = () => {
           vertical-align: middle;
         }
         .btn-primary-custom {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
           border: none;
           padding: 10px 24px;
           border-radius: 10px;
           font-weight: 600;
           color: white;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+          box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
         }
         .btn-primary-custom:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+          box-shadow: 0 6px 25px rgba(30, 58, 138, 0.5);
         }
         .btn-success-custom {
-          background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+          background: linear-gradient(135deg, #059669 0%, #10b981 100%);
           border: none;
           padding: 10px 24px;
           border-radius: 10px;
           font-weight: 600;
           color: white;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);
+          box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
         }
         .btn-success-custom:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(17, 153, 142, 0.5);
+          box-shadow: 0 6px 25px rgba(5, 150, 105, 0.5);
         }
         .btn-info-custom {
-          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+          background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
           border: none;
           padding: 10px 24px;
           border-radius: 10px;
           font-weight: 600;
           color: white;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+          box-shadow: 0 4px 15px rgba(8, 145, 178, 0.3);
         }
         .btn-info-custom:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(79, 172, 254, 0.5);
+          box-shadow: 0 6px 25px rgba(8, 145, 178, 0.5);
         }
         .btn-warning-custom {
-          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
           border: none;
           padding: 10px 24px;
           border-radius: 10px;
           font-weight: 600;
           color: white;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+          box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
         }
         .btn-warning-custom:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(240, 147, 251, 0.5);
+          box-shadow: 0 6px 25px rgba(217, 119, 6, 0.5);
         }
         .btn-secondary-custom {
-          background: linear-gradient(135deg, #868f96 0%, #596164 100%);
+          background: linear-gradient(135deg, #475569 0%, #64748b 100%);
           border: none;
           padding: 10px 24px;
           border-radius: 10px;
           font-weight: 600;
           color: white;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(134, 143, 150, 0.3);
+          box-shadow: 0 4px 15px rgba(71, 85, 105, 0.3);
         }
         .btn-secondary-custom:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(134, 143, 150, 0.5);
+          box-shadow: 0 6px 25px rgba(71, 85, 105, 0.5);
         }
         .btn-export-custom {
-          background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+          background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
           border: none;
           padding: 10px 24px;
           border-radius: 10px;
           font-weight: 600;
           color: white;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3);
+          box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
         }
         .btn-export-custom:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(250, 112, 154, 0.5);
+          box-shadow: 0 6px 25px rgba(124, 58, 237, 0.5);
         }
         .badge-code {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
           padding: 8px 14px;
           border-radius: 8px;
           font-weight: 600;
           font-size: 0.85rem;
         }
         .badge-count {
-          background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+          background: linear-gradient(135deg, #059669 0%, #10b981 100%);
           padding: 8px 14px;
           border-radius: 8px;
           font-weight: 600;
           font-size: 0.85rem;
         }
         .action-btn-view {
-          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+          background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
           border: none;
           padding: 8px 16px;
           border-radius: 8px;
@@ -428,10 +476,10 @@ const Departments = () => {
         }
         .action-btn-view:hover {
           transform: scale(1.1);
-          box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+          box-shadow: 0 4px 15px rgba(8, 145, 178, 0.4);
         }
         .action-btn-edit {
-          background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+          background: linear-gradient(135deg, #059669 0%, #10b981 100%);
           border: none;
           padding: 8px 16px;
           border-radius: 8px;
@@ -440,10 +488,10 @@ const Departments = () => {
         }
         .action-btn-edit:hover {
           transform: scale(1.1);
-          box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+          box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
         }
         .action-btn-delete {
-          background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+          background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
           border: none;
           padding: 8px 16px;
           border-radius: 8px;
@@ -452,7 +500,7 @@ const Departments = () => {
         }
         .action-btn-delete:hover {
           transform: scale(1.1);
-          box-shadow: 0 4px 15px rgba(238, 9, 121, 0.4);
+          box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
         }
         .filter-card {
           background: linear-gradient(to right, #fafafa 0%, #ffffff 100%);
@@ -525,7 +573,9 @@ const Departments = () => {
             <Col md={2}>
               <Form.Select value={filterHead} onChange={(e) => setFilterHead(e.target.value)} style={{ borderRadius: '10px', border: '2px solid #e8e8e8' }}>
                 <option value="">All Heads</option>
-                {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName}</option>)}
+                {employees
+                  .filter(emp => departments.some(d => d.departmentHead?._id === emp._id))
+                  .map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName}</option>)}
               </Form.Select>
             </Col>
             <Col md={3}>
@@ -535,14 +585,14 @@ const Departments = () => {
                 </Button>
                 {selectedRows.length > 0 && (
                   <>
-                    <Button className="btn-success-custom" size="sm" onClick={() => handleBulkStatusChange('ACTIVE')} title="Activate">
-                      <i className="fas fa-check"></i>
+                    <Button className="btn-success-custom" size="sm" onClick={() => handleBulkStatusChange('ACTIVE')} style={{padding: '6px 12px', fontSize: '0.75rem'}}>
+                      Activate
                     </Button>
-                    <Button className="btn-warning-custom" size="sm" onClick={() => handleBulkStatusChange('INACTIVE')} title="Deactivate">
-                      <i className="fas fa-ban"></i>
+                    <Button className="btn-warning-custom" size="sm" onClick={() => handleBulkStatusChange('INACTIVE')} style={{padding: '6px 12px', fontSize: '0.75rem'}}>
+                      Disable
                     </Button>
-                    <Button className="action-btn-delete" size="sm" onClick={handleBulkDelete} title="Delete">
-                      <i className="fas fa-trash"></i>
+                    <Button className="action-btn-delete" size="sm" onClick={handleBulkDelete} style={{padding: '6px 12px', fontSize: '0.75rem'}}>
+                      Delete
                     </Button>
                   </>
                 )}
@@ -773,8 +823,8 @@ const Departments = () => {
               <Button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #868f96 0%, #596164 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white' }}>
                 <i className="fas fa-times me-2"></i>Cancel
               </Button>
-              <Button type="submit" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white', boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)' }}>
-                <i className="fas fa-save me-2"></i>Save Department
+              <Button type="submit" disabled={submitting} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white', boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)' }}>
+                {submitting ? <><span className="spinner-border spinner-border-sm me-2"></span>Saving...</> : <><i className="fas fa-save me-2"></i>Save Department</>}
               </Button>
             </div>
           </Form>
@@ -827,8 +877,8 @@ const Departments = () => {
               <Button variant="secondary" onClick={() => setShowAssignModal(false)} style={{ borderRadius: '8px', padding: '10px 24px' }}>
                 <i className="fas fa-times me-2"></i>Cancel
               </Button>
-              <Button type="submit" style={{ background: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)', border: 'none', borderRadius: '8px', padding: '10px 24px' }}>
-                <i className="fas fa-check me-2"></i>Assign
+              <Button type="submit" disabled={submitting} style={{ background: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)', border: 'none', borderRadius: '8px', padding: '10px 24px' }}>
+                {submitting ? <><span className="spinner-border spinner-border-sm me-2"></span>Assigning...</> : <><i className="fas fa-check me-2"></i>Assign</>}
               </Button>
             </div>
           </Form>
@@ -903,8 +953,8 @@ const Departments = () => {
               <Button onClick={() => setShowBulkModal(false)} style={{ background: 'linear-gradient(135deg, #868f96 0%, #596164 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white' }}>
                 <i className="fas fa-times me-2"></i>Cancel
               </Button>
-              <Button type="submit" style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white', boxShadow: '0 4px 15px rgba(79, 172, 254, 0.4)' }}>
-                <i className="fas fa-check me-2"></i>Assign Employees
+              <Button type="submit" disabled={submitting} style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white', boxShadow: '0 4px 15px rgba(79, 172, 254, 0.4)' }}>
+                {submitting ? <><span className="spinner-border spinner-border-sm me-2"></span>Assigning...</> : <><i className="fas fa-check me-2"></i>Assign Employees</>}
               </Button>
             </div>
           </Form>
@@ -928,43 +978,152 @@ const Departments = () => {
       `}</style>
 
       {/* Transfer Modal */}
-      <Modal show={showTransferModal} onHide={() => setShowTransferModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title><i className="fas fa-exchange-alt me-2"></i>Transfer Employees</Modal.Title>
+      <Modal show={showTransferModal} onHide={() => {
+        setShowTransferModal(false);
+        setTransferData({ employeeIds: [], fromDepartmentId: '', toDepartmentId: '' });
+      }} centered size="lg">
+        <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white', border: 'none' }}>
+          <Modal.Title className="fw-bold">
+            <i className="fas fa-exchange-alt me-2"></i>Transfer Employees Between Departments
+          </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body style={{ padding: '40px', background: '#f8f9fa' }}>
           <Form onSubmit={handleTransfer}>
-            <Form.Group className="mb-3">
-              <Form.Label>From Department *</Form.Label>
-              <Form.Select value={transferData.fromDepartmentId}
-                onChange={(e) => setTransferData({...transferData, fromDepartmentId: e.target.value})} required>
+            <Form.Group className="mb-4">
+              <Form.Label className="fw-bold" style={{color: '#f5576c'}}>
+                <i className="fas fa-building me-2"></i>From Department *
+              </Form.Label>
+              <Form.Select 
+                value={transferData.fromDepartmentId}
+                onChange={(e) => setTransferData({...transferData, fromDepartmentId: e.target.value, employeeIds: []})} 
+                required
+                style={{ borderRadius: '10px', padding: '12px', border: '2px solid #e0e0e0', fontSize: '15px' }}
+              >
                 <option value="">Select source department</option>
-                {departments.map(dept => <option key={dept._id} value={dept._id}>{dept.name}</option>)}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Select Employees *</Form.Label>
-              <Form.Select multiple size={5} value={transferData.employeeIds}
-                onChange={(e) => setTransferData({...transferData, employeeIds: Array.from(e.target.selectedOptions, opt => opt.value)})} required>
-                {employees.filter(e => e.department?._id === transferData.fromDepartmentId || e.department === transferData.fromDepartmentId).map(emp => (
-                  <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName}</option>
+                {departments.map(dept => (
+                  <option key={dept._id} value={dept._id}>
+                    {dept.name} ({dept.code}) - {dept.employeeCount} employees
+                  </option>
                 ))}
               </Form.Select>
-              <Form.Text className="text-muted">Hold Ctrl/Cmd to select multiple</Form.Text>
             </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>To Department *</Form.Label>
-              <Form.Select value={transferData.toDepartmentId}
-                onChange={(e) => setTransferData({...transferData, toDepartmentId: e.target.value})} required>
+            
+            {transferData.fromDepartmentId && (() => {
+              const filteredEmployees = employees.filter(emp => {
+                const empDeptId = emp.department?._id || emp.department;
+                return empDeptId && empDeptId.toString() === transferData.fromDepartmentId.toString();
+              });
+              
+              return (
+                <Form.Group className="mb-4">
+                  <Form.Label className="fw-bold" style={{color: '#f5576c'}}>
+                    <i className="fas fa-user-check me-2"></i>Select Employees to Transfer * ({filteredEmployees.length} available)
+                  </Form.Label>
+                  {filteredEmployees.length === 0 ? (
+                    <div className="alert alert-warning" style={{ borderRadius: '10px' }}>
+                      <i className="fas fa-exclamation-triangle me-2"></i>
+                      No employees found in the selected department
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ 
+                        background: 'white',
+                        border: '2px solid #f5576c',
+                        borderRadius: '12px',
+                        padding: '8px',
+                        maxHeight: '280px',
+                        overflowY: 'auto'
+                      }}>
+                        <Form.Select 
+                          multiple 
+                          size={8} 
+                          value={transferData.employeeIds}
+                          onChange={(e) => setTransferData({...transferData, employeeIds: Array.from(e.target.selectedOptions, opt => opt.value)})} 
+                          required
+                          style={{ 
+                            border: 'none',
+                            fontSize: '15px',
+                            background: 'transparent'
+                          }}
+                          className="custom-multi-select"
+                        >
+                          {filteredEmployees.map(emp => (
+                            <option key={emp._id} value={emp._id} style={{
+                              padding: '12px 16px',
+                              borderRadius: '8px',
+                              margin: '4px 0',
+                              cursor: 'pointer'
+                            }}>
+                              👤 {emp.firstName} {emp.lastName} {emp.designation ? `- ${emp.designation}` : ''}
+                            </option>
+                          ))}
+                        </Form.Select>
+                      </div>
+                      <Form.Text className="text-muted mt-2 d-block">
+                        <i className="fas fa-info-circle me-1"></i>Hold Ctrl/Cmd to select multiple employees. {transferData.employeeIds.length} selected.
+                      </Form.Text>
+                    </>
+                  )}
+                </Form.Group>
+              );
+            })()}
+            
+            <Form.Group className="mb-4">
+              <Form.Label className="fw-bold" style={{color: '#f5576c'}}>
+                <i className="fas fa-building me-2"></i>To Department *
+              </Form.Label>
+              <Form.Select 
+                value={transferData.toDepartmentId}
+                onChange={(e) => setTransferData({...transferData, toDepartmentId: e.target.value})} 
+                required
+                style={{ borderRadius: '10px', padding: '12px', border: '2px solid #e0e0e0', fontSize: '15px' }}
+              >
                 <option value="">Select target department</option>
-                {departments.filter(d => d._id !== transferData.fromDepartmentId).map(dept => (
-                  <option key={dept._id} value={dept._id}>{dept.name}</option>
-                ))}
+                {departments
+                  .filter(d => d._id !== transferData.fromDepartmentId)
+                  .map(dept => (
+                    <option key={dept._id} value={dept._id}>
+                      {dept.name} ({dept.code}) - {dept.employeeCount} employees
+                    </option>
+                  ))}
               </Form.Select>
             </Form.Group>
-            <div className="d-flex gap-2 justify-content-end">
-              <Button variant="secondary" onClick={() => setShowTransferModal(false)}>Cancel</Button>
-              <Button type="submit">Transfer</Button>
+            
+            {transferData.fromDepartmentId && transferData.toDepartmentId && transferData.employeeIds.length > 0 && (
+              <div className="alert alert-info" style={{ borderRadius: '10px', border: '2px solid #4facfe' }}>
+                <i className="fas fa-info-circle me-2"></i>
+                <strong>Transfer Summary:</strong> Moving {transferData.employeeIds.length} employee(s) from{' '}
+                <strong>{departments.find(d => d._id === transferData.fromDepartmentId)?.name}</strong> to{' '}
+                <strong>{departments.find(d => d._id === transferData.toDepartmentId)?.name}</strong>
+              </div>
+            )}
+            
+            <div className="d-flex gap-3 justify-content-end mt-4">
+              <Button 
+                onClick={() => {
+                  setShowTransferModal(false);
+                  setTransferData({ employeeIds: [], fromDepartmentId: '', toDepartmentId: '' });
+                }} 
+                style={{ background: 'linear-gradient(135deg, #868f96 0%, #596164 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white' }}
+              >
+                <i className="fas fa-times me-2"></i>Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={submitting || !transferData.fromDepartmentId || !transferData.toDepartmentId || transferData.employeeIds.length === 0}
+                style={{ 
+                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
+                  border: 'none', 
+                  borderRadius: '10px', 
+                  padding: '12px 30px', 
+                  fontWeight: '600', 
+                  color: 'white', 
+                  boxShadow: '0 4px 15px rgba(240, 147, 251, 0.4)',
+                  opacity: (submitting || !transferData.fromDepartmentId || !transferData.toDepartmentId || transferData.employeeIds.length === 0) ? 0.6 : 1
+                }}
+              >
+                {submitting ? <><span className="spinner-border spinner-border-sm me-2"></span>Transferring...</> : <><i className="fas fa-exchange-alt me-2"></i>Transfer Employees</>}
+              </Button>
             </div>
           </Form>
         </Modal.Body>
@@ -985,7 +1144,9 @@ const Departments = () => {
             </Form.Group>
             <div className="d-flex gap-2 justify-content-end">
               <Button variant="secondary" onClick={() => setShowImportModal(false)}>Cancel</Button>
-              <Button type="submit">Import</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? <><span className="spinner-border spinner-border-sm me-2"></span>Importing...</> : 'Import'}
+              </Button>
             </div>
           </Form>
         </Modal.Body>
@@ -1003,7 +1164,7 @@ const Departments = () => {
             </Button>
             <Button variant="success" onClick={() => {
               if (selectedRows.length === 0) {
-                toast.warning('Please select departments first');
+                Swal.fire('Warning', 'Please select departments first', 'warning');
                 return;
               }
               const selected = filteredDepartments.filter(d => selectedRows.includes(d._id));

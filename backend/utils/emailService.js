@@ -233,7 +233,19 @@ const sendLeaveApprovalNotification = async (leaveRequest, approverName, approva
 
 const sendAnnouncementNotification = async (announcement, creatorName) => {
   try {
-    const employees = await User.find({ isActive: true });
+    const filter = { isActive: true };
+    
+    // Filter by target roles if specified
+    if (announcement.targetRoles && announcement.targetRoles.length > 0) {
+      filter.role = { $in: announcement.targetRoles };
+    }
+    
+    // Filter by target departments if specified
+    if (announcement.targetDepartments && announcement.targetDepartments.length > 0) {
+      filter.department = { $in: announcement.targetDepartments };
+    }
+    
+    const employees = await User.find(filter);
     
     // Send emails in batches to avoid rate limiting
     const batchSize = 5;

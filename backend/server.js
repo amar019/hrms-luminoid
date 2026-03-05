@@ -23,6 +23,9 @@ const userRoutes = require('./routes/users');
 const employeeImportRoutes = require('./routes/employeeImport');
 const departmentRoutes = require('./routes/departments');
 const employeeManagementRoutes = require('./routes/employeeManagement');
+const taskRoutes = require('./routes/tasks');
+const notificationRoutes = require('./routes/notifications');
+const dailyUpdateRoutes = require('./routes/dailyUpdates');
 
 // Initialize cron jobs
 require('./utils/cronJobs');
@@ -76,6 +79,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/employee-import', employeeImportRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/employee-management', employeeManagementRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/daily-updates', dailyUpdateRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Modal, Form, Table, Badge, Container, Row, Col, Tabs, Tab } from 'react-bootstrap';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import { SkeletonDashboard } from '../components/Skeleton';
+import { useAuth } from '../context/AuthContext';
 
 const DepartmentDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [department, setDepartment] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,8 +35,30 @@ const DepartmentDetails = () => {
       setLoading(false);
     } catch (error) {
       console.error('Error fetching department:', error);
-      toast.error(error.response?.data?.message || 'Failed to load department details');
+      Swal.fire('Error', error.response?.data?.message || 'Failed to load department details', 'error');
       setLoading(false);
+    }
+  };
+
+  const handleRemoveEmployee = async (empId, empName) => {
+    const result = await Swal.fire({
+      title: 'Remove Employee?',
+      text: `Remove ${empName} from ${department.name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, remove'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/api/departments/${id}/employees/${empId}`);
+        Swal.fire('Removed!', 'Employee removed from department', 'success');
+        fetchDepartmentDetails();
+      } catch (error) {
+        Swal.fire('Error', error.response?.data?.message || 'Error removing employee', 'error');
+      }
     }
   };
 
@@ -204,6 +228,7 @@ const DepartmentDetails = () => {
                     <th>Designation</th>
                     <th>Role</th>
                     <th>Join Date</th>
+                    {['ADMIN', 'HR', 'MANAGER'].includes(user?.role) && <th>Action</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -225,6 +250,13 @@ const DepartmentDetails = () => {
                       <td>{emp.designation || '-'}</td>
                       <td><Badge bg="secondary">{emp.role}</Badge></td>
                       <td>{emp.joinDate ? new Date(emp.joinDate).toLocaleDateString() : '-'}</td>
+                      {['ADMIN', 'HR', 'MANAGER'].includes(user?.role) && (
+                        <td>
+                          <Button size="sm" variant="danger" onClick={() => handleRemoveEmployee(emp._id, `${emp.firstName} ${emp.lastName}`)}>
+                            <i className="fas fa-trash"></i>
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                   {department.employees.length === 0 && (

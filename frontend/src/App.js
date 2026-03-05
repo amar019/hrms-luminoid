@@ -36,6 +36,8 @@ import Assets from './pages/Assets';
 import Reports from './pages/Reports';
 import Departments from './pages/Departments';
 import DepartmentDetails from './pages/DepartmentDetails';
+import Tasks from './pages/Tasks';
+import TaskManagement from './pages/TaskManagement';
 
 function App() {
   return (
@@ -178,6 +180,22 @@ function App() {
               <ProtectedRoute roles={['ADMIN', 'HR', 'MANAGER']}>
                 <EnhancedLayout>
                   <DepartmentDetails />
+                </EnhancedLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/tasks" element={
+              <ProtectedRoute>
+                <EnhancedLayout>
+                  <Tasks />
+                </EnhancedLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/task-management" element={
+              <ProtectedRoute roles={['MANAGER', 'HR', 'ADMIN']}>
+                <EnhancedLayout>
+                  <TaskManagement />
                 </EnhancedLayout>
               </ProtectedRoute>
             } />
