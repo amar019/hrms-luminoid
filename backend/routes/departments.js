@@ -17,7 +17,9 @@ const {
   updateMilestone,
   uploadDocument,
   importDepartments,
-  getHierarchy
+  getHierarchy,
+  getEmployeesForTransfer,
+  removeEmployeeFromDepartment
 } = require('../controllers/departmentController');
 const { auth, authorize } = require('../middleware/auth');
 
@@ -28,6 +30,7 @@ const upload = multer({ dest: 'uploads/' });
 router.post('/', auth, authorize('ADMIN'), createDepartment);
 router.get('/', auth, getAllDepartments);
 router.get('/hierarchy', auth, getHierarchy);
+router.get('/employees-for-transfer', auth, getEmployeesForTransfer);
 router.get('/:id', auth, getDepartmentById);
 router.put('/:id', auth, authorize('ADMIN'), updateDepartment);
 router.delete('/:id', auth, authorize('ADMIN'), deleteDepartment);
@@ -42,5 +45,6 @@ router.post('/:id/goals/:goalId/comments', auth, authorize('ADMIN', 'HR', 'MANAG
 router.put('/:id/goals/:goalId/milestones/:milestoneId', auth, authorize('ADMIN', 'HR', 'MANAGER'), updateMilestone);
 router.post('/:id/documents', auth, authorize('ADMIN', 'HR'), uploadDocument);
 router.post('/import', auth, authorize('ADMIN'), upload.single('file'), importDepartments);
+router.delete('/:id/employees/:empId', auth, authorize('ADMIN', 'HR', 'MANAGER'), removeEmployeeFromDepartment);
 
 module.exports = router;

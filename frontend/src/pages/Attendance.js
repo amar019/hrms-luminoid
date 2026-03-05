@@ -636,14 +636,14 @@ const Attendance = () => {
                   <>
                     <Row className="g-3 mb-4">
                       <Col md={6}>
-                        <div className="text-center p-3" style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', borderRadius: '12px', color: 'white', boxShadow: '0 4px 12px rgba(30, 58, 138, 0.3)' }}>
+                        <div className="text-center p-3" style={{ background: 'linear-gradient(135deg, #475569 0%, #64748b 100%)', borderRadius: '12px', color: 'white', boxShadow: '0 4px 12px rgba(71, 85, 105, 0.3)' }}>
                           <i className="fas fa-users fa-2x mb-2"></i>
                           <h3 className="fw-bold mb-1">{todayStatus.summary?.totalEmployees || 0}</h3>
                           <small>Total Employees</small>
                         </div>
                       </Col>
                       <Col md={3}>
-                        <div className="text-center p-2" style={{ background: 'linear-gradient(135deg, #065f46 0%, #10b981 100%)', borderRadius: '10px', color: 'white', boxShadow: '0 3px 10px rgba(6, 95, 70, 0.25)' }}>
+                        <div className="text-center p-2" style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', borderRadius: '10px', color: 'white', boxShadow: '0 3px 10px rgba(5, 150, 105, 0.25)' }}>
                           <i className="fas fa-sign-in-alt fa-lg mb-1"></i>
                           <h4 className="fw-bold mb-0">{todayStatus.summary?.checkedIn || 0}</h4>
                           <small style={{ fontSize: '0.75rem' }}>Checked In</small>
@@ -655,7 +655,7 @@ const Attendance = () => {
                         </div>
                       </Col>
                       <Col md={3}>
-                        <div className="text-center p-2" style={{ background: 'linear-gradient(135deg, #be123c 0%, #f43f5e 100%)', borderRadius: '10px', color: 'white', boxShadow: '0 3px 10px rgba(190, 18, 60, 0.25)' }}>
+                        <div className="text-center p-2" style={{ background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)', borderRadius: '10px', color: 'white', boxShadow: '0 3px 10px rgba(220, 38, 38, 0.25)' }}>
                           <i className="fas fa-sign-out-alt fa-lg mb-1"></i>
                           <h4 className="fw-bold mb-0">{todayStatus.summary?.checkedOut || 0}</h4>
                           <small style={{ fontSize: '0.75rem' }}>Checked Out</small>

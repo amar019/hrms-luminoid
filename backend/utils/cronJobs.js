@@ -4,6 +4,7 @@ const Holiday = require('../models/Holiday');
 const LeaveRequest = require('../models/LeaveRequest');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
+const DailyUpdate = require('../models/DailyUpdate');
 const { sendHolidayNotification, sendLeaveReminderNotification } = require('./emailService');
 const moment = require('moment-timezone');
 
@@ -88,6 +89,7 @@ cron.schedule('30 18 * * *', async () => {
   console.log('Running auto checkout for employees who forgot to check out...');
   
   const today = moment.tz('Asia/Kolkata').startOf('day').toDate();
+  const checkoutTime = moment.tz('Asia/Kolkata').set({ hour: 18, minute: 0, second: 0, millisecond: 0 }).toDate();
   
   try {
     const attendanceRecords = await Attendance.find({
@@ -99,23 +101,31 @@ cron.schedule('30 18 * * *', async () => {
     });
     
     if (attendanceRecords.length > 0) {
-      const autoCheckoutTime = moment.tz('Asia/Kolkata')
-        .set({ hour: 18, minute: 30, second: 0, millisecond: 0 })
-        .toDate();
-      
       for (const record of attendanceRecords) {
-        record.checkOut = autoCheckoutTime;
+        record.checkOut = checkoutTime;
         record.isAutoCheckout = true;
         record.notes = record.notes 
-          ? `${record.notes} | Auto checkout at 6:30 PM` 
-          : 'Auto checkout at 6:30 PM';
+          ? `${record.notes} | Auto checkout at 6:00 PM` 
+          : 'Auto checkout at 6:00 PM';
         await record.save();
       }
       
-      console.log(`Auto checked out ${attendanceRecords.length} employees at 6:30 PM`);
+      console.log(`Auto checked out ${attendanceRecords.length} employees at 6:00 PM`);
     }
   } catch (error) {
     console.error('Error in auto checkout job:', error);
+  }
+});
+
+// Clear daily updates - runs daily at 00:00 (midnight)
+cron.schedule('0 0 * * *', async () => {
+  console.log('Clearing daily updates...');
+  
+  try {
+    const result = await DailyUpdate.deleteMany({});
+    console.log(`Deleted ${result.deletedCount} daily updates`);
+  } catch (error) {
+    console.error('Error clearing daily updates:', error);
   }
 });
 

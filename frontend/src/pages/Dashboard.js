@@ -14,6 +14,8 @@ import { useNavigate } from "react-router-dom";
 import api from "../utils/api";
 import { toast } from "react-toastify";
 import { showAnnouncementNotification } from "../utils/notificationService";
+import DailyUpdates from "../components/DailyUpdates";
+import "../styles/Dashboard.css";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -263,285 +265,182 @@ const Dashboard = () => {
     );
   }
   return (
-    <div className="fade-in-up">
-      {/* Motivational Quote for All Users */}
-      {dashboardData?.motivationalQuote && (
-        <Row className="mb-4">
-          <Col>
-            <Card
-              className="border-0 shadow-sm"
-              style={{
-                background: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
-                borderRadius: '16px'
-              }}
-            >
-              <Card.Body className="p-4">
-                <div className="d-flex align-items-center gap-4">
-                  <div
-                    className="d-flex align-items-center justify-content-center flex-shrink-0"
-                    style={{
-                      width: '70px',
-                      height: '70px',
-                      background: 'rgba(255, 255, 255, 0.15)',
-                      borderRadius: '14px',
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)'
-                    }}
-                  >
-                    {dashboardData.motivationalQuote.icon ? (
-                      <i className={`${dashboardData.motivationalQuote.icon} text-white`} style={{ fontSize: '1.8rem', opacity: 0.9 }}></i>
-                    ) : (
-                      <i className="fas fa-quote-right text-white" style={{ fontSize: '1.8rem', opacity: 0.9 }}></i>
-                    )}
-                  </div>
-                  <div className="flex-grow-1">
-                    <p
-                      className="mb-2 text-white"
-                      style={{
-                        fontSize: '1.1rem',
-                        fontWeight: 500,
-                        lineHeight: 1.6,
-                        letterSpacing: '0.3px'
-                      }}
-                    >
-                      {dashboardData.motivationalQuote.quote}
-                    </p>
-                    <div className="d-flex align-items-center gap-2">
-                      <div style={{ width: '35px', height: '2px', background: 'rgba(255, 255, 255, 0.5)' }}></div>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)' }}>
-                        {dashboardData.motivationalQuote.author}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )}
-
-      <div className="page-header d-flex align-items-center justify-content-between">
-        <div>
-          <h1 className="page-title mb-1">
-            <i className="fas fa-tachometer-alt me-3"></i>
-            Dashboard
-          </h1>
-          <p className="text-muted mb-0">
-            Welcome back, {user?.firstName}! Here's your overview.
-          </p>
-        </div>
-        <div className="text-end">
-          <small className="text-muted d-block">Last updated</small>
-          <small className="text-primary">{new Date().toLocaleString()}</small>
+    <div className="dashboard-page">
+      {/* Header */}
+      <div className="dashboard-header">
+        <div className="d-flex align-items-center justify-content-between">
+          <div className="d-flex align-items-center gap-3">
+            <div className="dashboard-header-icon">
+              <i className="fas fa-tachometer-alt"></i>
+            </div>
+            <div>
+              <h1 style={{fontSize: '1.75rem', fontWeight: '700', margin: 0}}>Dashboard</h1>
+              <p style={{margin: 0, opacity: 0.9}}>Welcome back, {user?.firstName}!</p>
+            </div>
+          </div>
+          <div className="text-end">
+            <small style={{opacity: 0.8}}>Last updated</small>
+            <div style={{fontSize: '0.9rem', fontWeight: '600'}}>{new Date().toLocaleTimeString()}</div>
+          </div>
         </div>
       </div>
+
+      {/* Motivational Quote */}
+      {dashboardData?.motivationalQuote && (
+        <Card className="modern-card mb-4" style={{background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', border: 'none', color: 'white'}}>
+          <Card.Body className="p-4">
+            <div className="d-flex align-items-center gap-4">
+              <div style={{width: '70px', height: '70px', background: 'rgba(255, 255, 255, 0.15)', borderRadius: '1rem', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem'}}>
+                {dashboardData.motivationalQuote.icon ? (
+                  <i className={dashboardData.motivationalQuote.icon}></i>
+                ) : (
+                  <i className="fas fa-quote-right"></i>
+                )}
+              </div>
+              <div style={{flex: 1}}>
+                <p style={{fontSize: '1.15rem', fontWeight: 500, lineHeight: 1.6, marginBottom: '0.75rem', letterSpacing: '0.3px'}}>
+                  {dashboardData.motivationalQuote.quote}
+                </p>
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                  <div style={{width: '40px', height: '2px', background: 'rgba(255, 255, 255, 0.5)'}}></div>
+                  <span style={{fontSize: '0.95rem', fontWeight: 600, opacity: 0.95}}>
+                    {dashboardData.motivationalQuote.author}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
 
       {user?.role === "EMPLOYEE" && dashboardData && (
         <>
           {/* Quick Actions */}
-          <Row className="mb-4">
-            <Col>
-              <Card className="modern-card">
-                <Card.Body className="p-3">
-                  <div className="d-flex gap-2 flex-wrap justify-content-center">
-                    <Button variant="primary" href="/apply-leave" className="btn-modern">
-                      <i className="fas fa-calendar-plus me-2"></i>Apply Leave
-                    </Button>
-                    <Button variant="success" href="/attendance" className="btn-modern">
-                      <i className="fas fa-clock me-2"></i>Mark Attendance
-                    </Button>
-                    <Button variant="info" href="/my-leaves" className="btn-modern">
-                      <i className="fas fa-history me-2"></i>Leave History
-                    </Button>
-                    <Button variant="warning" href="/files" className="btn-modern">
-                      <i className="fas fa-file-alt me-2"></i>Documents
-                    </Button>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+          <Card className="modern-card mb-4">
+            <Card.Body className="p-3">
+              <div className="quick-actions">
+                <Button className="action-btn" style={{background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', color: 'white'}} href="/apply-leave">
+                  <i className="fas fa-calendar-plus"></i>Apply Leave
+                </Button>
+                <Button className="action-btn" style={{background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white'}} href="/attendance">
+                  <i className="fas fa-clock"></i>Mark Attendance
+                </Button>
+                <Button className="action-btn" style={{background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: 'white'}} href="/my-leaves">
+                  <i className="fas fa-history"></i>Leave History
+                </Button>
+                <Button className="action-btn" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white'}} href="/files">
+                  <i className="fas fa-file-alt"></i>Documents
+                </Button>
+              </div>
+            </Card.Body>
+          </Card>
 
-          {/* Stats Row */}
-          <Row className="mb-4">
-            <Col md={3}>
-              <Card className="modern-card hover-lift h-100">
-                <Card.Body className="text-center">
-                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#10b981' }}>
-                    <i className="fas fa-calendar-check"></i>
-                  </div>
-                  <div className="stats-number">
-                    {dashboardData.balances?.reduce((sum, b) => sum + (b.available || 0), 0) || 0}
-                  </div>
-                  <p className="stats-label mb-0">Total Leave Balance</p>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3}>
-              <Card className="modern-card hover-lift h-100">
-                <Card.Body className="text-center">
-                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#f59e0b' }}>
-                    <i className="fas fa-clock"></i>
-                  </div>
-                  <div className="stats-number">
-                    {dashboardData.balances?.reduce((sum, b) => sum + (b.pending || 0), 0) || 0}
-                  </div>
-                  <p className="stats-label mb-0">Pending Approvals</p>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3}>
-              <Card className="modern-card hover-lift h-100">
-                <Card.Body className="text-center">
-                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#ef4444' }}>
-                    <i className="fas fa-umbrella-beach"></i>
-                  </div>
-                  <div className="stats-number">
-                    {holidays.filter(h => new Date(h.date) >= new Date()).length || 0}
-                  </div>
-                  <p className="stats-label mb-0">Upcoming Holidays</p>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3}>
-              <Card className="modern-card hover-lift h-100">
-                <Card.Body className="text-center">
-                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#06b6d4' }}>
-                    <i className="fas fa-bullhorn"></i>
-                  </div>
-                  <div className="stats-number">{announcements.length || 0}</div>
-                  <p className="stats-label mb-0">Active Announcements</p>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+          {/* Stats Grid */}
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon" style={{background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'}}>
+                <i className="fas fa-calendar-check"></i>
+              </div>
+              <div className="stat-value">{dashboardData.balances?.reduce((sum, b) => sum + (b.available || 0), 0) || 0}</div>
+              <div className="stat-label">Total Leave Balance</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'}}>
+                <i className="fas fa-clock"></i>
+              </div>
+              <div className="stat-value">{dashboardData.balances?.reduce((sum, b) => sum + (b.pending || 0), 0) || 0}</div>
+              <div className="stat-label">Pending Approvals</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon" style={{background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'}}>
+                <i className="fas fa-umbrella-beach"></i>
+              </div>
+              <div className="stat-value">{holidays.filter(h => new Date(h.date) >= new Date()).length || 0}</div>
+              <div className="stat-label">Upcoming Holidays</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon" style={{background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'}}>
+                <i className="fas fa-bullhorn"></i>
+              </div>
+              <div className="stat-value">{announcements.length || 0}</div>
+              <div className="stat-label">Active Announcements</div>
+            </div>
+          </div>
 
           <Row className="mb-4">
             <Col md={6}>
-              <Card className="widget-card modern-card hover-lift">
-                <Card.Header className="border-0 pb-0">
-                  <div className="d-flex align-items-center">
-                    <div
-                      className="rounded-circle d-flex align-items-center justify-content-center me-3"
-                      style={{
-                        width: "48px",
-                        height: "48px",
-                        background:
-                          "linear-gradient(135deg, var(--primary-500), var(--primary-400))",
-                      }}
-                    >
-                      <i className="fas fa-chart-pie text-white"></i>
-                    </div>
-                    <div>
-                      <h6 className="card-title mb-0">Leave Balances</h6>
-                      <small className="text-muted-modern">
-                        Your available leaves
-                      </small>
-                    </div>
-                  </div>
+              <Card className="modern-card h-100">
+                <Card.Header>
+                  <i className="fas fa-comments me-2"></i>Daily Updates
                 </Card.Header>
-                <Card.Body>
-                  <Row>
-                    {dashboardData.balances
-                      ?.filter((balance) => balance.leaveTypeId !== null)
-                      .map((balance) => (
-                        <Col md={6} key={balance._id} className="mb-3">
-                          <div className="stats-card">
-                            <div className="d-flex align-items-center justify-content-between mb-2">
-                              <h6 className="stats-label mb-0">
-                                {balance.leaveTypeId?.name}
-                              </h6>
-                              <div
-                                className="rounded-circle"
-                                style={{
-                                  width: "12px",
-                                  height: "12px",
-                                  backgroundColor: balance.leaveTypeId?.color,
-                                }}
-                              ></div>
-                            </div>
-                            <div className="stats-number mb-2">
-                              {balance.available}
-                            </div>
-                            <div className="d-flex justify-content-between text-sm">
-                              <span className="text-muted">
-                                Used: <strong>{balance.used}</strong>
-                              </span>
-                              <span className="text-warning">
-                                Pending: <strong>{balance.pending}</strong>
-                              </span>
-                            </div>
-                          </div>
-                        </Col>
-                      ))}
-                  </Row>
+                <Card.Body className="p-0">
+                  <div style={{maxHeight: '400px', overflowY: 'auto'}}>
+                    <DailyUpdates />
+                  </div>
                 </Card.Body>
               </Card>
             </Col>
             <Col md={6}>
               <Card className="modern-card h-100">
                 <Card.Header>
-                  <i className="fas fa-bullhorn me-2 text-info"></i>
-                  Latest Announcements
+                  <i className="fas fa-bullhorn me-2"></i>Latest Announcements
                 </Card.Header>
                 <Card.Body className="p-0">
-                  <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '1rem' }}>
+                  <div style={{maxHeight: '400px', overflowY: 'auto'}}>
                     {announcements.length > 0 ? (
                       announcements.slice(0, 5).map((ann) => (
-                        <div
-                          key={ann._id}
-                          className="d-flex align-items-start mb-3 pb-3 border-bottom"
-                        >
-                          <div
-                            className="rounded d-flex align-items-center justify-content-center text-white me-2"
-                            style={{
-                              backgroundColor:
-                                ann.priority === "HIGH"
-                                  ? "#ef4444"
-                                  : ann.priority === "MEDIUM"
-                                    ? "#f59e0b"
-                                    : "#3b82f6",
-                              width: "35px",
-                              height: "35px",
-                              minWidth: "35px",
-                              fontSize: '0.875rem'
-                            }}
-                          >
+                        <div key={ann._id} className="announcement-item">
+                          <div className="announcement-icon" style={{background: ann.priority === 'HIGH' ? '#ef4444' : ann.priority === 'MEDIUM' ? '#f59e0b' : '#3b82f6'}}>
                             <i className="fas fa-bullhorn"></i>
                           </div>
-                          <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                          <div className="announcement-content">
                             <div className="d-flex justify-content-between align-items-start mb-1">
-                              <h6 className="mb-0 text-truncate" style={{ fontSize: '0.9rem' }}>{ann.title}</h6>
-                              <Badge
-                                bg={
-                                  ann.priority === "HIGH"
-                                    ? "danger"
-                                    : ann.priority === "MEDIUM"
-                                      ? "warning"
-                                      : "info"
-                                }
-                                className="ms-2"
-                                style={{ fontSize: '0.7rem' }}
-                              >
+                              <div className="announcement-title">{ann.title}</div>
+                              <Badge bg={ann.priority === 'HIGH' ? 'danger' : ann.priority === 'MEDIUM' ? 'warning' : 'info'} style={{fontSize: '0.7rem'}}>
                                 {ann.priority}
                               </Badge>
                             </div>
-                            <p className="text-muted mb-1" style={{ fontSize: '0.8rem', lineHeight: '1.4' }}>
-                              {ann.content}
-                            </p>
-                            <small className="text-muted" style={{ fontSize: '0.7rem' }}>
+                            <div className="announcement-text">{ann.content}</div>
+                            <div className="announcement-meta">
                               <i className="fas fa-clock me-1"></i>
                               {new Date(ann.createdAt).toLocaleDateString()}
-                            </small>
+                            </div>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-4">
-                        <i className="fas fa-bullhorn text-muted fs-1 mb-3" style={{ color: '#94a3b8' }}></i>
-                        <p className="text-muted mb-0">No announcements</p>
+                      <div className="empty-state">
+                        <div className="empty-icon"><i className="fas fa-bullhorn"></i></div>
+                        <div className="empty-text">No announcements</div>
                       </div>
                     )}
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          <Row className="mb-4">
+            <Col md={6}>
+              <Card className="modern-card h-100">
+                <Card.Header>
+                  <i className="fas fa-chart-pie me-2"></i>Leave Balances
+                </Card.Header>
+                <Card.Body>
+                  <div className="balance-grid">
+                    {dashboardData.balances?.filter((balance) => balance.leaveTypeId !== null).map((balance) => (
+                      <div key={balance._id} className="balance-card">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                          <div className="balance-type">{balance.leaveTypeId?.name}</div>
+                          <div className="rounded-circle" style={{width: '12px', height: '12px', backgroundColor: balance.leaveTypeId?.color}}></div>
+                        </div>
+                        <div className="balance-value">{balance.available}</div>
+                        <div className="balance-details">
+                          <span style={{color: '#64748b'}}>Used: <strong>{balance.used}</strong></span>
+                          <span style={{color: '#f59e0b'}}>Pending: <strong>{balance.pending}</strong></span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </Card.Body>
               </Card>
@@ -814,6 +713,22 @@ const Dashboard = () => {
 
       {user?.role === "MANAGER" && dashboardData && (
         <>
+          {/* Daily Updates & Discussion */}
+          <Row className="mb-4">
+            <Col md={6}>
+              <Card className="modern-card h-100">
+                <Card.Header>
+                  <i className="fas fa-comments me-2"></i>Daily Updates
+                </Card.Header>
+                <Card.Body className="p-0">
+                  <div style={{maxHeight: '400px', overflowY: 'auto'}}>
+                    <DailyUpdates />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
           <Row className="mb-4">
             <Col md={6}>
               <Card className="dashboard-card h-100">
@@ -896,265 +811,104 @@ const Dashboard = () => {
       {["HR", "ADMIN"].includes(user?.role) && dashboardData && (
         <>
           {/* Admin Controls */}
-          <Row className="mb-4">
-            <Col>
-              <Card className="modern-card">
-                <Card.Header>Admin Controls</Card.Header>
-                <Card.Body>
-                  <div className="d-flex gap-2 flex-wrap">
-                    <Button
-                      variant="primary"
-                      onClick={() => setShowAnnouncementModal(true)}
-                      className="btn-modern"
-                    >
-                      <i className="fas fa-bullhorn me-1"></i>Add Announcement
-                    </Button>
-                    <Button
-                      variant="success"
-                      onClick={() => setShowHolidayModal(true)}
-                      className="btn-modern"
-                    >
-                      <i className="fas fa-calendar-plus me-1"></i>Add Holiday
-                    </Button>
-                    <Button
-                      variant="info"
-                      onClick={() => setShowFileModal(true)}
-                      className="btn-modern"
-                    >
-                      <i className="fas fa-upload me-1"></i>Upload File
-                    </Button>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+          <Card className="modern-card mb-4">
+            <Card.Header>Admin Controls</Card.Header>
+            <Card.Body>
+              <div className="quick-actions">
+                <Button className="action-btn" style={{background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', color: 'white'}} onClick={() => setShowAnnouncementModal(true)}>
+                  <i className="fas fa-bullhorn"></i>Add Announcement
+                </Button>
+                <Button className="action-btn" style={{background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white'}} onClick={() => setShowHolidayModal(true)}>
+                  <i className="fas fa-calendar-plus"></i>Add Holiday
+                </Button>
+                <Button className="action-btn" style={{background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: 'white'}} onClick={() => setShowFileModal(true)}>
+                  <i className="fas fa-upload"></i>Upload File
+                </Button>
+              </div>
+            </Card.Body>
+          </Card>
 
           {/* Overview Stats */}
-          <Row className="mb-4">
-            <Col md={3}>
-              <Card className="modern-card hover-lift h-100">
-                <Card.Body className="text-center">
-                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#6366f1' }}>
-                    <i className="fas fa-users"></i>
-                  </div>
-                  <div className="stats-number">{dashboardData.totalEmployees}</div>
-                  <p className="stats-label mb-1">Total Employees</p>
-                  <div className="d-flex justify-content-center align-items-center gap-2">
-                    <small className="text-success">
-                      <i className="fas fa-check-circle me-1"></i>
-                      {dashboardData.activeEmployees} Active
-                    </small>
-                    <small className="text-success">
-                      <i className="fas fa-arrow-up me-1"></i>
-                      +5%
-                    </small>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3}>
-              <Card className="modern-card hover-lift h-100">
-                <Card.Body className="text-center">
-                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#f59e0b' }}>
-                    <i className="fas fa-user-clock"></i>
-                  </div>
-                  <div className="stats-number">{dashboardData.employeesOnLeaveToday}</div>
-                  <p className="stats-label mb-1">On Leave Today</p>
-                  <small className="text-muted d-flex justify-content-center align-items-center gap-1">
-                    Currently absent
-                    {dashboardData.employeesOnLeaveToday > 0 && (
-                      <span className="text-info">
-                        <i className="fas fa-arrow-down ms-1"></i>
-                        -2 vs yesterday
-                      </span>
-                    )}
-                  </small>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3}>
-              <Card className="modern-card hover-lift h-100">
-                <Card.Body className="text-center">
-                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#06b6d4' }}>
-                    <i className="fas fa-clock"></i>
-                  </div>
-                  <div className="stats-number">{dashboardData.pendingApprovals}</div>
-                  <p className="stats-label mb-1">Pending Approvals</p>
-                  <div className="d-flex justify-content-center align-items-center gap-2">
-                    <small className="text-warning">
-                      <i className="fas fa-exclamation-circle me-1"></i>
-                      Needs attention
-                    </small>
-                    {dashboardData.pendingApprovals > 0 && (
-                      <small className="text-danger">
-                        <i className="fas fa-arrow-up"></i>
-                        +3
-                      </small>
-                    )}
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3}>
-              <Card className="modern-card hover-lift h-100">
-                <Card.Body className="text-center">
-                  <div className="stats-icon mx-auto mb-3" style={{ backgroundColor: '#ef4444' }}>
-                    <i className="fas fa-file-alt"></i>
-                  </div>
-                  <div className="stats-number">{dashboardData.pendingDocVerifications || 0}</div>
-                  <p className="stats-label mb-1">Pending Verifications</p>
-                  <small className="text-muted">Documents to verify</small>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon" style={{background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'}}>
+                <i className="fas fa-users"></i>
+              </div>
+              <div className="stat-value">{dashboardData.totalEmployees}</div>
+              <div className="stat-label">Total Employees</div>
+              <small style={{color: '#10b981', fontSize: '0.8rem'}}>
+                <i className="fas fa-check-circle me-1"></i>{dashboardData.activeEmployees} Active
+              </small>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'}}>
+                <i className="fas fa-user-clock"></i>
+              </div>
+              <div className="stat-value">{dashboardData.employeesOnLeaveToday}</div>
+              <div className="stat-label">On Leave Today</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon" style={{background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'}}>
+                <i className="fas fa-clock"></i>
+              </div>
+              <div className="stat-value">{dashboardData.pendingApprovals}</div>
+              <div className="stat-label">Pending Approvals</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon" style={{background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'}}>
+                <i className="fas fa-file-alt"></i>
+              </div>
+              <div className="stat-value">{dashboardData.pendingDocVerifications || 0}</div>
+              <div className="stat-label">Pending Verifications</div>
+            </div>
+          </div>
 
-          {/* Department Distribution */}
+          {/* Department Distribution & Announcements */}
           <Row className="mb-4">
             <Col md={6}>
               <Card className="modern-card h-100">
-                <Card.Header className="d-flex justify-content-between align-items-center">
-                  <span>
-                    <i className="fas fa-sitemap me-2 text-primary"></i>
-                    Department Distribution
-                  </span>
-                  <Badge bg="primary" className="badge-modern">
-                    {dashboardData.departmentStats?.length || 0} Total
-                  </Badge>
+                <Card.Header>
+                  <i className="fas fa-comments me-2"></i>Daily Updates
                 </Card.Header>
-                <Card.Body>
-                  {dashboardData.departmentStats?.length > 0 ? (
-                    <Row className="g-2">
-                      {dashboardData.departmentStats.map((dept, index) => {
-                        const colors = [
-                          { bg: '#667eea', light: '#e0e7ff' },
-                          { bg: '#f093fb', light: '#fce7f3' },
-                          { bg: '#4facfe', light: '#dbeafe' },
-                          { bg: '#43e97b', light: '#d1fae5' },
-                          { bg: '#fa709a', light: '#ffe4e6' },
-                          { bg: '#30cfd0', light: '#cffafe' },
-                          { bg: '#a8edea', light: '#ccfbf1' },
-                          { bg: '#ff9a9e', light: '#fecaca' },
-                          { bg: '#ffecd2', light: '#fed7aa' },
-                          { bg: '#ff6e7f', light: '#fecdd3' }
-                        ];
-                        const color = colors[index % colors.length];
-                        
-                        return (
-                          <Col xs={6} key={index}>
-                            <div
-                              className="text-center p-2 rounded"
-                              style={{
-                                backgroundColor: color.light,
-                                border: `2px solid ${color.bg}20`,
-                                transition: 'all 0.3s ease',
-                                cursor: 'pointer'
-                              }}
-                              onClick={() => dept.departmentId && navigate(`/departments/${dept.departmentId}`)}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-3px)';
-                                e.currentTarget.style.boxShadow = `0 4px 8px ${color.bg}30`;
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = 'none';
-                              }}
-                              title={`Click to view ${dept._id} details`}
-                            >
-                              <div
-                                className="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center"
-                                style={{
-                                  width: '35px',
-                                  height: '35px',
-                                  backgroundColor: color.bg
-                                }}
-                              >
-                                <i className="fas fa-users text-white" style={{ fontSize: '0.875rem' }}></i>
-                              </div>
-                              <div className="fw-bold mb-0" style={{ fontSize: '1.25rem', color: color.bg }}>
-                                {dept.count}
-                              </div>
-                              <div className="text-muted" style={{ fontSize: '0.75rem', fontWeight: '600' }}>
-                                <div className="text-truncate" title={dept._id || 'Unassigned'}>
-                                  {dept._id || 'Unassigned'}
-                                </div>
-                              </div>
-                            </div>
-                          </Col>
-                        );
-                      })}
-                    </Row>
-                  ) : (
-                    <div className="text-center py-4">
-                      <i className="fas fa-sitemap text-muted fs-1 mb-3" style={{ color: '#94a3b8' }}></i>
-                      <p className="text-muted mb-0">No department data</p>
-                    </div>
-                  )}
+                <Card.Body className="p-0">
+                  <div style={{maxHeight: '400px', overflowY: 'auto'}}>
+                    <DailyUpdates />
+                  </div>
                 </Card.Body>
               </Card>
             </Col>
             <Col md={6}>
               <Card className="modern-card h-100">
                 <Card.Header>
-                  <i className="fas fa-bullhorn me-2 text-info"></i>
-                  Latest Announcements
+                  <i className="fas fa-bullhorn me-2"></i>Latest Announcements
                 </Card.Header>
                 <Card.Body className="p-0">
-                  <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '1rem' }}>
+                  <div style={{maxHeight: '400px', overflowY: 'auto'}}>
                     {announcements.length > 0 ? (
                       announcements.slice(0, 5).map((ann) => (
-                        <div
-                          key={ann._id}
-                          className="d-flex align-items-start mb-3 pb-3 border-bottom"
-                        >
-                          <div
-                            className="rounded d-flex align-items-center justify-content-center text-white me-2"
-                            style={{
-                              backgroundColor:
-                                ann.priority === "HIGH"
-                                  ? "#ef4444"
-                                  : ann.priority === "MEDIUM"
-                                    ? "#f59e0b"
-                                    : "#3b82f6",
-                              width: "35px",
-                              height: "35px",
-                              minWidth: "35px",
-                              fontSize: '0.875rem'
-                            }}
-                          >
+                        <div key={ann._id} className="announcement-item">
+                          <div className="announcement-icon" style={{background: ann.priority === 'HIGH' ? '#ef4444' : ann.priority === 'MEDIUM' ? '#f59e0b' : '#3b82f6'}}>
                             <i className="fas fa-bullhorn"></i>
                           </div>
-                          <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                          <div className="announcement-content">
                             <div className="d-flex justify-content-between align-items-start mb-1">
-                              <h6 className="mb-0 text-truncate" style={{ fontSize: '0.9rem' }}>{ann.title}</h6>
-                              <Badge
-                                bg={
-                                  ann.priority === "HIGH"
-                                    ? "danger"
-                                    : ann.priority === "MEDIUM"
-                                      ? "warning"
-                                      : "info"
-                                }
-                                className="ms-2"
-                                style={{ fontSize: '0.7rem' }}
-                              >
+                              <div className="announcement-title">{ann.title}</div>
+                              <Badge bg={ann.priority === 'HIGH' ? 'danger' : ann.priority === 'MEDIUM' ? 'warning' : 'info'} style={{fontSize: '0.7rem'}}>
                                 {ann.priority}
                               </Badge>
                             </div>
-                            <p className="text-muted mb-1" style={{ fontSize: '0.8rem', lineHeight: '1.4' }}>
-                              {ann.content}
-                            </p>
-                            <small className="text-muted" style={{ fontSize: '0.7rem' }}>
+                            <div className="announcement-text">{ann.content}</div>
+                            <div className="announcement-meta">
                               <i className="fas fa-clock me-1"></i>
                               {new Date(ann.createdAt).toLocaleDateString()}
-                            </small>
+                            </div>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-4">
-                        <i className="fas fa-bullhorn text-muted fs-1 mb-3" style={{ color: '#94a3b8' }}></i>
-                        <p className="text-muted mb-0">No announcements</p>
+                      <div className="empty-state">
+                        <div className="empty-icon"><i className="fas fa-bullhorn"></i></div>
+                        <div className="empty-text">No announcements</div>
                       </div>
                     )}
                   </div>
@@ -1163,35 +917,65 @@ const Dashboard = () => {
             </Col>
           </Row>
 
-          {/* Recent Activities */}
+          <Row className="mb-4">
+            <Col md={6}>
+              <Card className="modern-card h-100">
+                <Card.Header className="d-flex justify-content-between align-items-center">
+                  <span><i className="fas fa-sitemap me-2"></i>Department Distribution</span>
+                  <Badge style={{background: '#6366f1', fontSize: '0.75rem'}}>{dashboardData.departmentStats?.length || 0} Total</Badge>
+                </Card.Header>
+                <Card.Body>
+                  {dashboardData.departmentStats?.length > 0 ? (
+                    <div className="dept-grid">
+                      {dashboardData.departmentStats.map((dept, index) => {
+                        const colors = [
+                          { bg: '#667eea', light: '#e0e7ff' },
+                          { bg: '#f093fb', light: '#fce7f3' },
+                          { bg: '#4facfe', light: '#dbeafe' },
+                          { bg: '#43e97b', light: '#d1fae5' },
+                          { bg: '#fa709a', light: '#ffe4e6' },
+                          { bg: '#30cfd0', light: '#cffafe' }
+                        ];
+                        const color = colors[index % colors.length];
+                        return (
+                          <div key={index} className="dept-card" style={{borderColor: color.bg, background: color.light}} onClick={() => dept.departmentId && navigate(`/departments/${dept.departmentId}`)}>
+                            <div className="dept-icon" style={{background: color.bg}}>
+                              <i className="fas fa-users"></i>
+                            </div>
+                            <div className="dept-count" style={{color: color.bg}}>{dept.count}</div>
+                            <div className="dept-name">{dept._id || 'Unassigned'}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="empty-state">
+                      <div className="empty-icon"><i className="fas fa-sitemap"></i></div>
+                      <div className="empty-text">No department data</div>
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Recent Activities & Leave Statistics */}
           <Row className="mb-4">
             <Col md={6}>
               <Card className="modern-card h-100">
                 <Card.Header>
-                  <i className="fas fa-history me-2 text-success"></i>
-                  Recent Activities
+                  <i className="fas fa-history me-2"></i>Recent Activities
                 </Card.Header>
-                <Card.Body style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                <Card.Body style={{maxHeight: '300px', overflowY: 'auto'}}>
                   {dashboardData.recentActivities?.length > 0 ? (
                     dashboardData.recentActivities.map((activity) => (
                       <div key={activity._id} className="d-flex align-items-center mb-3 pb-3 border-bottom">
-                        <div
-                          className="rounded-circle d-flex align-items-center justify-content-center me-3"
-                          style={{
-                            width: '40px',
-                            height: '40px',
-                            backgroundColor: '#f3f4f6'
-                          }}
-                        >
+                        <div className="rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px', backgroundColor: '#f3f4f6'}}>
                           <i className="fas fa-calendar-alt text-primary"></i>
                         </div>
                         <div className="flex-grow-1">
-                          <div className="fw-semibold">
-                            {activity.userId?.firstName} {activity.userId?.lastName}
-                          </div>
-                          <small className="text-muted">
-                            Applied for {activity.leaveTypeId?.name} - {activity.days} days
-                          </small>
+                          <div className="fw-semibold">{activity.userId?.firstName} {activity.userId?.lastName}</div>
+                          <small className="text-muted">Applied for {activity.leaveTypeId?.name} - {activity.days} days</small>
                         </div>
                         {getStatusBadge(activity.status)}
                       </div>
@@ -1204,9 +988,8 @@ const Dashboard = () => {
             </Col>
             <Col md={6}>
               <Card className="modern-card h-100">
-                <Card.Header className="d-flex align-items-center">
-                  <i className="fas fa-chart-bar me-2 text-info"></i>
-                  Leave Statistics
+                <Card.Header>
+                  <i className="fas fa-chart-bar me-2"></i>Leave Statistics
                 </Card.Header>
                 <Card.Body>
                   {dashboardData.leaveStats?.map((stat) => {
@@ -1216,35 +999,16 @@ const Dashboard = () => {
                       <div key={stat._id} className="mb-3">
                         <div className="d-flex justify-content-between align-items-center mb-1">
                           <span className="fw-semibold">
-                            <i
-                              className={`fas fa-${getStatusIcon(stat._id)} me-2`}
-                              style={{ color: '#6366f1' }}
-                            ></i>
+                            <i className={`fas fa-${getStatusIcon(stat._id)} me-2`} style={{color: '#6366f1'}}></i>
                             {stat._id.replace("_", " ")}
                           </span>
                           <span>
-                            <Badge
-                              bg="light"
-                              text="dark"
-                              className="me-1 badge-modern"
-                            >
-                              {stat.count} requests
-                            </Badge>
-                            <Badge bg="primary" className="badge-modern">
-                              {stat.totalDays} days
-                            </Badge>
+                            <Badge bg="light" text="dark" className="me-1">{stat.count} requests</Badge>
+                            <Badge bg="primary">{stat.totalDays} days</Badge>
                           </span>
                         </div>
-                        <div className="progress" style={{ height: '8px', backgroundColor: '#e2e8f0' }}>
-                          <div
-                            className="progress-bar"
-                            style={{
-                              width: `${percentage}%`,
-                              backgroundColor: '#6366f1',
-                              transition: 'width 0.6s ease'
-                            }}
-                            title={`${percentage}% of total requests`}
-                          ></div>
+                        <div className="progress" style={{height: '8px', backgroundColor: '#e2e8f0'}}>
+                          <div className="progress-bar" style={{width: `${percentage}%`, backgroundColor: '#6366f1', transition: 'width 0.6s ease'}}></div>
                         </div>
                       </div>
                     );
@@ -1257,48 +1021,22 @@ const Dashboard = () => {
           {/* Birthdays, New Hires & Holidays */}
           <Row className="mb-4">
             <Col md={4}>
-              <Card className="card-scrollable h-100">
+              <Card className="modern-card h-100">
                 <Card.Header>
-                  <i className="fas fa-birthday-cake me-2 text-warning"></i>
-                  Upcoming Birthdays
+                  <i className="fas fa-birthday-cake me-2"></i>Upcoming Birthdays
                 </Card.Header>
-                <Card.Body>
+                <Card.Body style={{maxHeight: '300px', overflowY: 'auto'}}>
                   {dashboardData.upcomingBirthdays?.length > 0 ? (
                     dashboardData.upcomingBirthdays.map((emp) => (
-                      <div
-                        key={emp._id}
-                        className="d-flex align-items-center mb-3 p-2 rounded"
-                        style={{ backgroundColor: '#fef3c7', border: '1px solid #fbbf24' }}
-                      >
-                        <div
-                          className="rounded-circle d-flex align-items-center justify-content-center me-3"
-                          style={{
-                            width: '45px',
-                            height: '45px',
-                            backgroundColor: '#f59e0b',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: '1.1rem'
-                          }}
-                        >
+                      <div key={emp._id} className="d-flex align-items-center mb-3 p-2 rounded" style={{backgroundColor: '#fef3c7', border: '1px solid #fbbf24'}}>
+                        <div className="rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '45px', height: '45px', backgroundColor: '#f59e0b', color: 'white', fontWeight: 'bold', fontSize: '1.1rem'}}>
                           {emp.firstName?.charAt(0)}{emp.lastName?.charAt(0)}
                         </div>
                         <div className="flex-grow-1">
-                          <div className="fw-bold">
-                            {emp.firstName} {emp.lastName}
-                          </div>
+                          <div className="fw-bold">{emp.firstName} {emp.lastName}</div>
                           <small className="text-muted">{emp.department}</small>
                         </div>
-                        <div className="text-end">
-                          <Badge bg="warning" className="mb-1">
-                            {new Date(emp.dateOfBirth).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </Badge>
-                          <div>
-                            <Button size="sm" variant="outline-warning" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
-                              <i className="fas fa-gift me-1"></i>Wish
-                            </Button>
-                          </div>
-                        </div>
+                        <Badge bg="warning">{new Date(emp.dateOfBirth).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}</Badge>
                       </div>
                     ))
                   ) : (
@@ -1308,47 +1046,22 @@ const Dashboard = () => {
               </Card>
             </Col>
             <Col md={4}>
-              <Card className="card-scrollable h-100">
+              <Card className="modern-card h-100">
                 <Card.Header>
-                  <i className="fas fa-user-plus me-2 text-success"></i>New Hires (Last 30 days)
+                  <i className="fas fa-user-plus me-2"></i>New Hires (Last 30 days)
                 </Card.Header>
-                <Card.Body>
+                <Card.Body style={{maxHeight: '300px', overflowY: 'auto'}}>
                   {dashboardData.newHires?.length > 0 ? (
                     dashboardData.newHires.map((emp) => (
-                      <div
-                        key={emp._id}
-                        className="d-flex align-items-center mb-3 p-2 rounded"
-                        style={{ backgroundColor: '#d1fae5', border: '1px solid #10b981' }}
-                      >
-                        <div
-                          className="rounded-circle d-flex align-items-center justify-content-center me-3"
-                          style={{
-                            width: '45px',
-                            height: '45px',
-                            backgroundColor: '#10b981',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: '1.1rem'
-                          }}
-                        >
+                      <div key={emp._id} className="d-flex align-items-center mb-3 p-2 rounded" style={{backgroundColor: '#d1fae5', border: '1px solid #10b981'}}>
+                        <div className="rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '45px', height: '45px', backgroundColor: '#10b981', color: 'white', fontWeight: 'bold', fontSize: '1.1rem'}}>
                           {emp.firstName?.charAt(0)}{emp.lastName?.charAt(0)}
                         </div>
                         <div className="flex-grow-1">
-                          <div className="fw-bold">
-                            {emp.firstName} {emp.lastName}
-                          </div>
+                          <div className="fw-bold">{emp.firstName} {emp.lastName}</div>
                           <small className="text-muted">{emp.department}</small>
                         </div>
-                        <div className="text-end">
-                          <Badge bg="success" className="mb-1">
-                            {new Date(emp.joinDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </Badge>
-                          <div>
-                            <Button size="sm" variant="outline-success" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
-                              <i className="fas fa-hand-wave me-1"></i>Welcome
-                            </Button>
-                          </div>
-                        </div>
+                        <Badge bg="success">{new Date(emp.joinDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}</Badge>
                       </div>
                     ))
                   ) : (
@@ -1358,34 +1071,20 @@ const Dashboard = () => {
               </Card>
             </Col>
             <Col md={4}>
-              <Card className="card-scrollable h-100">
+              <Card className="modern-card h-100">
                 <Card.Header>
-                  <i className="fas fa-calendar-alt me-2 text-info"></i>
-                  Upcoming Holidays
+                  <i className="fas fa-calendar-alt me-2"></i>Upcoming Holidays
                 </Card.Header>
-                <Card.Body>
-                  {holidays
-                    .filter((h) => new Date(h.date) >= new Date())
-                    .slice(0, 5)
-                    .map((holiday) => (
-                      <div
-                        key={holiday._id}
-                        className="d-flex justify-content-between align-items-center mb-2 p-2 rounded"
-                        style={{ backgroundColor: '#dbeafe', border: '1px solid #3b82f6' }}
-                      >
-                        <div className="flex-grow-1">
-                          <div className="fw-bold">{holiday.name}</div>
-                          <small className="text-muted">
-                            {new Date(holiday.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                          </small>
-                        </div>
-                        <Badge
-                          bg={holiday.type === "FESTIVAL" ? "warning" : holiday.type === "NATIONAL" ? "danger" : "info"}
-                        >
-                          {holiday.type}
-                        </Badge>
+                <Card.Body style={{maxHeight: '300px', overflowY: 'auto'}}>
+                  {holidays.filter((h) => new Date(h.date) >= new Date()).slice(0, 5).map((holiday) => (
+                    <div key={holiday._id} className="holiday-item">
+                      <div className="holiday-info">
+                        <div className="holiday-name">{holiday.name}</div>
+                        <div className="holiday-date">{new Date(holiday.date).toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'})}</div>
                       </div>
-                    ))}
+                      <Badge bg={holiday.type === "FESTIVAL" ? "warning" : holiday.type === "NATIONAL" ? "danger" : "info"}>{holiday.type}</Badge>
+                    </div>
+                  ))}
                   {holidays.filter((h) => new Date(h.date) >= new Date()).length === 0 && (
                     <p className="text-muted mb-0 text-center py-3">No upcoming holidays</p>
                   )}

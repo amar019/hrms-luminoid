@@ -1,0 +1,1659 @@
+/* Task Management & My Tasks - Responsive Design */
+
+/* Modern Tab Styling */
+.modern-tabs .nav-tabs {
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+}
+
+.modern-tabs .nav-link {
+  border: none;
+  color: #64748b;
+  font-weight: 600;
+  padding: 1rem 1.5rem;
+  transition: all 0.3s;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+
+.modern-tabs .nav-link:hover {
+  color: #667eea;
+  background: transparent;
+  border-bottom-color: #667eea;
+}
+
+.modern-tabs .nav-link.active {
+  color: #667eea;
+  background: transparent;
+  border-bottom-color: #667eea;
+}
+
+/* Modern Table Styling */
+.modern-table-container {
+  overflow-x: auto;
+  border-radius: 0.5rem;
+}
+
+.modern-task-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.modern-task-table thead th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  padding: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.modern-task-table tbody tr.task-row {
+  background: white;
+  transition: all 0.2s;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.modern-task-table tbody tr.task-row:hover {
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.modern-task-table tbody td {
+  padding: 1rem;
+  vertical-align: middle;
+}
+
+/* Task Title Cell */
+.task-title-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.task-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.task-title {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.task-meta {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+/* User Cell */
+.user-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.user-name {
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Department Badge */
+.dept-badge {
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Task Type */
+.task-type {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Date Cell */
+.date-cell {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+/* Progress Cell */
+.progress-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress-bar-modern {
+  flex: 1;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 1rem;
+  transition: width 0.3s;
+}
+
+.progress-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  min-width: 40px;
+}
+
+/* Priority Badge */
+.priority-badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  text-transform: uppercase;
+}
+
+.priority-badge.priority-high {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.priority-badge.priority-medium {
+  background: #fef9e7;
+  color: #f59e0b;
+}
+
+.priority-badge.priority-low {
+  background: #f0f9ff;
+  color: #3b82f6;
+}
+
+/* Status Dropdown */
+.status-dropdown .dropdown-toggle {
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.status-dropdown .dropdown-toggle::after {
+  margin-left: 0.5rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-btn.status-assigned {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.status-btn.status-assigned .status-dot {
+  background: #64748b;
+}
+
+.status-btn.status-in-progress {
+  background: #dbeafe;
+  color: #3b82f6;
+}
+
+.status-btn.status-in-progress .status-dot {
+  background: #3b82f6;
+}
+
+.status-btn.status-review {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.status-btn.status-review .status-dot {
+  background: #f59e0b;
+}
+
+.status-btn.status-completed {
+  background: #d1fae5;
+  color: #10b981;
+}
+
+.status-btn.status-completed .status-dot {
+  background: #10b981;
+}
+
+.status-btn.status-cancelled {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.status-btn.status-cancelled .status-dot {
+  background: #ef4444;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 0.5rem;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.action-view {
+  background: #dbeafe;
+  color: #3b82f6;
+}
+
+.action-view:hover {
+  background: #3b82f6;
+  color: white;
+}
+
+.action-copy {
+  background: #d1fae5;
+  color: #10b981;
+}
+
+.action-copy:hover {
+  background: #10b981;
+  color: white;
+}
+
+.action-edit {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.action-edit:hover {
+  background: #f59e0b;
+  color: white;
+}
+
+.action-delete {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.action-delete:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* Smooth Animations */
+.modern-tabs .nav-tabs {
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+}
+
+.modern-tabs .nav-link {
+  border: none;
+  color: #64748b;
+  font-weight: 600;
+  padding: 1rem 1.5rem;
+  transition: all 0.3s;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+
+.modern-tabs .nav-link:hover {
+  color: #667eea;
+  background: transparent;
+  border-bottom-color: #667eea;
+}
+
+.modern-tabs .nav-link.active {
+  color: #667eea;
+  background: transparent;
+  border-bottom-color: #667eea;
+}
+
+/* Smooth Animations */
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Table Enhancements */
+.table thead th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.table tbody tr {
+  transition: all 0.2s;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.table tbody tr:hover {
+  background: #f8fafc !important;
+  transform: scale(1.01);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Button Hover Effects */
+.btn {
+  transition: all 0.3s;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Mobile First - Base Styles */
+@media (max-width: 768px) {
+  /* Page Header */
+  .page-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem;
+  }
+
+  .page-header .d-flex.gap-2 {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .page-header .d-flex.gap-2 button {
+    width: 100%;
+  }
+
+  .page-title {
+    font-size: 1.5rem !important;
+  }
+
+  /* Stats Cards */
+  .row .col-md-3 {
+    margin-bottom: 0.75rem;
+  }
+
+  .row .col-md-3 .card {
+    margin-bottom: 0;
+  }
+
+  /* Filters */
+  .card-body .row.g-2 {
+    gap: 0.5rem !important;
+  }
+
+  .card-body .row.g-2 .col-md-3,
+  .card-body .row.g-2 .col-md-2 {
+    width: 100%;
+    padding: 0;
+  }
+
+  .card-body .row.g-2 .text-end {
+    text-align: left !important;
+    margin-top: 0.5rem;
+  }
+
+  /* Table Responsive */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    font-size: 0.75rem !important;
+    min-width: 800px;
+  }
+
+  table th,
+  table td {
+    padding: 0.5rem 0.25rem !important;
+    white-space: nowrap;
+  }
+
+  table .btn {
+    padding: 0.25rem 0.4rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  table .badge {
+    font-size: 0.6rem !important;
+    padding: 0.2rem 0.4rem !important;
+  }
+
+  /* Action Buttons */
+  .d-flex.gap-1 {
+    gap: 0.25rem !important;
+  }
+
+  /* Tabs */
+  .nav-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nav-tabs .nav-link {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    white-space: nowrap;
+  }
+
+  /* Modal */
+  .modal-dialog {
+    margin: 0.5rem !important;
+  }
+
+  .modal-dialog.modal-lg,
+  .modal-dialog.modal-xl {
+    max-width: calc(100% - 1rem) !important;
+  }
+
+  .modal-body {
+    padding: 1rem !important;
+    max-height: calc(100vh - 200px) !important;
+  }
+
+  .modal-header .modal-title {
+    font-size: 1rem !important;
+  }
+
+  /* Form Groups in Modal */
+  .modal-body .row .col-md-6,
+  .modal-body .row .col-md-4,
+  .modal-body .row .col-md-3 {
+    width: 100%;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Task Details Modal */
+  .modal-body .row .col-md-8,
+  .modal-body .row .col-md-4 {
+    width: 100%;
+  }
+
+  /* Progress Circle */
+  .position-relative svg {
+    width: 100px !important;
+    height: 100px !important;
+  }
+
+  .position-relative svg circle {
+    r: 40 !important;
+  }
+
+  .position-relative h2 {
+    font-size: 1.5rem !important;
+  }
+
+  /* Badges in Header */
+  .d-flex.gap-2.flex-wrap {
+    gap: 0.5rem !important;
+  }
+
+  .d-flex.gap-2.flex-wrap .badge {
+    font-size: 0.7rem !important;
+  }
+
+  /* Daily Updates Cards */
+  .card.mb-3 .card-body .row .col-md-3,
+  .card.mb-3 .card-body .row .col-md-6 {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Team Members */
+  .d-flex.align-items-center.p-2 {
+    flex-direction: row !important;
+  }
+
+  .bg-primary.text-white.rounded-circle,
+  .bg-info.text-white.rounded-circle {
+    width: 35px !important;
+    height: 35px !important;
+    font-size: 14px !important;
+  }
+
+  /* Comments Section */
+  .d-flex.flex-column {
+    height: 400px !important;
+  }
+
+  /* Client Info */
+  .card-body .row .col-md-3 {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  /* GPS Tracking */
+  .d-flex.align-items-start.gap-3 {
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  /* Download Modal */
+  .modal-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+
+  /* Task List - My Tasks Page */
+  .table-responsive table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  /* Hide less important columns on mobile */
+  table th:nth-child(3),
+  table td:nth-child(3),
+  table th:nth-child(4),
+  table td:nth-child(4) {
+    display: none;
+  }
+
+  /* Pending Updates Badge */
+  .page-title .badge {
+    display: block;
+    margin-top: 0.5rem;
+    margin-left: 0 !important;
+  }
+}
+
+/* Tablet - Medium Screens */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .page-title {
+    font-size: 1.75rem !important;
+  }
+
+  table {
+    font-size: 0.85rem !important;
+  }
+
+  table th,
+  table td {
+    padding: 0.6rem 0.4rem !important;
+  }
+
+  .modal-dialog.modal-xl {
+    max-width: 95% !important;
+  }
+
+  /* Show 2 columns for stats */
+  .row .col-md-3 {
+    width: 50%;
+  }
+}
+
+/* Desktop - Large Screens */
+@media (min-width: 1025px) {
+  /* Ensure proper spacing */
+  .table th,
+  .table td {
+    padding: 0.75rem !important;
+  }
+}
+
+/* Landscape Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .modal-body {
+    max-height: calc(100vh - 150px) !important;
+  }
+
+  .d-flex.flex-column {
+    height: 300px !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .page-header button,
+  .card-body .row.g-2,
+  table .btn,
+  .nav-tabs {
+    display: none !important;
+  }
+
+  table {
+    font-size: 10pt !important;
+  }
+}
+
+/* Custom Scrollbar for Mobile */
+@media (max-width: 768px) {
+  .table-responsive::-webkit-scrollbar,
+  .nav-tabs::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .table-responsive::-webkit-scrollbar-track,
+  .nav-tabs::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  .table-responsive::-webkit-scrollbar-thumb,
+  .nav-tabs::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+  }
+
+  .table-responsive::-webkit-scrollbar-thumb:hover,
+  .nav-tabs::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+}
+
+/* Daily Update Form - Mobile Responsive */
+@media (max-width: 768px) {
+  /* Update Modal Header */
+  .modal-header[style*="#0d6efd"] .modal-title {
+    font-size: 1rem !important;
+  }
+
+  /* Progress Slider */
+  .form-range {
+    height: 8px;
+    margin: 1rem 0;
+  }
+
+  .form-range::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  .form-range::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Progress Percentage Display */
+  .text-center h2 {
+    font-size: 2rem !important;
+    margin: 0.5rem 0;
+  }
+
+  /* Status and Hours Row */
+  .row .col-md-6 {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  /* Textarea in Update Form */
+  .modal-body textarea.form-control {
+    font-size: 0.9rem;
+    min-height: 100px;
+  }
+
+  /* Sales Details Section */
+  .border.rounded.p-3 {
+    padding: 1rem !important;
+  }
+
+  .border.rounded.p-3 h6 {
+    font-size: 0.95rem !important;
+  }
+
+  /* Alert in Update Form */
+  .alert.alert-info {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .alert.alert-info strong {
+    font-size: 0.9rem;
+  }
+}
+
+/* Task Details Page - Mobile Responsive */
+@media (max-width: 768px) {
+  /* Details Modal Header */
+  .modal-header[style*="linear-gradient"] {
+    padding: 1rem !important;
+  }
+
+  .modal-header[style*="linear-gradient"] .modal-title {
+    font-size: 1rem !important;
+  }
+
+  /* Task Header Section */
+  .modal-body > div[style*="#f8f9fa"] {
+    padding: 1rem !important;
+  }
+
+  .modal-body h4 {
+    font-size: 1.1rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* Badge Container */
+  .d-flex.gap-2.flex-wrap {
+    gap: 0.4rem !important;
+  }
+
+  .d-flex.gap-2.flex-wrap .badge {
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.6rem !important;
+  }
+
+  /* Progress Circle Container */
+  .card.text-center[style*="border: 2px"] {
+    margin-top: 1rem;
+  }
+
+  .card.text-center .card-body {
+    padding: 1rem !important;
+  }
+
+  .card.text-center h6 {
+    font-size: 0.85rem !important;
+  }
+
+  /* Tabs in Details */
+  .tabs.px-3 {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  .tab-content {
+    padding: 0.75rem !important;
+  }
+
+  /* Daily Updates Timeline */
+  .card.mb-3[style*="border-left"] {
+    margin-bottom: 1rem !important;
+  }
+
+  .card.mb-3 .card-body {
+    padding: 0.75rem !important;
+  }
+
+  /* Update Card Header */
+  .card-body .d-flex.justify-content-between {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+
+  /* User Avatar in Updates */
+  .bg-primary.text-white.rounded-circle[style*="width: 40px"],
+  .bg-primary.text-white.rounded-circle[style*="width: 45px"] {
+    width: 35px !important;
+    height: 35px !important;
+    font-size: 12px !important;
+  }
+
+  /* Update Content Boxes */
+  div[style*="background: #f8f9fa"][style*="padding: 12px"],
+  div[style*="background: #fff3cd"][style*="padding: 12px"] {
+    padding: 0.75rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Comments Section */
+  div[style*="height: 500px"][style*="background: #e5ddd5"] {
+    height: 350px !important;
+    padding: 0.75rem !important;
+  }
+
+  /* Comment Bubbles */
+  div[style*="maxWidth: '70%'"] {
+    max-width: 85% !important;
+  }
+
+  div[style*="background: white"][style*="padding: 8px 12px"] {
+    font-size: 0.85rem !important;
+  }
+
+  /* Comment Input */
+  div[style*="borderRadius: '30px'"] {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  /* Mention Suggestions */
+  div[style*="position: absolute"][style*="bottom: '100%'"] {
+    font-size: 0.85rem !important;
+  }
+
+  /* Task Information Table */
+  .table.table-sm.table-borderless td {
+    padding: 0.4rem 0 !important;
+    font-size: 0.85rem !important;
+  }
+
+  .table.table-sm.table-borderless strong {
+    font-size: 0.8rem !important;
+  }
+
+  /* Team Members Section */
+  .card-header[style*="background: #f8f9fa"] {
+    padding: 0.75rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* Team Member Cards */
+  .d-flex.align-items-center.p-2[style*="background: #e7f3ff"],
+  .d-flex.align-items-center.mb-2.p-2[style*="background: #f8f9fa"] {
+    padding: 0.75rem !important;
+  }
+
+  .d-flex.align-items-center .fw-bold {
+    font-size: 0.85rem !important;
+  }
+
+  .d-flex.align-items-center small {
+    font-size: 0.75rem !important;
+  }
+
+  /* Client Information */
+  .card-body .row .col-md-3 {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  /* GPS Tracking Section */
+  .card-body h6.text-success,
+  .card-body h6.text-danger {
+    font-size: 0.9rem !important;
+  }
+
+  .card-body p {
+    font-size: 0.85rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Map Button */
+  .btn.btn-sm.btn-outline-primary {
+    font-size: 0.75rem !important;
+    padding: 0.4rem 0.6rem !important;
+  }
+}
+
+/* Landscape Mobile - Update Form */
+@media (max-width: 768px) and (orientation: landscape) {
+  .modal-body[style*="padding: 1.5rem"] {
+    padding: 1rem !important;
+    max-height: calc(100vh - 120px) !important;
+  }
+
+  .text-center h2 {
+    font-size: 1.5rem !important;
+  }
+
+  .form-group {
+    margin-bottom: 0.75rem !important;
+  }
+}
+
+/* Very Small Screens - Update Form */
+@media (max-width: 576px) {
+  /* Compact Progress Display */
+  .text-center h2.text-primary {
+    font-size: 1.75rem !important;
+  }
+
+  /* Smaller Form Labels */
+  .form-label strong {
+    font-size: 0.85rem !important;
+  }
+
+  /* Compact Buttons */
+  .modal-footer .btn {
+    padding: 0.6rem 1rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  .modal-footer .btn-lg {
+    padding: 0.7rem 1.2rem !important;
+  }
+}
+
+/* Very Small Screens - Task Details */
+@media (max-width: 576px) {
+  /* Compact Header */
+  .modal-body h4.mb-3 {
+    font-size: 1rem !important;
+    line-height: 1.3;
+  }
+
+  /* Stack Progress Circle */
+  .row .col-md-8,
+  .row .col-md-4 {
+    width: 100% !important;
+  }
+
+  /* Smaller Tabs */
+  .nav-tabs .nav-link {
+    font-size: 0.8rem !important;
+    padding: 0.5rem 0.6rem !important;
+  }
+
+  /* Compact Update Cards */
+  .card.mb-3 {
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* Smaller Badges in Updates */
+  .badge[style*="fontSize: '0.9rem'"],
+  .badge[style*="fontSize: '1rem'"] {
+    font-size: 0.75rem !important;
+    padding: 0.3rem 0.5rem !important;
+  }
+
+  /* Compact Team Section */
+  .bg-info.text-white.rounded-circle[style*="width: 40px"] {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* Mobile Task Details - Full Screen Design */
+@media (max-width: 768px) {
+  /* Full Screen Modal */
+  .task-details-modal .modal-dialog {
+    margin: 0 !important;
+    max-width: 100% !important;
+    height: 100vh;
+  }
+
+  .task-details-modal .modal-content {
+    height: 100vh;
+    border-radius: 0 !important;
+    border: none;
+  }
+
+  .task-details-modal .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 1050;
+    border-radius: 0 !important;
+    padding: 1rem !important;
+  }
+
+  .task-details-modal .modal-body {
+    padding: 0 !important;
+    overflow-y: auto;
+    height: calc(100vh - 60px);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mobile Task Header */
+  .mobile-task-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem 1rem;
+    position: relative;
+  }
+
+  .mobile-task-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+  }
+
+  .mobile-task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .mobile-task-meta .badge {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.7rem;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+  }
+
+  /* Mobile Progress Card */
+  .mobile-progress-card {
+    background: white;
+    margin: -1rem 1rem 1rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 1;
+  }
+
+  .mobile-progress-circle {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .mobile-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  /* Mobile Section */
+  .mobile-section {
+    background: white;
+    margin-bottom: 0.5rem;
+    padding: 1rem;
+  }
+
+  .mobile-section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .mobile-section-title i {
+    color: #667eea;
+  }
+
+  /* Mobile Info Grid */
+  .mobile-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .mobile-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .mobile-info-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .mobile-info-value {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #212529;
+  }
+
+  /* Mobile Tabs */
+  .mobile-tabs {
+    display: flex;
+    background: white;
+    border-bottom: 2px solid #e9ecef;
+    position: sticky;
+    top: 60px;
+    z-index: 1040;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-tab {
+    flex: 1;
+    min-width: 120px;
+    padding: 1rem;
+    text-align: center;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+  }
+
+  .mobile-tab.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+  }
+
+  .mobile-tab-badge {
+    display: inline-block;
+    background: #e9ecef;
+    color: #495057;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    margin-left: 0.25rem;
+  }
+
+  .mobile-tab.active .mobile-tab-badge {
+    background: #667eea;
+    color: white;
+  }
+
+  /* Mobile Update Card */
+  .mobile-update-card {
+    background: white;
+    border-left: 4px solid #667eea;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .mobile-update-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 0.75rem;
+  }
+
+  .mobile-update-user {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .mobile-update-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #667eea;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .mobile-update-info {
+    flex: 1;
+  }
+
+  .mobile-update-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .mobile-update-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+  }
+
+  .mobile-update-progress {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #667eea;
+  }
+
+  .mobile-update-content {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .mobile-update-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.25rem;
+  }
+
+  .mobile-update-text {
+    font-size: 0.85rem;
+    color: #212529;
+    line-height: 1.5;
+  }
+
+  /* Mobile Comment Bubble */
+  .mobile-comment-container {
+    padding: 1rem;
+    background: #e5ddd5;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobile-comment-list {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+  }
+
+  .mobile-comment {
+    margin-bottom: 0.75rem;
+    display: flex;
+  }
+
+  .mobile-comment.own {
+    justify-content: flex-end;
+  }
+
+  .mobile-comment-bubble {
+    max-width: 80%;
+    padding: 0.75rem;
+    border-radius: 1rem;
+    background: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+
+  .mobile-comment.own .mobile-comment-bubble {
+    background: #dcf8c6;
+    border-bottom-right-radius: 0.25rem;
+  }
+
+  .mobile-comment-bubble:not(.own) {
+    border-bottom-left-radius: 0.25rem;
+  }
+
+  .mobile-comment-author {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 0.25rem;
+  }
+
+  .mobile-comment-text {
+    font-size: 0.85rem;
+    color: #212529;
+    word-wrap: break-word;
+  }
+
+  .mobile-comment-time {
+    font-size: 0.7rem;
+    color: #6c757d;
+    text-align: right;
+    margin-top: 0.25rem;
+  }
+
+  /* Mobile Comment Input */
+  .mobile-comment-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: white;
+    padding: 0.5rem;
+    border-radius: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .mobile-comment-input textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+  }
+
+  .mobile-comment-send {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #667eea;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+  }
+
+  .mobile-comment-send:disabled {
+    background: #e9ecef;
+    color: #adb5bd;
+  }
+
+  /* Mobile Team Member */
+  .mobile-team-member {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .mobile-team-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #667eea;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .mobile-team-info {
+    flex: 1;
+  }
+
+  .mobile-team-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .mobile-team-email {
+    font-size: 0.75rem;
+    color: #6c757d;
+  }
+
+  /* Mobile Client Card */
+  .mobile-client-card {
+    background: #fff8e6;
+    border-left: 4px solid #ffc107;
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+
+  .mobile-client-item {
+    margin-bottom: 0.5rem;
+  }
+
+  .mobile-client-item:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Mobile GPS Card */
+  .mobile-gps-card {
+    background: #e7f3ff;
+    border-left: 4px solid #0d6efd;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .mobile-gps-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #0d6efd;
+    margin-bottom: 0.5rem;
+  }
+
+  .mobile-gps-info {
+    font-size: 0.8rem;
+    color: #495057;
+    margin-bottom: 0.25rem;
+  }
+
+  .mobile-gps-map-btn {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  /* Empty State */
+  .mobile-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+  }
+
+  .mobile-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  .mobile-empty-text {
+    font-size: 0.9rem;
+  }
+}
+
+/* Touch-friendly buttons */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .btn-sm {
+    min-height: 36px;
+    min-width: 36px;
+  }
+}
+
+/* Improved Card Layout for Mobile */
+@media (max-width: 768px) {
+  .card {
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .card-header {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+}
+
+/* Stack form controls vertically on mobile */
+@media (max-width: 768px) {
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* Optimize dropdown menus for mobile */
+@media (max-width: 768px) {
+  .dropdown-menu {
+    font-size: 0.85rem;
+  }
+
+  .dropdown-item {
+    padding: 0.5rem 1rem;
+  }
+}
+
+/* Better spacing for mobile alerts */
+@media (max-width: 768px) {
+  .alert {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Responsive text sizes */
+@media (max-width: 768px) {
+  h1 { font-size: 1.5rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+  h4 { font-size: 1rem !important; }
+  h5 { font-size: 0.95rem !important; }
+  h6 { font-size: 0.9rem !important; }
+  
+  p, small, .text-muted {
+    font-size: 0.85rem !important;
+  }
+}
+
+/* Improve touch targets for checkboxes */
+@media (max-width: 768px) {
+  .form-check {
+    padding-left: 2rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: -2rem;
+  }
+
+  .form-check-label {
+    font-size: 0.9rem;
+    padding-left: 0.5rem;
+  }
+}
+
+/* Mobile-optimized tabs */
+@media (max-width: 768px) {
+  .tab-content {
+    padding: 1rem 0.5rem;
+  }
+
+  .tab-pane {
+    font-size: 0.85rem;
+  }
+}
+
+/* Better mobile table alternative - Card View */
+@media (max-width: 576px) {
+  .mobile-card-view {
+    display: block !important;
+  }
+
+  .mobile-card-view .task-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .mobile-card-view .task-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .mobile-card-view .task-card-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #212529;
+    margin-bottom: 0.25rem;
+  }
+
+  .mobile-card-view .task-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .mobile-card-view .task-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .mobile-card-view .task-card-actions .btn {
+    flex: 1;
+    min-width: calc(50% - 0.25rem);
+  }
+}

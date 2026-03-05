@@ -5,6 +5,14 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import NotificationsPanel from './NotificationsPanel';
+import { 
+  MdDashboard, MdAccessTime, MdEventAvailable, MdCalendarToday, 
+  MdPeople, MdSettings, MdCampaign, MdBarChart, MdAccountTree,
+  MdFolder, MdPerson, MdReceipt, MdLaptop, MdNotifications,
+  MdBrightness4, MdBrightness7, MdMenu, MdLogout, MdHome,
+  MdTask, MdCheckCircle, MdAddCircle, MdBusiness, MdAssignment
+} from 'react-icons/md';
 
 const EnhancedLayout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -71,56 +79,75 @@ const EnhancedLayout = ({ children }) => {
     }
   };
 
+  const handleLogout = async () => {
+    const Swal = (await import('sweetalert2')).default;
+    const result = await Swal.fire({
+      title: 'Logout',
+      text: 'Are you sure you want to logout?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, logout',
+      cancelButtonText: 'Cancel'
+    });
+    if (result.isConfirmed) {
+      logout();
+    }
+  };
+
   const getMenuItems = () => {
     const items = [
-      { path: '/dashboard', label: 'Dashboard', icon: 'tachometer-alt', roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },
-      { path: '/attendance', label: 'Attendance', icon: 'clock', roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] }
+      { path: '/dashboard', label: 'Dashboard', icon: MdDashboard, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },
+      { path: '/attendance', label: 'Attendance', icon: MdAccessTime, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] }
     ];
 
     if (user?.role === 'EMPLOYEE') {
       items.push(
-        { path: '/apply-leave', label: 'Apply Leave', icon: 'plus-circle', roles: ['EMPLOYEE'] },
-        { path: '/my-leaves', label: 'My Leaves', icon: 'calendar-check', roles: ['EMPLOYEE'] }
+        { path: '/apply-leave', label: 'Apply Leave', icon: MdAddCircle, roles: ['EMPLOYEE'] },
+        { path: '/my-leaves', label: 'My Leaves', icon: MdEventAvailable, roles: ['EMPLOYEE'] },
+        { path: '/tasks', label: 'My Tasks', icon: MdTask, roles: ['EMPLOYEE'] }
       );
     }
 
     if (['MANAGER', 'HR', 'ADMIN'].includes(user?.role)) {
       items.push(
-        { path: '/approvals', label: 'Approvals', icon: 'tasks', roles: ['MANAGER', 'HR', 'ADMIN'], badge: pendingCount },
-        { path: '/team-calendar', label: 'Team Calendar', icon: 'calendar-alt', roles: ['MANAGER', 'HR', 'ADMIN'] },
-        { path: '/employee-directory', label: 'Directory', icon: 'users', roles: ['MANAGER', 'HR', 'ADMIN'] }
+        { path: '/approvals', label: 'Approvals', icon: MdCheckCircle, roles: ['MANAGER', 'HR', 'ADMIN'], badge: pendingCount },
+        { path: '/task-management', label: 'Task Management', icon: MdAssignment, roles: ['MANAGER', 'HR', 'ADMIN'] },
+        { path: '/team-calendar', label: 'Team Calendar', icon: MdCalendarToday, roles: ['MANAGER', 'HR', 'ADMIN'] },
+        { path: '/employee-directory', label: 'Directory', icon: MdPeople, roles: ['MANAGER', 'HR', 'ADMIN'] }
       );
     }
 
     if (['HR', 'ADMIN'].includes(user?.role)) {
       items.push(
-        { path: '/leave-types', label: 'Leave Types', icon: 'cogs', roles: ['HR', 'ADMIN'] },
-        { path: '/announcements', label: 'Announcements', icon: 'bullhorn', roles: ['HR', 'ADMIN'] },
-        { path: '/reports', label: 'Reports', icon: 'chart-bar', roles: ['HR', 'ADMIN'] }
+        { path: '/leave-types', label: 'Leave Types', icon: MdSettings, roles: ['HR', 'ADMIN'] },
+        { path: '/announcements', label: 'Announcements', icon: MdCampaign, roles: ['HR', 'ADMIN'] },
+        { path: '/reports', label: 'Reports', icon: MdBarChart, roles: ['HR', 'ADMIN'] }
       );
     }
 
     if (user?.role === 'ADMIN') {
-      items.push({ path: '/departments', label: 'Departments', icon: 'sitemap', roles: ['ADMIN'] });
+      items.push({ path: '/departments', label: 'Departments', icon: MdAccountTree, roles: ['ADMIN'] });
     }
 
     items.push(
-      { path: '/files', label: 'Files', icon: 'folder-open', roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },
-      { path: '/expenses', label: 'Expenses', icon: 'receipt', roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] }
+      { path: '/files', label: 'Files', icon: MdFolder, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },
+      { path: '/expenses', label: 'Expenses', icon: MdReceipt, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] }
     );
 
     if (['HR', 'ADMIN'].includes(user?.role)) {
-      items.push({ path: '/assets', label: 'Assets', icon: 'laptop', roles: ['HR', 'ADMIN'] });
+      items.push({ path: '/assets', label: 'Assets', icon: MdLaptop, roles: ['HR', 'ADMIN'] });
     }
 
     return items.filter(item => item.roles.includes(user?.role));
   };
 
   const quickLinks = [
-    { path: '/dashboard', icon: 'home', label: 'Home' },
-    { path: '/attendance', icon: 'clock', label: 'Attendance' },
-    { path: '/approvals', icon: 'tasks', label: 'Approvals', badge: pendingCount, roles: ['MANAGER', 'HR', 'ADMIN'] },
-    { path: '/profile', icon: 'user', label: 'Profile' }
+    { path: '/dashboard', icon: MdHome, label: 'Home' },
+    { path: '/attendance', icon: MdAccessTime, label: 'Attendance' },
+    { path: '/approvals', icon: MdTask, label: 'Approvals', badge: pendingCount, roles: ['MANAGER', 'HR', 'ADMIN'] },
+    { path: '/profile', icon: MdPerson, label: 'Profile' }
   ].filter(link => !link.roles || link.roles.includes(user?.role));
 
   return (
@@ -130,10 +157,10 @@ const EnhancedLayout = ({ children }) => {
         <div className="navbar-container">
           <div className="navbar-left">
             <Button variant="link" className="menu-toggle" onClick={() => setShowSidebar(true)}>
-              <i className="fas fa-bars"></i>
+              <MdMenu size={24} />
             </Button>
             <Navbar.Brand className="brand">
-              <i className="fas fa-building"></i>
+              <MdBusiness size={28} />
               <span className="brand-text">HRMS Pro</span>
             </Navbar.Brand>
           </div>
@@ -142,37 +169,22 @@ const EnhancedLayout = ({ children }) => {
           </div>
 
           <div className="navbar-right">
-            <Button variant="link" className="nav-icon-btn" onClick={toggleTheme} title={isDarkMode ? 'Light Mode' : 'Dark Mode'}>
-              <i className={`fas fa-${isDarkMode ? 'sun' : 'moon'}`}></i>
+            <Button variant="link" className="nav-icon-btn" onClick={() => navigate(user?.role === 'EMPLOYEE' ? '/tasks' : '/task-management')} title="My Tasks">
+              <MdAssignment size={22} />
             </Button>
+            
+            <NotificationsPanel />
             
             {['MANAGER', 'HR', 'ADMIN'].includes(user?.role) && (
               <Button variant="link" className="nav-icon-btn" onClick={() => navigate('/approvals')}>
-                <i className="fas fa-bell"></i>
+                <MdTask size={22} />
                 {pendingCount > 0 && <Badge className="notification-badge">{pendingCount}</Badge>}
               </Button>
             )}
             
-            <Dropdown align="end">
-              <Dropdown.Toggle variant="link" className="profile-dropdown">
-                <div className="profile-avatar">
-                  <i className="fas fa-user"></i>
-                </div>
-              </Dropdown.Toggle>
-              <Dropdown.Menu className="profile-menu">
-                <div className="profile-header">
-                  <div className="profile-name">{user?.firstName} {user?.lastName}</div>
-                  <div className="profile-role">{user?.role}</div>
-                </div>
-                <Dropdown.Divider />
-                <Dropdown.Item onClick={() => navigate('/profile')}>
-                  <i className="fas fa-user-circle me-2"></i>My Profile
-                </Dropdown.Item>
-                <Dropdown.Item onClick={logout}>
-                  <i className="fas fa-sign-out-alt me-2"></i>Logout
-                </Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
+            <Button variant="link" className="nav-icon-btn" onClick={handleLogout} title="Logout">
+              <MdLogout size={22} />
+            </Button>
           </div>
         </div>
       </Navbar>
@@ -197,23 +209,26 @@ const EnhancedLayout = ({ children }) => {
 
         <Offcanvas.Body className="sidebar-body">
           <Nav className="flex-column">
-            {getMenuItems().map(item => (
-              <LinkContainer key={item.path} to={item.path}>
-                <Nav.Link 
-                  className={location.pathname === item.path ? 'active' : ''}
-                  onClick={() => setShowSidebar(false)}
-                >
-                  <i className={`fas fa-${item.icon}`}></i>
-                  <span>{item.label}</span>
-                  {item.badge > 0 && <Badge bg="danger">{item.badge}</Badge>}
-                </Nav.Link>
-              </LinkContainer>
-            ))}
+            {getMenuItems().map(item => {
+              const IconComponent = item.icon;
+              return (
+                <LinkContainer key={item.path} to={item.path}>
+                  <Nav.Link 
+                    className={location.pathname === item.path ? 'active' : ''}
+                    onClick={() => setShowSidebar(false)}
+                  >
+                    <IconComponent size={20} />
+                    <span>{item.label}</span>
+                    {item.badge > 0 && <Badge bg="danger">{item.badge}</Badge>}
+                  </Nav.Link>
+                </LinkContainer>
+              );
+            })}
           </Nav>
 
           <div className="sidebar-footer">
-            <Button variant="outline-light" className="logout-btn" onClick={() => { logout(); setShowSidebar(false); }}>
-              <i className="fas fa-sign-out-alt"></i>
+            <Button variant="outline-light" className="logout-btn" onClick={() => { handleLogout(); setShowSidebar(false); }}>
+              <MdLogout size={20} />
               <span>Logout</span>
             </Button>
           </div>
@@ -227,20 +242,23 @@ const EnhancedLayout = ({ children }) => {
 
       {/* Bottom Navigation (Mobile) */}
       <div className="bottom-nav">
-        {quickLinks.map(link => (
-          <Button
-            key={link.path}
-            variant="link"
-            className={`bottom-nav-item ${location.pathname === link.path ? 'active' : ''}`}
-            onClick={() => navigate(link.path)}
-          >
-            <div className="bottom-nav-icon">
-              <i className={`fas fa-${link.icon}`}></i>
-              {link.badge > 0 && <Badge className="bottom-badge">{link.badge}</Badge>}
-            </div>
-            <span className="bottom-nav-label">{link.label}</span>
-          </Button>
-        ))}
+        {quickLinks.map(link => {
+          const IconComponent = link.icon;
+          return (
+            <Button
+              key={link.path}
+              variant="link"
+              className={`bottom-nav-item ${location.pathname === link.path ? 'active' : ''}`}
+              onClick={() => navigate(link.path)}
+            >
+              <div className="bottom-nav-icon">
+                <IconComponent size={24} />
+                {link.badge > 0 && <Badge className="bottom-badge">{link.badge}</Badge>}
+              </div>
+              <span className="bottom-nav-label">{link.label}</span>
+            </Button>
+          );
+        })}
       </div>
     </div>
   );

@@ -526,21 +526,22 @@ const runAutoCheckout = async (req, res) => {
       return res.json({ message: 'No employees to auto checkout', count: 0 });
     }
     
+    const { AUTO_CHECKOUT_TIME } = require('../config/attendanceConfig');
     const autoCheckoutTime = moment.tz('Asia/Kolkata')
-      .set({ hour: 18, minute: 0, second: 0, millisecond: 0 })
+      .set({ hour: AUTO_CHECKOUT_TIME.hour, minute: AUTO_CHECKOUT_TIME.minute, second: 0, millisecond: 0 })
       .toDate();
     
     for (const record of attendanceRecords) {
       record.checkOut = autoCheckoutTime;
       record.isAutoCheckout = true;
       record.notes = record.notes 
-        ? `${record.notes} | Auto checkout at 6:00 PM` 
-        : 'Auto checkout at 6:00 PM';
+        ? `${record.notes} | Auto checkout at ${AUTO_CHECKOUT_TIME.hour}:${String(AUTO_CHECKOUT_TIME.minute).padStart(2, '0')}` 
+        : `Auto checkout at ${AUTO_CHECKOUT_TIME.hour}:${String(AUTO_CHECKOUT_TIME.minute).padStart(2, '0')}`;
       await record.save();
     }
     
     res.json({ 
-      message: `Auto checked out ${attendanceRecords.length} employees at 6:00 PM`,
+      message: `Auto checked out ${attendanceRecords.length} employees at ${AUTO_CHECKOUT_TIME.hour}:${String(AUTO_CHECKOUT_TIME.minute).padStart(2, '0')}`,
       count: attendanceRecords.length
     });
   } catch (error) {
