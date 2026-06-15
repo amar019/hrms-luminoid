@@ -1,0 +1,196 @@
+@import url(https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap);
+/* Dynamic entrance animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Premium gradient headers */
+.premium-gradient-header {
+  background: linear-gradient(135deg, #0A66C2 0%, #1E3A8A 50%, #0D9488 100%) !important;
+  color: #FFFFFF !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-gradient-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%);
+  animation: rotateGlow 25s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rotateGlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Glassmorphism containers */
+.glass-card {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(226, 232, 240, 0.7) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 12px 28px rgba(10, 102, 194, 0.06) !important;
+  border-color: rgba(10, 102, 194, 0.25) !important;
+}
+
+.glass-card-no-hover {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(226, 232, 240, 0.7) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Card custom variations */
+.premium-metric-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.premium-metric-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #0A66C2, #0D9488);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.premium-metric-card:hover::after {
+  opacity: 1;
+}
+
+/* Fluent list items hover */
+.fluent-hover-item {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fluent-hover-item:hover {
+  transform: translateX(4px);
+  background-color: #F8FAFC;
+}
+
+/* LMS Design System Overrides */
+body {
+  background-color: #F8F9FA;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Tab and Page Navigation Styling */
+.MuiTabs-root {
+  min-height: 48px;
+}
+
+.MuiTab-root {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  color: #64748B !important;
+  transition: color 0.2s ease;
+}
+
+.MuiTab-root.Mui-selected {
+  color: #0A66C2 !important;
+}
+
+/* Card visual styles */
+.MuiCard-root {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.02) !important;
+  border: 1px solid #E2E8F0 !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.MuiCard-root:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.05) !important;
+  border-color: #CBD5E1 !important;
+}
+
+/* Linear Progress Bar Customizations */
+.MuiLinearProgress-root {
+  background-color: #E2E8F0 !important;
+  border-radius: 4px !important;
+}
+
+.MuiLinearProgress-bar {
+  border-radius: 4px !important;
+}
+
+/* Typography elements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', 'Inter', -apple-system, sans-serif !important;
+}
+
+/* Custom layout spacing utilities */
+.lms-page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Carousel and horizontal row scrolls */
+.horizontal-scroll-container {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 3px;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Sticky filtering elements */
+.sticky-filter-bar {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 64px;
+  z-index: 90;
+  background-color: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(8px);
+          backdrop-filter: blur(8px);
+}
+
+
+/*# sourceMappingURL=202.230c5c04.chunk.css.map*/
