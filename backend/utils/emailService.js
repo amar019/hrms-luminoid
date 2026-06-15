@@ -18,8 +18,6 @@ const transporter = nodemailer.createTransport({
 transporter.verify((error) => {
   if (error) {
     console.error('[EMAIL] SMTP connection failed:', error.message);
-  } else {
-    
   }
 });
 
@@ -30,13 +28,13 @@ const sendHolidayNotification = async (employees, holiday) => {
       to: employee.email,
       subject: `Upcoming Holiday: ${holiday.name}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">🎉 Upcoming Holiday Notification</h2>
-          <p>Dear ${employee.name},</p>
-          <p>We hope this message finds you well. We wanted to remind you about an upcoming holiday:</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Upcoming Holiday Notification</h2>
+          <p>Dear ${employee.name || employee.firstName},</p>
+          <p>We wanted to remind you about an upcoming holiday:</p>
           
-          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #007bff; margin: 0 0 10px 0;">${holiday.name}</h3>
+          <div style="margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>Holiday:</strong> ${holiday.name}</p>
             <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(holiday.date).toLocaleDateString('en-US', { 
               weekday: 'long', 
               year: 'numeric', 
@@ -47,7 +45,7 @@ const sendHolidayNotification = async (employees, holiday) => {
             ${holiday.description ? `<p style="margin: 5px 0;"><strong>Description:</strong> ${holiday.description}</p>` : ''}
           </div>
           
-          <p>Please plan your work accordingly and enjoy the holiday!</p>
+          <p>Please plan your work accordingly.</p>
           
           <p>Best regards,<br>HR Team</p>
         </div>
@@ -59,7 +57,6 @@ const sendHolidayNotification = async (employees, holiday) => {
 
   try {
     await Promise.all(emailPromises);
-    // 
   } catch (error) {
     console.error('Error sending holiday notifications:', error);
   }
@@ -81,13 +78,12 @@ const sendLeaveApplicationNotification = async (leaveRequest) => {
         to: recipient.email,
         subject: `Leave Application - ${employee.firstName} ${employee.lastName}`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">📋 New Leave Application</h2>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+            <h2 style="color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px;">New Leave Application</h2>
             <p>Dear ${recipient.firstName},</p>
-            <p>A new leave application has been submitted and requires your approval:</p>
+            <p>A new leave application has been submitted and requires your review:</p>
             
-            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #007bff; margin: 0 0 15px 0;">Leave Details</h3>
+            <div style="margin: 20px 0;">
               <p style="margin: 5px 0;"><strong>Employee:</strong> ${employee.firstName} ${employee.lastName}</p>
               <p style="margin: 5px 0;"><strong>Leave Type:</strong> ${leaveRequest.leaveTypeId?.name || 'N/A'}</p>
               <p style="margin: 5px 0;"><strong>Start Date:</strong> ${new Date(leaveRequest.startDate).toLocaleDateString()}</p>
@@ -105,7 +101,6 @@ const sendLeaveApplicationNotification = async (leaveRequest) => {
     });
     
     await Promise.all(emailPromises);
-    // 
   } catch (error) {
     console.error('Error sending leave application notification:', error);
   }
@@ -123,13 +118,12 @@ const sendLeaveReminderNotification = async (leaveRequest) => {
       to: manager.email,
       subject: `URGENT: Leave Approval Reminder - ${employee.firstName} ${employee.lastName}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #dc3545;">⚠️ URGENT: Leave Approval Reminder</h2>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Leave Approval Reminder</h2>
           <p>Dear ${manager.firstName},</p>
           <p>This is a reminder that the following leave application is still pending your approval and the leave starts tomorrow:</p>
           
-          <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-            <h3 style="color: #856404; margin: 0 0 15px 0;">Pending Leave Application</h3>
+          <div style="margin: 20px 0;">
             <p style="margin: 5px 0;"><strong>Employee:</strong> ${employee.firstName} ${employee.lastName}</p>
             <p style="margin: 5px 0;"><strong>Leave Type:</strong> ${leaveRequest.leaveTypeId?.name || 'N/A'}</p>
             <p style="margin: 5px 0;"><strong>Start Date:</strong> ${new Date(leaveRequest.startDate).toLocaleDateString()}</p>
@@ -138,14 +132,13 @@ const sendLeaveReminderNotification = async (leaveRequest) => {
             <p style="margin: 5px 0;"><strong>Reason:</strong> ${leaveRequest.reason}</p>
           </div>
           
-          <p style="color: #dc3545; font-weight: bold;">Please approve or reject this application immediately as the leave starts tomorrow.</p>
+          <p><strong>Please approve or reject this application as soon as possible.</strong></p>
           <p>Best regards,<br>HR Team</p>
         </div>
       `
     };
     
     await transporter.sendMail(mailOptions);
-    // 
   } catch (error) {
     console.error('Error sending leave reminder notification:', error);
   }
@@ -153,17 +146,15 @@ const sendLeaveReminderNotification = async (leaveRequest) => {
 
 const sendHalfDayLOPNotification = async (user, attendance) => {
   try {
-    let subject, statusMessage, statusColor, requiredHours;
+    let subject, statusMessage, requiredHours;
     
     if (attendance.totalHours < 4) {
       subject = 'LOP - Loss of Pay Due to Insufficient Working Hours';
       statusMessage = 'LOP (Loss of Pay)';
-      statusColor = '#dc3545';
       requiredHours = 'Minimum 4 hours for half day, 8 hours for full day';
     } else if (attendance.totalHours < 8) {
       subject = 'Half Day - Insufficient Working Hours';
       statusMessage = 'Half Day';
-      statusColor = '#ffc107';
       requiredHours = 'Minimum 8 hours for full day';
     }
     
@@ -172,13 +163,12 @@ const sendHalfDayLOPNotification = async (user, attendance) => {
       to: user.email,
       subject: subject,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: ${statusColor};">⚠️ ${statusMessage} Notice</h2>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px;">${statusMessage} Notice</h2>
           <p>Dear ${user.firstName},</p>
           <p>Your attendance for today has been marked as ${statusMessage} due to insufficient working hours:</p>
           
-          <div style="background-color: ${attendance.totalHours < 4 ? '#f8d7da' : '#fff3cd'}; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${statusColor};">
-            <h3 style="color: ${attendance.totalHours < 4 ? '#721c24' : '#856404'}; margin: 0 0 15px 0;">Attendance Details</h3>
+          <div style="margin: 20px 0;">
             <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(attendance.date).toLocaleDateString()}</p>
             <p style="margin: 5px 0;"><strong>Check In:</strong> ${new Date(attendance.checkIn).toLocaleTimeString()}</p>
             <p style="margin: 5px 0;"><strong>Check Out:</strong> ${new Date(attendance.checkOut).toLocaleTimeString()}</p>
@@ -198,7 +188,6 @@ const sendHalfDayLOPNotification = async (user, attendance) => {
     };
     
     await transporter.sendMail(mailOptions);
-    // 
   } catch (error) {
     console.error('Error sending attendance notification:', error);
   }
@@ -213,13 +202,12 @@ const sendLeaveApprovalNotification = async (leaveRequest, approverName, approva
       to: employee.email,
       subject: `Leave Approved - ${new Date(leaveRequest.startDate).toLocaleDateString()} to ${new Date(leaveRequest.endDate).toLocaleDateString()}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #28a745;">✅ Leave Request Approved</h2>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Leave Request Approved</h2>
           <p>Dear ${employee.firstName},</p>
           <p>Your leave request has been approved by ${approverName} (${approvalType}):</p>
           
-          <div style="background-color: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
-            <h3 style="color: #155724; margin: 0 0 15px 0;">Approved Leave Details</h3>
+          <div style="margin: 20px 0;">
             <p style="margin: 5px 0;"><strong>Leave Type:</strong> ${leaveRequest.leaveTypeId?.name || 'N/A'}</p>
             <p style="margin: 5px 0;"><strong>From:</strong> ${new Date(leaveRequest.startDate).toLocaleDateString()}</p>
             <p style="margin: 5px 0;"><strong>To:</strong> ${new Date(leaveRequest.endDate).toLocaleDateString()}</p>
@@ -227,14 +215,13 @@ const sendLeaveApprovalNotification = async (leaveRequest, approverName, approva
             <p style="margin: 5px 0;"><strong>Status:</strong> ${leaveRequest.status.replace('_', ' ')}</p>
           </div>
           
-          <p>You can now proceed with your planned leave. Have a great time!</p>
+          <p>You can now proceed with your planned leave.</p>
           <p>Best regards,<br>HR Team</p>
         </div>
       `
     };
     
     await transporter.sendMail(mailOptions);
-    // 
   } catch (error) {
     console.error('Error sending leave approval notification:', error);
   }
@@ -258,14 +245,8 @@ const sendAnnouncementNotification = async (announcement, creatorName) => {
     const employees = await User.find(filter).select('email firstName lastName');
 
     if (employees.length === 0) {
-      
       return;
     }
-
-    const priorityColor = announcement.priority === 'HIGH' ? '#dc3545' :
-                          announcement.priority === 'MEDIUM' ? '#f59e0b' : '#10b981';
-    const priorityBg    = announcement.priority === 'HIGH' ? '#fef2f2' :
-                          announcement.priority === 'MEDIUM' ? '#fffbeb' : '#ecfdf5';
 
     const batchSize = 5;
     for (let i = 0; i < employees.length; i += batchSize) {
@@ -277,25 +258,22 @@ const sendAnnouncementNotification = async (announcement, creatorName) => {
           to: employee.email,
           subject: `[${announcement.priority}] ${announcement.title}`,
           html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 0;">
-              <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 28px 36px; border-radius: 12px 12px 0 0;">
-                <h1 style="color: #fff; margin: 0; font-size: 20px; font-weight: 700;">📢 New Announcement</h1>
-                <p style="color: rgba(255,255,255,0.7); margin: 6px 0 0; font-size: 13px;">From: ${creatorName}</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+              <h2 style="color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px;">New Announcement</h2>
+              <p>Dear ${employee.firstName},</p>
+              
+              <div style="margin: 20px 0;">
+                <h3 style="margin: 0 0 10px 0;">${announcement.title}</h3>
+                <p style="margin: 0; line-height: 1.5;">${announcement.content}</p>
               </div>
-              <div style="background: #fff; margin: 0; padding: 28px 36px; border: 1px solid #e2e8f0; border-top: none;">
-                <p style="margin: 0 0 16px; color: #374151; font-size: 15px;">Dear <strong>${employee.firstName}</strong>,</p>
-                <div style="background: ${priorityBg}; border-left: 4px solid ${priorityColor}; border-radius: 0 8px 8px 0; padding: 20px 24px; margin-bottom: 20px;">
-                  <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 18px;">${announcement.title}</h2>
-                  <p style="color: #475569; margin: 0; font-size: 14px; line-height: 1.7;">${announcement.content}</p>
-                </div>
-                <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: #64748b;">
-                  <span><strong>Priority:</strong> <span style="color: ${priorityColor}; font-weight: 700;">${announcement.priority}</span></span>
-                  ${announcement.expiryDate ? `<span><strong>Valid until:</strong> ${new Date(announcement.expiryDate).toLocaleDateString()}</span>` : ''}
-                </div>
+              
+              <div style="margin-top: 20px;">
+                <p style="margin: 5px 0;"><strong>From:</strong> ${creatorName}</p>
+                <p style="margin: 5px 0;"><strong>Priority:</strong> ${announcement.priority}</p>
+                ${announcement.expiryDate ? `<p style="margin: 5px 0;"><strong>Valid until:</strong> ${new Date(announcement.expiryDate).toLocaleDateString()}</p>` : ''}
               </div>
-              <div style="text-align: center; padding: 16px 36px 28px; color: #94a3b8; font-size: 12px;">
-                <p style="margin: 0;">This is an automated notification from Luminoid HRMS.</p>
-              </div>
+              
+              <p style="margin-top: 30px;">Best regards,<br>Luminoid HRMS</p>
             </div>
           `
         };
@@ -310,8 +288,6 @@ const sendAnnouncementNotification = async (announcement, creatorName) => {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
-
-    
   } catch (error) {
     console.error('Error sending announcement notification:', error);
   }
@@ -322,56 +298,21 @@ const sendBirthdayWishes = async (employee) => {
     const mailOptions = {
       from: process.env.SMTP_FROM || 'noreply@company.com',
       to: employee.email,
-      subject: `🎉 Happy Birthday ${employee.firstName}! 🎂`,
+      subject: `Happy Birthday ${employee.firstName}!`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 0; border-radius: 15px; overflow: hidden;">
-          <div style="background: white; margin: 20px; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-            <div style="background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); padding: 30px; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🎉 HAPPY BIRTHDAY! 🎉</h1>
-              <div style="font-size: 4em; margin: 10px 0;">🎂</div>
-            </div>
-            
-            <div style="padding: 30px; text-align: center;">
-              <h2 style="color: #333; margin: 0 0 20px 0; font-size: 1.8em;">Dear ${employee.firstName},</h2>
-              
-              <div style="background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%); color: white; padding: 25px; border-radius: 10px; margin: 20px 0;">
-                <p style="margin: 0; font-size: 1.2em; line-height: 1.6;">🌟 Today is your special day! 🌟</p>
-                <p style="margin: 15px 0 0 0; font-size: 1.1em;">We hope your birthday is filled with happiness, laughter, and wonderful memories!</p>
-              </div>
-              
-              <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #28a745;">
-                <p style="margin: 0; color: #333; font-size: 1.1em; line-height: 1.6;">
-                  🎈 On behalf of the entire team, we wish you a fantastic birthday and a year ahead filled with success, joy, and prosperity! 🎈
-                </p>
-              </div>
-              
-              <div style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #fd79a8 0%, #fdcb6e 100%); border-radius: 10px;">
-                <h3 style="color: white; margin: 0 0 15px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">🎁 Birthday Wishes from Your Work Family! 🎁</h3>
-                <p style="color: white; margin: 0; font-size: 1.1em; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">May this new year of your life bring you endless opportunities and amazing adventures!</p>
-              </div>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <div style="display: inline-block; background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%); color: white; padding: 15px 30px; border-radius: 25px; font-size: 1.2em; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
-                  🎊 ENJOY YOUR SPECIAL DAY! 🎊
-                </div>
-              </div>
-              
-              <div style="border-top: 2px solid #e9ecef; padding-top: 20px; margin-top: 30px;">
-                <p style="color: #666; margin: 0; font-style: italic;">With warmest birthday wishes,</p>
-                <p style="color: #333; margin: 5px 0 0 0; font-weight: bold; font-size: 1.1em;">Your Amazing Team & HR Department</p>
-              </div>
-            </div>
-          </div>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Happy Birthday!</h2>
+          <p>Dear ${employee.firstName},</p>
           
-          <div style="text-align: center; padding: 20px; color: white;">
-            <p style="margin: 0; opacity: 0.8;">🎂 Have a wonderful birthday celebration! 🎂</p>
-          </div>
+          <p>On behalf of the entire team, we wish you a very Happy Birthday!</p>
+          <p>We hope you have a wonderful day and a year filled with success and happiness.</p>
+          
+          <p>Best wishes,<br>Your Team & HR Department</p>
         </div>
       `
     };
     
     await transporter.sendMail(mailOptions);
-    // 
   } catch (error) {
     console.error('Error sending birthday wishes:', error);
   }
@@ -379,26 +320,27 @@ const sendBirthdayWishes = async (employee) => {
 
 const sendWelcomeEmail = async ({ to, name, password, loginUrl }) => {
   try {
+    // Ensuring the correct URL is sent regardless of environment
+    const overrideLoginUrl = 'https://hrms-krishigyanai.netlify.app/login';
+    
     const mailOptions = {
       from: process.env.SMTP_FROM || 'noreply@company.com',
       to: to,
-      subject: 'Welcome to the Team! 🎉',
+      subject: 'Welcome to the Team',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #28a745;">🎉 Welcome Aboard!</h2>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Welcome Aboard!</h2>
           <p>Dear ${name},</p>
-          <p>Welcome to our team! We're excited to have you on board.</p>
+          <p>Welcome to our team. We're excited to have you on board.</p>
           
-          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #007bff; margin: 0 0 15px 0;">Your Login Credentials</h3>
+          <div style="margin: 20px 0;">
+            <h3 style="color: #333; margin: 0 0 10px 0;">Your Login Credentials</h3>
             <p style="margin: 5px 0;"><strong>Email:</strong> ${to}</p>
-            <p style="margin: 5px 0;"><strong>Temporary Password:</strong> <code style="background: #e9ecef; padding: 5px 10px; border-radius: 4px;">${password}</code></p>
-            <p style="margin: 15px 0 5px 0;"><strong>Login URL:</strong> <a href="${loginUrl}">${loginUrl}</a></p>
+            <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${password}</p>
+            <p style="margin: 15px 0 5px 0;"><strong>Login URL:</strong> <a href="${overrideLoginUrl}">${overrideLoginUrl}</a></p>
           </div>
           
-          <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0; color: #856404;">⚠️ <strong>Important:</strong> Please change your password after first login for security.</p>
-          </div>
+          <p><strong>Important:</strong> Please change your password after your first login for security.</p>
           
           <p>If you have any questions, feel free to reach out to HR.</p>
           <p>Best regards,<br>HR Team</p>
@@ -417,29 +359,16 @@ const sendExpenseDeadlineReminder = async (employees, daysLeft, lastDay, billing
   const [year, month] = billingMonth.split('-');
   const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
 
-  // Handle different urgency levels based on days left
-  let urgencyColor, urgencyBg, urgencyBorder, urgencyLabel, daysLeftText;
+  let urgencyLabel, daysLeftText;
   
   if (daysLeft === 0) {
-    // Today is the last day
-    urgencyColor = '#dc2626';
-    urgencyBg = '#fee2e2';
-    urgencyBorder = '#fca5a5';
-    urgencyLabel = '🚨 LAST DAY TODAY!';
+    urgencyLabel = 'LAST DAY TODAY';
     daysLeftText = 'today (last day)';
   } else if (daysLeft === 1) {
-    // Tomorrow is the last day
-    urgencyColor = '#dc2626';
-    urgencyBg = '#fee2e2';
-    urgencyBorder = '#fca5a5';
-    urgencyLabel = '🚨 LAST DAY TOMORROW!';
+    urgencyLabel = 'LAST DAY TOMORROW';
     daysLeftText = '1 day';
   } else {
-    // 2 or more days left
-    urgencyColor = '#ea580c';
-    urgencyBg = '#ffedd5';
-    urgencyBorder = '#fdba74';
-    urgencyLabel = `⚠️ Only ${daysLeft} Days Left!`;
+    urgencyLabel = `Only ${daysLeft} Days Left`;
     daysLeftText = `${daysLeft} days`;
   }
 
@@ -449,65 +378,32 @@ const sendExpenseDeadlineReminder = async (employees, daysLeft, lastDay, billing
       to: employee.email,
       subject: `[Action Required] Submit Your ${monthName} Expenses — ${daysLeft === 0 ? 'Last Day' : daysLeftText + ' Left'}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 0;">
-
-          <!-- Header -->
-          <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 32px 40px; border-radius: 12px 12px 0 0;">
-            <h1 style="color: #fff; margin: 0; font-size: 22px; font-weight: 700;">💼 Expense Submission Reminder</h1>
-            <p style="color: rgba(255,255,255,0.6); margin: 6px 0 0; font-size: 14px;">${monthName} — Deadline Alert</p>
-          </div>
-
-          <!-- Urgency Banner -->
-          <div style="background: ${urgencyBg}; border: 1.5px solid ${urgencyBorder}; border-radius: 8px; margin: 24px 40px 0; padding: 16px 20px;">
-            <p style="margin: 0 0 8px; color: ${urgencyColor}; font-size: 16px; font-weight: 700;">${urgencyLabel}</p>
-            <p style="margin: 0; color: ${urgencyColor}; font-size: 13px;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Expense Submission Reminder</h2>
+          <p>Dear ${employee.firstName},</p>
+          
+          <p>This is a reminder to submit all your pending expense claims for <strong>${monthName}</strong>.</p>
+          
+          <div style="margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>Status:</strong> ${urgencyLabel}</p>
+            <p style="margin: 5px 0;">
               ${daysLeft === 0 
-                ? `Today is the <strong>last day</strong> to submit expenses for <strong>${monthName}</strong>. Submit before midnight!` 
-                : `The expense submission window for <strong>${monthName}</strong> closes on the <strong>${lastDay}th</strong>. After that, no expenses can be submitted or claimed.`
+                ? `Today is the last day to submit expenses for ${monthName}. Submit before midnight.` 
+                : `The expense submission window for ${monthName} closes on the ${lastDay}th. After that, no expenses can be submitted or claimed.`
               }
             </p>
           </div>
-
-          <!-- Body -->
-          <div style="background: #fff; margin: 16px 40px 0; border-radius: 8px; padding: 24px; border: 1px solid #e2e8f0;">
-            <p style="margin: 0 0 16px; color: #334155; font-size: 15px;">Dear <strong>${employee.firstName}</strong>,</p>
-            <p style="margin: 0 0 16px; color: #475569; font-size: 14px; line-height: 1.6;">
-              This is a reminder to submit all your pending expense claims for <strong>${monthName}</strong>.
-              You have <strong style="color: ${urgencyColor};">${daysLeft === 0 ? 'until midnight today' : daysLeftText}</strong> remaining.
-            </p>
-
-            <!-- Checklist -->
-            <div style="background: #f8fafc; border-radius: 8px; padding: 16px 20px; margin: 16px 0;">
-              <p style="margin: 0 0 10px; font-weight: 700; color: #1e293b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Before the deadline, make sure you have:</p>
-              <ul style="margin: 0; padding-left: 20px; color: #475569; font-size: 14px; line-height: 2;">
-                <li>Submitted all expense claims for ${monthName}</li>
-                <li>Uploaded bills/receipts for each expense</li>
-                <li>Verified the amounts and categories are correct</li>
-              </ul>
-            </div>
-
-            <div style="background: #fee2e2; border-radius: 8px; padding: 14px 18px; margin: 16px 0; border-left: 4px solid #dc2626;">
-              <p style="margin: 0; color: #991b1b; font-size: 13px; font-weight: 600;">
-                ❌ After ${daysLeft === 0 ? 'midnight today' : `${lastDay}th ${monthName}`}, the system will be locked and no new expenses can be submitted or claimed for this month.
-              </p>
-            </div>
-          </div>
-
-          <!-- CTA -->
-          <div style="text-align: center; margin: 24px 40px;">
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/expenses"
-               style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: #fff; text-decoration: none;
-                      padding: 14px 32px; border-radius: 8px; font-size: 15px; font-weight: 700;
-                      box-shadow: 0 4px 12px rgba(16,185,129,0.35);">
-              Submit My Expenses Now →
-            </a>
-          </div>
-
-          <!-- Footer -->
-          <div style="text-align: center; padding: 20px 40px 32px; color: #94a3b8; font-size: 12px;">
-            <p style="margin: 0;">This is an automated reminder from your HRMS. Please do not reply to this email.</p>
-            <p style="margin: 6px 0 0;">© ${new Date().getFullYear()} Luminoid HRMS</p>
-          </div>
+          
+          <p><strong>Before the deadline, make sure you have:</strong></p>
+          <ul>
+            <li>Submitted all expense claims for ${monthName}</li>
+            <li>Uploaded bills/receipts for each expense</li>
+            <li>Verified the amounts and categories are correct</li>
+          </ul>
+          
+          <p>Please submit your expenses through the HRMS platform as soon as possible.</p>
+          
+          <p>Best regards,<br>HR Team</p>
         </div>
       `
     };

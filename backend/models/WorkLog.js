@@ -10,6 +10,10 @@ const workLogSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  taskId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Task'
+  },
   workDone: {
     type: String,
     required: true
@@ -40,6 +44,15 @@ const workLogSchema = new mongoose.Schema({
     type: String,
     enum: ['COMPLETED', 'IN_PROGRESS', 'PENDING', 'ON_HOLD', 'BLOCKED', 'CANCELLED'],
     default: 'COMPLETED'
+  },
+  approvalStatus: {
+    type: String,
+    enum: ['PENDING', 'APPROVED', 'REJECTED'],
+    default: 'PENDING'
+  },
+  reviewer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   project: {
     type: String

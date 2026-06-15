@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Badge, Button, Form, Row, Col, Card, Modal } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -84,7 +84,7 @@ const LeaveHistory = () => {
       }));
     } catch (error) {
       console.error('Error fetching leaves:', error);
-      toast.error('Error fetching leave history');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error fetching leave history' });
     } finally {
       setLoading(false);
     }
@@ -108,10 +108,10 @@ const LeaveHistory = () => {
     if (result.isConfirmed) {
       try {
         await api.delete(`/api/leave-requests/${leave._id}`);
-        toast.success('Leave request deleted successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Leave request deleted successfully', timer: 2000, showConfirmButton: false });
         fetchAllLeaves();
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Error deleting leave request');
+        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error deleting leave request' });
       }
     }
   };
@@ -169,7 +169,7 @@ const LeaveHistory = () => {
 
   const handleBalanceSubmit = async () => {
     if (!balanceUpdate.leaveTypeId || balanceUpdate.allocated <= 0) {
-      toast.error('Please select leave type and enter valid allocation');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Please select leave type and enter valid allocation' });
       return;
     }
 
@@ -180,11 +180,11 @@ const LeaveHistory = () => {
         allocated: Number(balanceUpdate.allocated),
         year: new Date().getFullYear()
       });
-      toast.success('Leave balance updated successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Leave balance updated successfully', timer: 2000, showConfirmButton: false });
       setShowBalanceModal(false);
       fetchEmployeeLeaveData();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error updating leave balance');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error updating leave balance' });
     }
   };
 

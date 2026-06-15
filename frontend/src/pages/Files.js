@@ -12,7 +12,7 @@ import {
 } from "react-bootstrap";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
-import { toast } from "react-toastify";
+
 import Swal from 'sweetalert2';
 
 const Files = () => {
@@ -140,7 +140,7 @@ const Files = () => {
       }
     } catch (error) {
       console.error("Error fetching files:", error);
-      toast.error("Error fetching files");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Error fetching files" });
     } finally {
       setLoading(false);
     }
@@ -205,9 +205,9 @@ const Files = () => {
         setActiveFolder(res.data);
         if (orgActiveFolder?.folder?._id === uploadFolderId) setOrgActiveFolder(res.data);
       }
-      toast.success("File uploaded successfully");
+      Swal.fire({ icon: 'success', title: 'Success', text: "File uploaded successfully", timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error uploading file");
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || "Error uploading file" });
     } finally {
       setUploading(false);
     }
@@ -228,9 +228,9 @@ const Files = () => {
       try {
         await api.delete(`/api/files/${fileId}`);
         fetchFiles();
-        toast.success("File deleted successfully");
+        Swal.fire({ icon: 'success', title: 'Success', text: "File deleted successfully", timer: 2000, showConfirmButton: false });
       } catch (error) {
-        toast.error(error.response?.data?.message || "Error deleting file");
+        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || "Error deleting file" });
       }
     }
   };
@@ -249,8 +249,8 @@ const Files = () => {
         await api.post('/api/files/bulk-delete', { fileIds: orgSelected });
         setOrgSelected([]);
         fetchFiles();
-        toast.success(`${orgSelected.length} files deleted`);
-      } catch (e) { toast.error('Error deleting files'); }
+        Swal.fire({ icon: 'success', title: 'Success', text: `${orgSelected.length} files deleted`, timer: 2000, showConfirmButton: false });
+      } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: 'Error deleting files' }); }
     }
   };
 
@@ -258,7 +258,7 @@ const Files = () => {
     try {
       const res = await api.get(`/api/folders/${folder._id}/files`);
       setOrgActiveFolder(res.data);
-    } catch (e) { toast.error('Error opening folder'); }
+    } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: 'Error opening folder' }); }
   };
 
   const openFolder = async (folder) => {
@@ -266,7 +266,7 @@ const Files = () => {
       const res = await api.get(`/api/folders/${folder._id}/files`);
       setActiveFolder(res.data);
       setActiveTab('folders');
-    } catch (e) { toast.error('Error opening folder'); }
+    } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: 'Error opening folder' }); }
   };
 
   const handleCreateFolder = async () => {
@@ -279,17 +279,17 @@ const Files = () => {
       };
       if (editingFolder) {
         await api.put(`/api/folders/${editingFolder._id}`, payload);
-        toast.success('Folder updated');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Folder updated', timer: 2000, showConfirmButton: false });
       } else {
         await api.post('/api/folders', payload);
-        toast.success('Folder created');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Folder created', timer: 2000, showConfirmButton: false });
       }
       setShowFolderModal(false);
       setFolderForm(defaultFolderForm);
       setEditingFolder(null);
       setFolderStep(1);
       fetchFolders();
-    } catch (err) { toast.error(err.response?.data?.message || 'Error saving folder'); }
+    } catch (err) { Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Error saving folder' }); }
   };
 
   const openEditFolder = (folder, e) => {
@@ -341,7 +341,7 @@ const Files = () => {
       setPasswordUnlocked(prev => ({ ...prev, [folder._id]: true }));
       setFolderPasswordInput('');
       openFolder(folder);
-    } catch (e) { toast.error('Incorrect password'); }
+    } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: 'Incorrect password' }); }
   };
 
   const handleDeleteFolder = async (folderId) => {
@@ -351,8 +351,8 @@ const Files = () => {
         await api.delete(`/api/folders/${folderId}`);
         if (activeFolder?.folder?._id === folderId) setActiveFolder(null);
         fetchFolders();
-        toast.success('Folder deleted');
-      } catch (e) { toast.error('Error deleting folder'); }
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Folder deleted', timer: 2000, showConfirmButton: false });
+      } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: 'Error deleting folder' }); }
     }
   };
 
@@ -363,8 +363,8 @@ const Files = () => {
       setAssignFile(null);
       fetchFiles();
       if (activeFolder) openFolder(activeFolder.folder);
-      toast.success('File assigned to folder');
-    } catch (e) { toast.error('Error assigning file'); }
+      Swal.fire({ icon: 'success', title: 'Success', text: 'File assigned to folder', timer: 2000, showConfirmButton: false });
+    } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: 'Error assigning file' }); }
   };
 
   const handlePrint = () => {
@@ -386,7 +386,7 @@ const Files = () => {
       const response = await api.get(`/api/files/download/${file._id}`);
       setPreviewUrl(response.data.downloadUrl);
     } catch (error) {
-      toast.error("Error loading preview");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Error loading preview" });
     } finally {
       setPreviewLoading(false);
     }
@@ -415,7 +415,7 @@ const Files = () => {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Download error:", error);
-      toast.error("Error downloading file");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Error downloading file" });
     }
   };
 
@@ -441,9 +441,9 @@ const Files = () => {
       setAckComments("");
       setSelectedFileForAck(null);
       fetchFiles();
-      toast.success("Document acknowledged successfully");
+      Swal.fire({ icon: 'success', title: 'Success', text: "Document acknowledged successfully", timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error("Error acknowledging document");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Error acknowledging document" });
     }
   };
 
@@ -462,9 +462,9 @@ const Files = () => {
       try {
         await api.post('/api/files/submit-my-documents');
         fetchFiles();
-        toast.success('Documents submitted successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Documents submitted successfully', timer: 2000, showConfirmButton: false });
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Error submitting documents');
+        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error submitting documents' });
       }
     }
   };
@@ -473,9 +473,9 @@ const Files = () => {
     try {
       await api.put(`/api/files/unlock/${employeeId}`);
       fetchFiles();
-      toast.success('Documents unlocked');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Documents unlocked', timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error('Error unlocking documents');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error unlocking documents' });
     }
   };
 
@@ -483,9 +483,9 @@ const Files = () => {
     try {
       await api.put(`/api/files/lock/${employeeId}`);
       fetchFiles();
-      toast.success('Documents locked');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Documents locked', timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error('Error locking documents');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error locking documents' });
     }
   };
 
@@ -575,15 +575,15 @@ const Files = () => {
       setSelectedFileForVerify(null);
       setVerifyForm({ verificationStatus: 'VERIFIED' });
       fetchFiles();
-      toast.success('Document verification updated');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Document verification updated', timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error('Error updating verification');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error updating verification' });
     }
   };
 
   const handleAutoGenerateSalarySlips = async () => {
     if (!autoGenForm.templateFileId) {
-      toast.error('Please select a template file');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Please select a template file' });
       return;
     }
     
@@ -608,9 +608,9 @@ const Files = () => {
         templateFileId: ''
       });
       fetchFiles();
-      toast.success(`Successfully generated ${response.data.count} salary slips`);
+      Swal.fire({ icon: 'success', title: 'Success', text: `Successfully generated ${response.data.count} salary slips`, timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error generating salary slips');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error generating salary slips' });
     } finally {
       setGenerating(false);
     }
@@ -627,7 +627,7 @@ const Files = () => {
 
   const handleUploadTemplate = async () => {
     if (!templateUploadFile) {
-      toast.error('Please select a file to upload');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Please select a file to upload' });
       return;
     }
 
@@ -654,10 +654,10 @@ const Files = () => {
       setAutoGenForm(prev => ({ ...prev, templateFileId: newFile._id }));
       setTemplateUploadFile(null);
       
-      toast.success('Template uploaded successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Template uploaded successfully', timer: 2000, showConfirmButton: false });
       fetchFiles();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error uploading template');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error uploading template' });
     } finally {
       setUploadingTemplate(false);
     }
@@ -2022,7 +2022,7 @@ const Files = () => {
                                   await api.post(`/api/folders/${folder._id}/verify-password`, { password: result.value });
                                   setPasswordUnlocked(prev => ({ ...prev, [folder._id]: true }));
                                   openFolder(folder);
-                                } catch (e) { toast.error('Incorrect password'); }
+                                } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: 'Incorrect password' }); }
                               }
                             });
                             return;

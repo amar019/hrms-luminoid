@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Badge, Spinner, Alert, Form, InputGroup, Button, Table, Modal } from 'react-bootstrap';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 import Swal from 'sweetalert2';
 
 const TeamCalendar = () => {
@@ -67,7 +67,7 @@ const TeamCalendar = () => {
     } catch (err) {
       console.error('Error fetching team calendar:', err);
       setError('Failed to load team calendar');
-      toast.error('Failed to load team calendar');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load team calendar' });
     } finally {
       setLoading(false);
     }
@@ -133,7 +133,7 @@ const TeamCalendar = () => {
       setEmployeeDetails(response.data);
     } catch (err) {
       console.error('Error fetching employee details:', err);
-      toast.error(err.response?.data?.message || 'Failed to load employee details');
+      Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Failed to load employee details' });
       setEmployeeDetails(null);
     } finally {
       setLoadingEmployee(false);
@@ -240,17 +240,17 @@ const TeamCalendar = () => {
     try {
       if (editingHoliday) {
         await api.put(`/api/holidays/${editingHoliday._id}`, holidayForm);
-        toast.success('Holiday updated successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Holiday updated successfully', timer: 2000, showConfirmButton: false });
       } else {
         await api.post('/api/holidays', holidayForm);
-        toast.success('Holiday added successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Holiday added successfully', timer: 2000, showConfirmButton: false });
       }
       setShowHolidayModal(false);
       setHolidayForm({ name: '', date: '', type: 'FESTIVAL', description: '' });
       setEditingHoliday(null);
       fetchPublicHolidays();
     } catch (error) {
-      toast.error(editingHoliday ? 'Error updating holiday' : 'Error adding holiday');
+      Swal.fire({ icon: 'error', title: 'Error', text: editingHoliday ? 'Error updating holiday' : 'Error adding holiday' });
     }
   };
 
@@ -279,10 +279,10 @@ const TeamCalendar = () => {
     if (result.isConfirmed) {
       try {
         await api.delete(`/api/holidays/${holidayId}`);
-        toast.success('Holiday deleted successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Holiday deleted successfully', timer: 2000, showConfirmButton: false });
         fetchPublicHolidays();
       } catch (error) {
-        toast.error('Error deleting holiday');
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Error deleting holiday' });
       }
     }
   };

@@ -1,10 +1,11 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Badge, Button, Form, Modal } from 'react-bootstrap';
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({ iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'), iconUrl: require('leaflet/dist/images/marker-icon.png'), shadowUrl: require('leaflet/dist/images/marker-shadow.png') });
@@ -37,7 +38,7 @@ const MyFieldVisits = () => {
         return d >= new Date(startDate) && d <= new Date(endDate + 'T23:59:59');
       });
       setVisits(filtered);
-    } catch { toast.error('Failed to load visits'); }
+    } catch { Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load visits' }); }
     finally { setLoading(false); }
   };
 

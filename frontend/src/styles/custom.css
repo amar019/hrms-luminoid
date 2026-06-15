@@ -647,17 +647,24 @@ body {
 
 /* Loading Skeletons */
 .skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
   background-size: 200% 100%;
-  animation: loading 1.5s infinite;
+  animation: loading 1.8s ease-in-out infinite;
+  opacity: 0.8;
+  transition: opacity 0.3s ease-in-out;
 }
 
 @keyframes loading {
   0% {
     background-position: 200% 0;
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.55;
   }
   100% {
     background-position: -200% 0;
+    opacity: 0.8;
   }
 }
 
@@ -1946,4 +1953,16 @@ body {
 
 .department-scroll::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+/* Global Scrollbar Hiding overrides */
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+html, body, .main-content, .desktop-content, .jira-main, .d-flex {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
 }

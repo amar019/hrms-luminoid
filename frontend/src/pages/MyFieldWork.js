@@ -1,6 +1,7 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect } from "react";
 import { Card, Button, Badge, Row, Col, Modal, Form } from "react-bootstrap";
-import { toast } from "react-toastify";
+
 import api from "../utils/api";
 
 const MyFieldWork = () => {
@@ -48,7 +49,7 @@ const MyFieldWork = () => {
       setTodayVisits(res.data);
       calculateStats(res.data);
     } catch (error) {
-      toast.error("Failed to load visits");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Failed to load visits" });
     } finally {
       setLoading(false);
     }
@@ -68,7 +69,7 @@ const MyFieldWork = () => {
 
   const handleCheckIn = async (visitId) => {
     if (!navigator.geolocation) {
-      toast.error("GPS not supported on this device");
+      Swal.fire({ icon: 'error', title: 'Error', text: "GPS not supported on this device" });
       return;
     }
 
@@ -82,10 +83,10 @@ const MyFieldWork = () => {
             lng,
             accuracy,
           });
-          toast.success("✅ Checked in successfully!");
+          Swal.fire({ icon: 'success', title: 'Success', text: "✅ Checked in successfully!", timer: 2000, showConfirmButton: false });
           fetchTodayVisits();
         } catch (error) {
-          toast.error(error.response?.data?.message || "Check-in failed");
+          Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || "Check-in failed" });
         }
       },
       (error) => {
@@ -97,7 +98,7 @@ const MyFieldWork = () => {
         } else {
           msg += "Please try again.";
         }
-        toast.error(msg);
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
@@ -110,7 +111,7 @@ const MyFieldWork = () => {
 
   const handleCheckOut = async () => {
     if (!navigator.geolocation) {
-      toast.error("GPS not supported on this device");
+      Swal.fire({ icon: 'error', title: 'Error', text: "GPS not supported on this device" });
       return;
     }
 
@@ -130,7 +131,7 @@ const MyFieldWork = () => {
             outcome
           );
 
-          toast.success("✅ Visit completed!");
+          Swal.fire({ icon: 'success', title: 'Success', text: "✅ Visit completed!", timer: 2000, showConfirmButton: false });
           setShowCheckOutModal(false);
           setOutcome({
             status: "NEUTRAL",
@@ -140,11 +141,11 @@ const MyFieldWork = () => {
           });
           fetchTodayVisits();
         } catch (error) {
-          toast.error(error.response?.data?.message || "Check-out failed");
+          Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || "Check-out failed" });
         }
       },
       (error) => {
-        toast.error("Unable to get location for check-out");
+        Swal.fire({ icon: 'error', title: 'Error', text: "Unable to get location for check-out" });
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
@@ -152,7 +153,7 @@ const MyFieldWork = () => {
 
   const handleQuickLog = async () => {
     if (!quickLog.clientName.trim()) {
-      toast.error("Client name is required");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Client name is required" });
       return;
     }
 
@@ -181,7 +182,7 @@ const MyFieldWork = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("✅ Visit logged successfully!");
+      Swal.fire({ icon: 'success', title: 'Success', text: "✅ Visit logged successfully!", timer: 2000, showConfirmButton: false });
       setShowQuickLogModal(false);
       setQuickLog({
         clientName: "",
@@ -195,7 +196,7 @@ const MyFieldWork = () => {
       setQuickLogGps(null);
       fetchTodayVisits();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to log visit");
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || "Failed to log visit" });
     } finally {
       setQuickLogSubmitting(false);
     }
@@ -222,9 +223,9 @@ const MyFieldWork = () => {
       const address = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
       setQuickLogGps({ lat, lng, address });
-      toast.success("✅ Location captured!");
+      Swal.fire({ icon: 'success', title: 'Success', text: "✅ Location captured!", timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error("Unable to get location. Please try again.");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Unable to get location. Please try again." });
     } finally {
       setGpsLoading(false);
     }
@@ -241,7 +242,7 @@ const MyFieldWork = () => {
 
     // Auto-capture GPS if not already captured
     if (!quickLogGps) {
-      toast.info("📍 Capturing location...");
+      Swal.fire({ icon: 'info', title: 'Info', text: "📍 Capturing location..." });
       captureGPS();
     }
   };
@@ -264,10 +265,10 @@ const MyFieldWork = () => {
     setDeletingId(visitId);
     try {
       await api.delete(`/api/field-visits/${visitId}`);
-      toast.success('Visit deleted');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Visit deleted', timer: 2000, showConfirmButton: false });
       fetchTodayVisits();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete visit');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to delete visit' });
     } finally {
       setDeletingId(null);
     }

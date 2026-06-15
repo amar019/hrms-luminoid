@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Card, Form, Button, Row, Col, Badge } from 'react-bootstrap';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 
 const OUTCOME_OPTIONS = [
   { value: 'POSITIVE',       label: 'Positive',          icon: 'thumbs-up',        color: '#10b981' },
@@ -117,14 +117,14 @@ const SelfReportVisit = () => {
       console.log('✅ GPS captured:', pos);
       const address = await getAddress(pos.lat, pos.lng);
       setGps({ ...pos, address });
-      toast.success('✅ Location captured!', { autoClose: 3000 });
+      Swal.fire({ icon: 'success', title: 'Success', text: '✅ Location captured!', timer: 2000, showConfirmButton: false });
       console.log('📍 Location saved with address:', address);
     } catch (error) {
       console.error('❌ GPS Error Code:', error.code, 'Message:', error.message);
       
       if (error.code === 1) {
         console.error('🔒 PERMISSION DENIED - User rejected location access');
-        toast.error('🔒 Permission Denied - Allow location access in Settings', { autoClose: 7000 });
+        Swal.fire({ icon: 'error', title: 'Error', text: '🔒 Permission Denied - Allow location access in Settings' });
         // Show alert with steps
         setTimeout(() => {
           alert('📍 HOW TO ENABLE LOCATION:\n\n' +
@@ -139,16 +139,16 @@ const SelfReportVisit = () => {
         }, 500);
       } else if (error.code === 2) {
         console.error('📡 GPS UNAVAILABLE - Location info unavailable');
-        toast.error('📡 GPS unavailable - Move to open area', { autoClose: 6000 });
+        Swal.fire({ icon: 'error', title: 'Error', text: '📡 GPS unavailable - Move to open area' });
       } else if (error.code === 3) {
         console.error('⏱️ TIMEOUT - GPS request took too long');
-        toast.error('⏱️ GPS timeout - Try again in open area', { autoClose: 5000 });
+        Swal.fire({ icon: 'error', title: 'Error', text: '⏱️ GPS timeout - Try again in open area' });
       } else if (error.code === 0) {
         console.error('⚠️ NOT SUPPORTED - Geolocation API not available');
-        toast.error('⚠️ GPS not supported on this device', { autoClose: 5000 });
+        Swal.fire({ icon: 'error', title: 'Error', text: '⚠️ GPS not supported on this device' });
       } else {
         console.error('❓ UNKNOWN ERROR');
-        toast.error(`❌ Location error: ${error.message}`, { autoClose: 5000 });
+        Swal.fire({ icon: 'error', title: 'Error', text: `❌ Location error: ${error.message}` });
       }
     } finally {
       setGpsLoading(false);
@@ -164,22 +164,22 @@ const SelfReportVisit = () => {
     
     // Capture GPS automatically if not already captured
     if (!gps) {
-      const loadingToast = toast.info('📍 Capturing location for photo...', { autoClose: false });
+      const loadingToast = Swal.fire({ icon: 'info', title: 'Info', text: '📍 Capturing location for photo...' });
       try {
         console.log('🔵 Auto-capturing GPS for photo...');
         const pos = await getLocation();
         console.log('✅ GPS captured for photo:', pos);
         const address = await getAddress(pos.lat, pos.lng);
         setGps({ ...pos, address });
-        toast.dismiss(loadingToast);
-        toast.success('✅ Location captured with photo!', { autoClose: 3000 });
+        Swal.close();
+        Swal.fire({ icon: 'success', title: 'Success', text: '✅ Location captured with photo!', timer: 2000, showConfirmButton: false });
         console.log('📍 Location saved with address:', address);
       } catch (error) {
-        toast.dismiss(loadingToast);
+        Swal.close();
         console.error('❌ GPS Error Code:', error.code, 'Message:', error.message);
         
         if (error.code === 1) {
-          toast.error('🔒 Location permission denied. Please enable location access.', { autoClose: 7000 });
+          Swal.fire({ icon: 'error', title: 'Error', text: '🔒 Location permission denied. Please enable location access.' });
           setTimeout(() => {
             alert('📍 HOW TO ENABLE LOCATION:\n\n' +
               '📱 iOS (Safari):\n' +
@@ -192,11 +192,11 @@ const SelfReportVisit = () => {
               '3. Select "Allow"');
           }, 500);
         } else if (error.code === 2) {
-          toast.error('📡 GPS unavailable - Move to open area and try again', { autoClose: 6000 });
+          Swal.fire({ icon: 'error', title: 'Error', text: '📡 GPS unavailable - Move to open area and try again' });
         } else if (error.code === 3) {
-          toast.error('⏱️ GPS timeout - Try again in open area', { autoClose: 5000 });
+          Swal.fire({ icon: 'error', title: 'Error', text: '⏱️ GPS timeout - Try again in open area' });
         } else {
-          toast.error(`❌ Location error: ${error.message || 'Unknown error'}`, { autoClose: 5000 });
+          Swal.fire({ icon: 'error', title: 'Error', text: `❌ Location error: ${error.message || 'Unknown error'}` });
         }
       }
     }
@@ -204,7 +204,7 @@ const SelfReportVisit = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.clientName.trim()) { toast.error('Client / place name is required'); return; }
+    if (!form.clientName.trim()) { Swal.fire({ icon: 'error', title: 'Error', text: 'Client / place name is required' }); return; }
     
     // Warn if photo is uploaded but no GPS
     if (photo && !gps) {
@@ -235,14 +235,14 @@ const SelfReportVisit = () => {
       await api.post('/api/field-visits/self-report', fd, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      toast.success('Visit logged successfully!');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Visit logged successfully!', timer: 2000, showConfirmButton: false });
       setForm(EMPTY);
       setPhoto(null);
       setGps(null);
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 4000);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to submit visit');
+      Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Failed to submit visit' });
     } finally {
       setSubmitting(false);
     }

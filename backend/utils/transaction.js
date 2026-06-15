@@ -41,11 +41,12 @@ async function executeAtomic(operations) {
       const { model, operation, data, options = {} } = op;
       
       switch (operation) {
-        case 'create':
+        case 'create': {
           const created = await model.create([data], { session, ...options });
           results.push(created[0]);
           break;
-        case 'update':
+        }
+        case 'update': {
           const updated = await model.findByIdAndUpdate(
             data._id || data.id,
             data.update,
@@ -53,14 +54,16 @@ async function executeAtomic(operations) {
           );
           results.push(updated);
           break;
-        case 'delete':
+        }
+        case 'delete': {
           const deleted = await model.findByIdAndDelete(
             data._id || data.id,
             { session, ...options }
           );
           results.push(deleted);
           break;
-        case 'softDelete':
+        }
+        case 'softDelete': {
           const softDeleted = await model.findByIdAndUpdate(
             data._id || data.id,
             { 
@@ -73,6 +76,7 @@ async function executeAtomic(operations) {
           );
           results.push(softDeleted);
           break;
+        }
         default:
           throw new Error(`Unknown operation: ${operation}`);
       }

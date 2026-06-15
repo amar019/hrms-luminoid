@@ -1,3 +1,4 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect } from "react";
 import {
   Row,
@@ -19,7 +20,7 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import api from "../utils/api";
-import { toast } from "react-toastify";
+
 
 // Fix leaflet default icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -117,7 +118,7 @@ const FieldReports = () => {
       const res = await api.get(`/api/field-reports/all?${params}`);
       setReports(res.data);
     } catch {
-      toast.error("Failed to load reports");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Failed to load reports" });
     } finally {
       setLoading(false);
     }
@@ -128,7 +129,7 @@ const FieldReports = () => {
       const res = await api.get(`/api/field-reports/${filterDate}/${empId}`);
       setSelectedReport(res.data);
     } catch {
-      toast.error("Failed to load report");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Failed to load report" });
     }
   };
 
@@ -145,7 +146,7 @@ const FieldReports = () => {
       const res = await api.get(`/api/journey/summary?${params}`);
       setJourneys(res.data);
     } catch {
-      toast.error("Failed to load journey data");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Failed to load journey data" });
     } finally {
       setJourneyLoading(false);
     }
@@ -159,7 +160,7 @@ const FieldReports = () => {
       const res = await api.get(`/api/field-reports/monthly-stats?${params}`);
       setMonthlyStats(res.data);
     } catch {
-      toast.error("Failed to load monthly stats");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Failed to load monthly stats" });
     } finally {
       setJourneyLoading(false);
     }
@@ -240,7 +241,7 @@ const FieldReports = () => {
     a.href = URL.createObjectURL(blob);
     a.download = filename;
     a.click();
-    toast.success("Report exported");
+    Swal.fire({ icon: 'success', title: 'Success', text: "Report exported", timer: 2000, showConfirmButton: false });
   };
 
   // Summary stats

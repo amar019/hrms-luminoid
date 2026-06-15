@@ -1,8 +1,9 @@
+import Swal from 'sweetalert2';
 import React, { useState } from 'react';
 import { Row, Col, Card, Button, Modal, Form, Alert, Table, Badge, ProgressBar } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 
 const EmployeeImport = () => {
   const { user } = useAuth();
@@ -21,7 +22,7 @@ const EmployeeImport = () => {
       if (allowedTypes.includes(file.type)) {
         setSelectedFile(file);
       } else {
-        toast.error('Please select a valid Excel (.xlsx, .xls) or CSV file');
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Please select a valid Excel (.xlsx, .xls }) or CSV file');
         e.target.value = '';
       }
     }
@@ -42,9 +43,9 @@ const EmployeeImport = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
       
-      toast.success('Template downloaded successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Template downloaded successfully', timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error('Error downloading template');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error downloading template' });
     }
   };
 
@@ -63,16 +64,16 @@ const EmployeeImport = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
       
-      toast.success('Employee data exported successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Employee data exported successfully', timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error('Error exporting employee data');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error exporting employee data' });
     }
   };
 
   const handleImport = async (e) => {
     e.preventDefault();
     if (!selectedFile) {
-      toast.error('Please select a file to import');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Please select a file to import' });
       return;
     }
 
@@ -93,13 +94,13 @@ const EmployeeImport = () => {
       setSelectedFile(null);
       
       if (response.data.results.success.length > 0) {
-        toast.success(`Successfully imported ${response.data.results.success.length} employees`);
+        Swal.fire({ icon: 'success', title: 'Success', text: `Successfully imported ${response.data.results.success.length} employees`, timer: 2000, showConfirmButton: false });
       }
       if (response.data.results.errors.length > 0) {
-        toast.warning(`${response.data.results.errors.length} rows had errors`);
+        Swal.fire({ icon: 'warning', title: 'Warning', text: `${response.data.results.errors.length} rows had errors` });
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error importing employees');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error importing employees' });
     } finally {
       setImporting(false);
     }

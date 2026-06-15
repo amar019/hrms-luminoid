@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Badge, Button, Form, Row, Col, Card } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -63,10 +63,10 @@ const MyLeaves = () => {
     if (result.isConfirmed) {
       try {
         await api.delete(`/api/leave-requests/${id}`);
-        toast.success('Leave request deleted successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Leave request deleted successfully', timer: 2000, showConfirmButton: false });
         fetchLeaves();
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Error deleting leave request');
+        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error deleting leave request' });
       }
     }
   };
@@ -85,10 +85,10 @@ const MyLeaves = () => {
     if (result.isConfirmed) {
       try {
         await api.put(`/api/leave-requests/${id}/cancel`);
-        toast.success('Leave request cancelled successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Leave request cancelled successfully', timer: 2000, showConfirmButton: false });
         fetchLeaves();
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Error cancelling leave request');
+        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error cancelling leave request' });
       }
     }
   };

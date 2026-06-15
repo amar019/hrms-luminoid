@@ -1,5 +1,6 @@
+import Swal from 'sweetalert2';
 // Task Update Reminder Utility
-import { toast } from 'react-toastify';
+
 
 export const scheduleTaskReminder = (tasks) => {
   const now = new Date();
@@ -32,18 +33,13 @@ export const scheduleTaskReminder = (tasks) => {
         }
         
         // Show toast notification
-        toast.warning(
-          `⏰ Daily Update Reminder: Please update ${tasksNeedingUpdate.length} task${tasksNeedingUpdate.length > 1 ? 's' : ''} before end of day!`,
-          {
-            position: 'top-center',
-            autoClose: false,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            closeButton: true
-          }
-        );
+        Swal.fire({ 
+          icon: 'warning', 
+          title: 'Warning', 
+          text: `⏰ Daily Update Reminder: Please update ${tasksNeedingUpdate.length} task${tasksNeedingUpdate.length > 1 ? 's' : ''} before end of day!`,
+          position: 'top',
+          showConfirmButton: true
+        });
         
         return true;
       }

@@ -1,9 +1,10 @@
+import Swal from 'sweetalert2';
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Row, Col, Card, Form, Button, Tab, Tabs, Image } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 import '../styles/EmployeeProfile.css';
 
 const EmployeeProfile = () => {
@@ -47,7 +48,7 @@ const EmployeeProfile = () => {
     } catch (error) {
       console.error('Error fetching profile:', error);
       const msg = error.response?.data?.message || error.message || 'Failed to load profile';
-      toast.error(msg);
+      Swal.fire({ icon: 'error', title: 'Error', text: msg });
     } finally {
       setLoading(false);
     }
@@ -57,16 +58,16 @@ const EmployeeProfile = () => {
     e.preventDefault();
     try {
       await api.put('/api/employee-profiles/me', profile);
-      toast.success('Profile updated successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Profile updated successfully', timer: 2000, showConfirmButton: false });
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(error.response?.data?.message || 'Error updating profile');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error updating profile' });
     }
   };
 
   const handleDelete = async () => {
     if (!id || user?.role !== 'ADMIN') {
-      toast.error('Only admins can delete profiles');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Only admins can delete profiles' });
       return;
     }
     
@@ -74,11 +75,11 @@ const EmployeeProfile = () => {
     if (result) {
       try {
         await api.delete(`/api/users/${id}`);
-        toast.success('Employee deleted successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Employee deleted successfully', timer: 2000, showConfirmButton: false });
         window.history.back();
       } catch (error) {
         console.error('Error deleting employee:', error);
-        toast.error(error.response?.data?.message || 'Error deleting employee');
+        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error deleting employee' });
       }
     }
   };
@@ -88,12 +89,12 @@ const EmployeeProfile = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Please select an image file' });
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size should be less than 5MB');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Image size should be less than 5MB' });
       return;
     }
 
@@ -116,10 +117,10 @@ const EmployeeProfile = () => {
         }
       }));
       
-      toast.success('Profile image updated successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Profile image updated successfully', timer: 2000, showConfirmButton: false });
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast.error(error.response?.data?.message || 'Error uploading image');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error uploading image' });
     } finally {
       setUploadingImage(false);
     }
@@ -135,10 +136,10 @@ const EmployeeProfile = () => {
           profileImage: null
         }
       }));
-      toast.success('Profile image deleted successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Profile image deleted successfully', timer: 2000, showConfirmButton: false });
     } catch (error) {
       console.error('Error deleting image:', error);
-      toast.error(error.response?.data?.message || 'Error deleting image');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error deleting image' });
     }
   };
 

@@ -1,8 +1,9 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect } from 'react';
 import { Badge, Dropdown, Modal, Form, Button, Row, Col } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 import './DailyUpdates.css';
 
 const DailyUpdates = () => {
@@ -56,12 +57,12 @@ const DailyUpdates = () => {
         tags: tagsArray
       });
 
-      toast.success('News update posted successfully!');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'News update posted successfully!', timer: 2000, showConfirmButton: false });
       setShowModal(false);
       resetForm();
       fetchNews();
     } catch (error) {
-      toast.error('Failed to post update');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to post update' });
     }
   };
 
@@ -88,12 +89,12 @@ const DailyUpdates = () => {
   const handleDeleteConfirm = async () => {
     try {
       await api.delete(`/api/daily-updates/${deleteItemId}`);
-      toast.success('News deleted successfully!');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'News deleted successfully!', timer: 2000, showConfirmButton: false });
       setShowDeleteModal(false);
       setDeleteItemId(null);
       fetchNews();
     } catch (error) {
-      toast.error('Failed to delete news');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete news' });
     }
   };
 

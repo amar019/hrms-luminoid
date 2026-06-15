@@ -13,7 +13,7 @@ import {
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { toast } from "react-toastify";
+
 import Swal from "sweetalert2";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";

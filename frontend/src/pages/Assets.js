@@ -1,8 +1,9 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Modal, Form, Table, Badge } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 
 const Assets = () => {
   const { user } = useAuth();
@@ -55,9 +56,9 @@ const Assets = () => {
       setShowModal(false);
       setAssetForm({ assetId: '', name: '', category: 'LAPTOP', brand: '', model: '', serialNumber: '', purchaseDate: '', condition: 'NEW' });
       fetchAssets();
-      toast.success('Asset added successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Asset added successfully', timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error('Error adding asset');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error adding asset' });
     }
   };
 
@@ -65,9 +66,9 @@ const Assets = () => {
     try {
       await api.put(`/api/assets/${assetId}/assign`, { employeeId });
       fetchAssets();
-      toast.success('Asset assigned successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Asset assigned successfully', timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error('Error assigning asset');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error assigning asset' });
     }
   };
 
@@ -75,9 +76,9 @@ const Assets = () => {
     try {
       await api.put(`/api/assets/${assetId}/return`);
       fetchAssets();
-      toast.success('Asset returned successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Asset returned successfully', timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error('Error returning asset');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error returning asset' });
     }
   };
 

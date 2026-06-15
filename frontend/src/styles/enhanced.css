@@ -95,6 +95,15 @@ body {
   box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.5);
 }
 
+.glass-card-no-hover {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow);
+}
+
 .modern-card {
   background: white;
   border: none;

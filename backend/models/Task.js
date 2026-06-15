@@ -6,6 +6,7 @@ const taskSchema = new mongoose.Schema({
   department: { type: String, required: true },
   taskType: { type: String, required: true },
   category: String,
+  project: String,
   
   assignedTo: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -39,6 +40,13 @@ const taskSchema = new mongoose.Schema({
     enum: ['ASSIGNED', 'IN_PROGRESS', 'REVIEW', 'COMPLETED', 'CANCELLED'],
     default: 'ASSIGNED'
   },
+  
+  approvalStatus: {
+    type: String,
+    enum: ['PENDING', 'APPROVED', 'REJECTED', 'CHANGES_REQUESTED'],
+    default: 'PENDING'
+  },
+  reviewer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   
   checkIn: {
     time: Date,

@@ -1,8 +1,9 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Modal, Form, Table, Badge } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 
 const EmployeeManagement = () => {
   const { user } = useAuth();
@@ -37,7 +38,7 @@ const EmployeeManagement = () => {
       setDepartments(response.data.data || []);
     } catch (error) {
       console.error('Error fetching departments:', error);
-      toast.error('Failed to load departments');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load departments' });
     }
   };
 
@@ -46,7 +47,7 @@ const EmployeeManagement = () => {
       const response = await api.get(`/api/employee-management/all?status=${filter}`);
       setEmployees(response.data);
     } catch (error) {
-      toast.error('Error fetching employees');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error fetching employees' });
     }
   };
 
@@ -58,36 +59,27 @@ const EmployeeManagement = () => {
       
       // Show success with password
       if (response.data.employee?.tempPassword) {
-        await toast.promise(
-          Promise.resolve(),
-          {
-            pending: 'Creating employee...',
-            success: {
-              render() {
-                return (
-                  <div>
-                    <strong>Employee Created Successfully!</strong>
-                    <div style={{ marginTop: '8px', padding: '8px', background: '#f0fdf4', borderRadius: '6px' }}>
-                      <div><strong>Email:</strong> {response.data.employee.email}</div>
-                      <div><strong>Password:</strong> <code style={{ background: '#dcfce7', padding: '2px 6px', borderRadius: '4px' }}>{response.data.employee.tempPassword}</code></div>
-                    </div>
-                    <small style={{ color: '#059669', marginTop: '4px', display: 'block' }}>✓ Welcome email sent to employee</small>
-                  </div>
-                );
-              },
-              autoClose: 8000
-            }
-          }
-        );
+        Swal.fire({
+          icon: 'success',
+          title: 'Employee Created Successfully!',
+          html: `
+            <div style="margin-top: 8px; padding: 8px; background: #f0fdf4; border-radius: 6px; text-align: left;">
+              <div><strong>Email:</strong> ${response.data.employee.email}</div>
+              <div><strong>Password:</strong> <code style="background: #dcfce7; padding: 2px 6px; border-radius: 4px;">${response.data.employee.tempPassword}</code></div>
+            </div>
+            <small style="color: #059669; margin-top: 8px; display: block;">✓ Welcome email sent to employee</small>
+          `,
+          showConfirmButton: true
+        });
       } else {
-        toast.success('Employee created successfully! Welcome email sent.');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Employee created successfully! Welcome email sent.', timer: 2000, showConfirmButton: false });
       }
       
       setShowAddModal(false);
       resetForm();
       fetchEmployees();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error creating employee');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error creating employee' });
     } finally {
       setLoading(false);
     }
@@ -100,30 +92,30 @@ const EmployeeManagement = () => {
       await api.put(`/api/employee-management/${userId}/deactivate`, {
         reason: 'Deactivated by admin'
       });
-      toast.success('Employee deactivated successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Employee deactivated successfully', timer: 2000, showConfirmButton: false });
       fetchEmployees();
     } catch (error) {
-      toast.error('Error deactivating employee');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error deactivating employee' });
     }
   };
 
   const handleReactivate = async (userId) => {
     try {
       await api.put(`/api/employee-management/${userId}/reactivate`);
-      toast.success('Employee reactivated successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Employee reactivated successfully', timer: 2000, showConfirmButton: false });
       fetchEmployees();
     } catch (error) {
-      toast.error('Error reactivating employee');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error reactivating employee' });
     }
   };
 
   const handleToggleFieldEmployee = async (userId, currentValue) => {
     try {
       await api.put(`/api/employee-management/${userId}/toggle-field-employee`);
-      toast.success(`Field tracking ${!currentValue ? 'enabled' : 'disabled'}`);
+      Swal.fire({ icon: 'success', title: 'Success', text: `Field tracking ${!currentValue ? 'enabled' : 'disabled'}`, timer: 2000, showConfirmButton: false });
       fetchEmployees();
     } catch (error) {
-      toast.error('Error updating field employee status');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error updating field employee status' });
     }
   };
 

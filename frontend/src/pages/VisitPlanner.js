@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Modal, Form, Badge, Table } from 'react-bootstrap';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 import Swal from 'sweetalert2';
 
 const VisitPlanner = () => {
@@ -23,7 +23,7 @@ const VisitPlanner = () => {
       const [eRes, cRes] = await Promise.all([api.get('/api/employees'), api.get('/api/field-clients')]);
       setEmployees(eRes.data.filter(e => e.role === 'EMPLOYEE'));
       setClients(cRes.data.filter(c => c.status !== 'INACTIVE'));
-    } catch { toast.error('Failed to load data'); }
+    } catch { Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load data' }); }
     finally { setLoading(false); }
   };
 
@@ -31,7 +31,7 @@ const VisitPlanner = () => {
     try {
       const res = await api.get(`/api/visit-plans?date=${filterDate}`);
       setPlans(res.data);
-    } catch { toast.error('Failed to load plans'); }
+    } catch { Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load plans' }); }
   };
 
   const openCreate = () => {
@@ -51,22 +51,22 @@ const VisitPlanner = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.clients.length === 0) { toast.error('Add at least one client'); return; }
+    if (form.clients.length === 0) { Swal.fire({ icon: 'error', title: 'Error', text: 'Add at least one client' }); return; }
     setSaving(true);
     try {
       await api.post('/api/visit-plans', form);
-      toast.success('Visit plan created & visits assigned');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Visit plan created & visits assigned', timer: 2000, showConfirmButton: false });
       setShowModal(false);
       fetchPlans();
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed to create plan'); }
+    } catch (err) { Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Failed to create plan' }); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({ title: 'Delete plan?', text: 'All planned visits will be removed', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' });
     if (!result.isConfirmed) return;
-    try { await api.delete(`/api/visit-plans/${id}`); toast.success('Plan deleted'); fetchPlans(); }
-    catch { toast.error('Delete failed'); }
+    try { await api.delete(`/api/visit-plans/${id}`); Swal.fire({ icon: 'success', title: 'Success', text: 'Plan deleted', timer: 2000, showConfirmButton: false }); fetchPlans(); }
+    catch { Swal.fire({ icon: 'error', title: 'Error', text: 'Delete failed' }); }
   };
 
   const filteredClients = clients.filter(c =>

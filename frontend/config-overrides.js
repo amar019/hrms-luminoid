@@ -3,6 +3,16 @@ const TerserPlugin = require('terser-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
 
 module.exports = function override(config, env) {
+  // Fix ESM resolution issues for modules like MUI (only within node_modules/.mjs files)
+  config.module.rules.push({
+    test: /\.mjs$/,
+    include: /node_modules/,
+    type: 'javascript/auto',
+    resolve: {
+      fullySpecified: false,
+    },
+  });
+
   if (env === 'production') {
     config.optimization = {
       ...config.optimization,

@@ -127,15 +127,13 @@ exports.updateTask = async (req, res) => {
     const oldTask = await Task.findById(req.params.id);
     if (!oldTask) return res.status(404).json({ message: "Task not found" });
 
-    // Check permissions: only task creator (if ASSIGNED status) or ADMIN/HR can update
+    // Check permissions: ONLY task creator can update
     const isCreator = oldTask.assignedBy.toString() === req.user.id;
-    const isPrivileged = ["ADMIN", "HR"].includes(req.user.role);
-    const isAssignedStatus = oldTask.status === "ASSIGNED";
 
-    if (!isPrivileged && !(isCreator && isAssignedStatus)) {
+    if (!isCreator) {
       return res
         .status(403)
-        .json({ message: "Access denied. Insufficient permissions." });
+        .json({ message: "Access denied. Only the task creator/assigner can update this task." });
     }
 
     const task = await Task.findByIdAndUpdate(req.params.id, req.body, {
@@ -150,6 +148,14 @@ exports.updateTask = async (req, res) => {
       `Task updated by ${req.user.firstName} ${req.user.lastName}`,
     );
     await task.save();
+
+    // Rule 2: Sync parent task stats & cascade assignee changes to subtasks
+    try {
+      const SubtaskSyncService = require('../services/subtaskSyncService');
+      await SubtaskSyncService.syncParentTask(task._id, 'GENERAL_TASK');
+    } catch (syncErr) {
+      logger.error("Error syncing general task subtasks on update:", syncErr);
+    }
 
     // Notify assigned users
     for (const userId of task.assignedTo) {
@@ -177,8 +183,18 @@ exports.updateTask = async (req, res) => {
 exports.deleteTask = async (req, res) => {
   try {
     logger.info("deleteTask", { userId: req.user?.id });
-    const task = await Task.findByIdAndDelete(req.params.id);
+    const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: "Task not found" });
+
+    const isCreator = task.assignedBy.toString() === req.user.id;
+
+    if (!isCreator) {
+      return res
+        .status(403)
+        .json({ message: "Access denied. Only the task creator/assigner can delete this task." });
+    }
+
+    await Task.findByIdAndDelete(req.params.id);
     res.json({ message: "Task deleted" });
   } catch (error) {
     logger.error("deleteTask error", {

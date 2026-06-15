@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Badge, Button, Modal, Form } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -41,12 +41,12 @@ const Approvals = () => {
         comments
       });
       
-      toast.success(`Leave request ${action}d successfully`);
+      Swal.fire({ icon: 'success', title: 'Success', text: `Leave request ${action}d successfully`, timer: 2000, showConfirmButton: false });
       setShowModal(false);
       setComments('');
       fetchPendingApprovals();
     } catch (error) {
-      toast.error(error.response?.data?.message || `Error ${action}ing leave request`);
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || `Error ${action}ing leave request` });
     } finally {
       setLoading(false);
     }
@@ -68,10 +68,10 @@ const Approvals = () => {
     if (result.isConfirmed) {
       try {
         await api.delete(`/api/leave-requests/${request._id}`);
-        toast.success('Leave request deleted successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Leave request deleted successfully', timer: 2000, showConfirmButton: false });
         fetchPendingApprovals();
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Error deleting leave request');
+        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error deleting leave request' });
       }
     }
   };

@@ -1,4 +1,5 @@
 const Expense = require("../models/Expense");
+const User = require("../models/User");
 const logger = require('../utils/logger');
 
 const getExpenseAnalytics = async (req, res) => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Badge, Card } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+
 import Swal from 'sweetalert2';
 import api from '../utils/api';
 
@@ -42,17 +42,17 @@ const LeaveTypes = () => {
     try {
       if (editingType) {
         await api.put(`/api/leave-types/${editingType._id}`, formData);
-        toast.success('Leave type updated successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Leave type updated successfully', timer: 2000, showConfirmButton: false });
       } else {
         await api.post('/api/leave-types', formData);
-        toast.success('Leave type created successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Leave type created successfully', timer: 2000, showConfirmButton: false });
       }
       
       setShowModal(false);
       resetForm();
       fetchLeaveTypes();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error saving leave type');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error saving leave type' });
     } finally {
       setLoading(false);
     }
@@ -89,10 +89,10 @@ const LeaveTypes = () => {
     if (result.isConfirmed) {
       try {
         await api.delete(`/api/leave-types/${id}`);
-        toast.success('Leave type deleted successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Leave type deleted successfully', timer: 2000, showConfirmButton: false });
         fetchLeaveTypes();
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Error deleting leave type');
+        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Error deleting leave type' });
       }
     }
   };

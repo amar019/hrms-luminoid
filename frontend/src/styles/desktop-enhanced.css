@@ -3,8 +3,8 @@
 /* Large Screens (1200px+) */
 @media (min-width: 1200px) {
   .desktop-content {
-    padding: 2rem 3rem;
-    padding-top: calc(64px + 2rem);
+    padding: 0.5rem 1rem;
+    padding-top: calc(64px + 0.5rem);
   }
 
   .card {
@@ -201,8 +201,8 @@
 /* Medium-Large Screens (992px - 1199px) */
 @media (min-width: 992px) and (max-width: 1199px) {
   .desktop-content {
-    padding: 1.5rem 2rem;
-    padding-top: calc(64px + 1.5rem);
+    padding: 0.5rem 1rem;
+    padding-top: calc(64px + 0.5rem);
   }
 
   .stats-grid {
@@ -235,29 +235,21 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 
-  /* Smooth Scrolling */
+  /* Smooth Scrolling & Hide Scrollbars */
   html {
     scroll-behavior: smooth;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
 
-  /* Custom Scrollbar */
+  body {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  /* Custom Scrollbar - Hidden as requested */
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 5px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 5px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    display: none;
   }
 
   /* Sidebar Desktop */
@@ -544,7 +536,8 @@
 /* Ultra Wide Screens (1600px+) */
 @media (min-width: 1600px) {
   .desktop-content {
-    padding: 2.5rem 4rem;
+    padding: 1rem 1.5rem;
+    padding-top: calc(64px + 1rem);
   }
 
   .stats-grid {

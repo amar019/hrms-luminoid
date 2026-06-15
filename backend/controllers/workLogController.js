@@ -465,3 +465,37 @@ exports.getWorkLogById = async (req, res) => {
     res.status(500).json({ message: "Error fetching work log" });
   }
 };
+
+exports.approveWorkLog = async (req, res) => {
+  try {
+    logger.info("approveWorkLog", { userId: req.user?.id });
+    if (!["ADMIN", "HR", "MANAGER"].includes(req.user.role)) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const { status } = req.body;
+    if (!['APPROVED', 'REJECTED'].includes(status)) {
+      return res.status(400).json({ message: "Invalid approval status" });
+    }
+
+    const workLog = await WorkLog.findByIdAndUpdate(
+      req.params.id,
+      { approvalStatus: status, reviewer: req.user.id },
+      { new: true }
+    ).populate("userId", "firstName lastName");
+
+    if (!workLog) {
+      return res.status(404).json({ message: "Work log not found" });
+    }
+
+    res.json(workLog);
+  } catch (error) {
+    logger.error("approveWorkLog error", {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.id,
+    });
+
+    res.status(500).json({ message: "Error approving work log" });
+  }
+};

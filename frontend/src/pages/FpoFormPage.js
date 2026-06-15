@@ -1,8 +1,9 @@
+import Swal from 'sweetalert2';
 import React, { useState } from 'react';
 import { Card, Form, Button, Row, Col, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 
 const FpoFormPage = () => {
   const navigate = useNavigate();
@@ -29,10 +30,10 @@ const FpoFormPage = () => {
 
     try {
       await api.post('/api/fpo-forms', formData);
-      toast.success('FPO form submitted successfully!');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'FPO form submitted successfully!', timer: 2000, showConfirmButton: false });
       navigate('/fpo-submissions');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to submit form');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to submit form' });
     } finally {
       setLoading(false);
     }

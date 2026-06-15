@@ -1,9 +1,10 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge, Form, InputGroup, Row, Col, Modal } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 
 const statusColors = {
   PENDING: { bg: '#fef3c7', color: '#f59e0b', border: '#fbbf24' },
@@ -39,7 +40,7 @@ const FpoSubmissions = () => {
       const response = await api.get('/api/fpo-forms', { params });
       setSubmissions(response.data);
     } catch (error) {
-      toast.error('Failed to load submissions');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load submissions' });
     } finally {
       setLoading(false);
     }
@@ -59,11 +60,11 @@ const FpoSubmissions = () => {
     setReviewing(true);
     try {
       await api.put(`/api/fpo-forms/${selectedSubmission._id}/review`, reviewData);
-      toast.success('Review submitted successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Review submitted successfully', timer: 2000, showConfirmButton: false });
       setShowReviewModal(false);
       fetchSubmissions();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to submit review');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to submit review' });
     } finally {
       setReviewing(false);
     }

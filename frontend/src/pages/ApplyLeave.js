@@ -1,6 +1,7 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect } from 'react';
 import { Card, Form, Button, Alert, Row, Col } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+
 import api from '../utils/api';
 
 const ApplyLeave = () => {
@@ -113,12 +114,12 @@ const ApplyLeave = () => {
 
     try {
       await api.post('/api/leave-requests', formData);
-      toast.success(
+      Swal.fire({ icon: 'success', title: 'Success', text: 
         <div className="d-flex align-items-center">
           <i className="fas fa-check-circle me-2"></i>
           Leave request submitted successfully!
         </div>
-      );
+      , timer: 2000, showConfirmButton: false });
       setFormData({
         leaveTypeId: '',
         startDate: '',
@@ -430,7 +431,7 @@ const ApplyLeave = () => {
                           const files = Array.from(e.target.files);
                           const validFiles = files.filter(f => f.size <= 5 * 1024 * 1024);
                           if (validFiles.length !== files.length) {
-                            toast.warning('Some files exceed 5MB and were removed');
+                            Swal.fire({ icon: 'warning', title: 'Warning', text: 'Some files exceed 5MB and were removed' });
                           }
                           setFormData(prev => ({ ...prev, attachments: validFiles }));
                         }}

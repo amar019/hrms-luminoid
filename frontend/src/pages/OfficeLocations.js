@@ -1,6 +1,7 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Form, Row, Col, Badge } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+
 import api from '../utils/api';
 
 const OfficeLocations = () => {
@@ -25,7 +26,7 @@ const OfficeLocations = () => {
       const res = await api.get('/api/office-locations');
       setLocations(res.data);
     } catch (e) {
-      toast.error('Failed to load office locations');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load office locations' });
     }
   };
 
@@ -60,16 +61,16 @@ const OfficeLocations = () => {
   };
 
   const handleSave = async () => {
-    if (!form.name?.trim()) return toast.error('Office name is required');
-    if (!form.latitude || !form.longitude) return toast.error('Latitude and longitude are required');
-    if (isNaN(form.latitude) || isNaN(form.longitude)) return toast.error('Invalid coordinates');
+    if (!form.name?.trim()) return Swal.fire({ icon: 'error', title: 'Error', text: 'Office name is required' });
+    if (!form.latitude || !form.longitude) return Swal.fire({ icon: 'error', title: 'Error', text: 'Latitude and longitude are required' });
+    if (isNaN(form.latitude) || isNaN(form.longitude)) return Swal.fire({ icon: 'error', title: 'Error', text: 'Invalid coordinates' });
     const startTotal = Number(form.startTime) * 60 + Number(form.startMinute);
     const endTotal = Number(form.endTime) * 60 + Number(form.endMinute);
-    if (startTotal >= endTotal) return toast.error('End time must be after start time');
+    if (startTotal >= endTotal) return Swal.fire({ icon: 'error', title: 'Error', text: 'End time must be after start time' });
     const radius = Number(form.radiusMeters);
-    if (!radius || radius < 10 || radius > 5000) return toast.error('Radius must be between 10 and 5000 meters');
+    if (!radius || radius < 10 || radius > 5000) return Swal.fire({ icon: 'error', title: 'Error', text: 'Radius must be between 10 and 5000 meters' });
     const grace = Number(form.compensationMinutes);
-    if (grace < 0 || grace > 120) return toast.error('Grace period must be between 0 and 120 minutes');
+    if (grace < 0 || grace > 120) return Swal.fire({ icon: 'error', title: 'Error', text: 'Grace period must be between 0 and 120 minutes' });
     
     setSaving(true);
     try {
@@ -90,15 +91,15 @@ const OfficeLocations = () => {
       
       if (editing) {
         await api.put(`/api/office-locations/${editing._id}`, payload);
-        toast.success('Office location updated successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Office location updated successfully', timer: 2000, showConfirmButton: false });
       } else {
         await api.post('/api/office-locations', payload);
-        toast.success('Office location added successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Office location added successfully', timer: 2000, showConfirmButton: false });
       }
       setShowModal(false);
       fetchLocations();
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to save office location');
+      Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || 'Failed to save office location' });
     } finally {
       setSaving(false);
     }
@@ -108,10 +109,10 @@ const OfficeLocations = () => {
     if (!window.confirm('Delete this office location?')) return;
     try {
       await api.delete(`/api/office-locations/${id}`);
-      toast.success('Deleted');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Deleted', timer: 2000, showConfirmButton: false });
       fetchLocations();
     } catch (e) {
-      toast.error('Failed to delete');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete' });
     }
   };
 
@@ -133,10 +134,10 @@ const OfficeLocations = () => {
       const data = await res.json();
       setSearchResults(data);
       if (data.length === 0) {
-        toast.info('No locations found. Try a different search term.');
+        Swal.fire({ icon: 'info', title: 'Info', text: 'No locations found. Try a different search term.' });
       }
     } catch (error) {
-      toast.error('Failed to search location');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to search location' });
       setSearchResults([]);
     } finally {
       setSearchingLocation(false);
@@ -152,7 +153,7 @@ const OfficeLocations = () => {
     }));
     setSearchResults([]);
     setSearchQuery('');
-    toast.success('Location selected!');
+    Swal.fire({ icon: 'success', title: 'Success', text: 'Location selected!', timer: 2000, showConfirmButton: false });
   };
 
   return (

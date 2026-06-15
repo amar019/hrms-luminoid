@@ -54,20 +54,28 @@ const NotificationsPanel = () => {
     try {
       await api.put(`/api/notifications/${notification._id}/read`);
       setUnreadCount(prev => Math.max(0, prev - 1));
-      setNotifications(prev => prev.map(n => 
+      setNotifications(prev => prev.map(n =>
         n._id === notification._id ? { ...n, read: true } : n
       ));
       setShow(false);
-      
+
       // Navigate to task details and open it
       const taskId = notification.task._id || notification.task;
-      
-      // Determine which page to navigate to based on user role
-      if (user.role === 'EMPLOYEE') {
-        navigate('/tasks', { state: { openTaskId: taskId } });
-      } else {
-        navigate('/task-management', { state: { openTaskId: taskId } });
+
+      try {
+        const issueRes = await api.get(`/api/project-tasks/${taskId}`);
+        if (issueRes.data) {
+          const pId = issueRes.data.project?._id || issueRes.data.project;
+          if (pId) {
+            navigate(`/project-tracker/projects/${pId}`, { state: { openTaskId: taskId } });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to resolve task project, falling back to dashboard', err);
       }
+
+      navigate('/project-tracker');
     } catch (error) {
       console.error('Error marking as read');
     }
@@ -164,7 +172,7 @@ const NotificationsPanel = () => {
             </button>
           )}
         </div>
-        
+
         <div className="notification-dropdown-list">
           {notifications.length > 0 ? (
             notifications.map((notif, index) => {
@@ -187,7 +195,7 @@ const NotificationsPanel = () => {
                       {!notif.read && <span className="notification-unread-badge">New</span>}
                     </div>
                   </div>
-                  <button 
+                  <button
                     className="notification-delete-btn"
                     onClick={(e) => handleDeleteNotification(e, notif._id, !notif.read)}
                     title="Delete"

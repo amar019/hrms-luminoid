@@ -46,9 +46,11 @@ const PAGE_META = {
   "/organization": { title: "Organization", icon: "building" },
   "/apply-leave": { title: "Apply Leave", icon: "calendar-plus" },
   "/my-leaves": { title: "My Leaves", icon: "calendar-check" },
-  "/tasks": { title: "My Tasks", icon: "tasks" },
+  "/project-tracker/projects": { title: "Project Tracker Dashboard", icon: "tasks" },
+  "/project-tracker/my-tasks": { title: "My Tasks Dashboard", icon: "tasks" },
+  "/project-tracker/daily-updates": { title: "Daily Updates", icon: "history" },
+  "/project-tracker/chat-rooms": { title: "Project Chat Rooms", icon: "comments" },
   "/approvals": { title: "Approvals", icon: "check-circle" },
-  "/task-management": { title: "Task Management", icon: "clipboard-list" },
   "/team-calendar": { title: "Team Calendar", icon: "calendar-alt" },
   "/employee-directory": { title: "Employee Directory", icon: "users" },
   "/leave-types": { title: "Leave Types", icon: "cog" },
@@ -289,8 +291,8 @@ const EnhancedLayout = ({ children }) => {
     if (["MANAGER", "HR", "ADMIN"].includes(user?.role)) {
       items.push(
         {
-          path: "/task-management",
-          label: "Task Management",
+          path: "/project-tracker/projects",
+          label: "Project Tracker",
           icon: MdAssignment,
           roles: ["MANAGER", "HR", "ADMIN"],
         },
@@ -304,8 +306,8 @@ const EnhancedLayout = ({ children }) => {
     }
     if (user?.role === "EMPLOYEE") {
       items.push({
-        path: "/tasks",
-        label: "My Tasks",
+        path: "/project-tracker/my-tasks",
+        label: "Project Tracker",
         icon: MdTask,
         roles: ["EMPLOYEE"],
       });

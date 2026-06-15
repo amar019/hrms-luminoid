@@ -123,7 +123,8 @@ const Layout = ({ children }) => {
     const items = [
       { path: '/dashboard', label: 'Dashboard', icon: MdDashboard, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },
       { path: '/attendance', label: 'Attendance', icon: MdAccessTime, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },
-      { path: '/leave-management', label: 'Leave Management', icon: MdCalendarToday, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] }
+      { path: '/leave-management', label: 'Leave Management', icon: MdCalendarToday, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] },
+      { path: '/jira', label: 'Tasks & Work Cycles', icon: MdAssignment, roles: ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'] }
     ];
 
     if (['MANAGER', 'HR', 'ADMIN'].includes(user?.role)) {
@@ -460,7 +461,7 @@ const Layout = ({ children }) => {
               </div>
               
               <div className="navbar-actions">
-                <div className="action-icon" title="My Tasks" onClick={() => navigate(user?.role === 'EMPLOYEE' ? '/tasks' : '/task-management')} style={{cursor: 'pointer'}}>
+                <div className="action-icon" title="Tasks & Work Cycles" onClick={() => navigate('/jira')} style={{cursor: 'pointer'}}>
                   <MdAssignment size={22} />
                 </div>
                 {['MANAGER', 'HR', 'ADMIN'].includes(user?.role) && (
@@ -640,7 +641,7 @@ const Layout = ({ children }) => {
               <MdAccessTime size={24} />
               <span>Attendance</span>
             </div>
-            <div className="nav-item nav-item-center" onClick={() => navigate(user?.role === 'EMPLOYEE' ? '/tasks' : '/task-management')}>
+            <div className="nav-item nav-item-center" onClick={() => navigate('/jira')}>
               <div className="center-icon">
                 <MdTask size={24} />
                 {pendingCount > 0 && (

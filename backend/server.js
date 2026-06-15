@@ -40,6 +40,10 @@ const fieldReportRoutes = require('./routes/fieldReports');
 const fpoFormRoutes = require('./routes/fpoForms');
 const consentRoutes = require('./routes/consent');
 const attendancePolicyRoutes = require('./routes/attendancePolicy');
+const projectTaskRoutes = require('./routes/projectTasks');
+const projectRoutes = require('./routes/projects');
+const subtaskRoutes = require('./routes/subtasks');
+const projectDiscussionRoutes = require('./routes/projectDiscussions');
 
 const seedDefaultOffice = require('./utils/seedOfficeLocation');
 const sanitizeInput = require('./middleware/sanitize');
@@ -78,35 +82,35 @@ setInterval(() => {
 
 const rateLimitMiddleware = (maxRequests, windowMs, identifier = 'ip') => (req, res, next) => {
   // Use email for login attempts, IP for other requests
-  const key = identifier === 'email' && req.body.email 
-    ? `${req.body.email}:${req.path}` 
+  const key = identifier === 'email' && req.body.email
+    ? `${req.body.email}:${req.path}`
     : `${req.ip}:${req.path}`;
-  
+
   const now = Date.now();
   const record = rateLimit.get(key) || { count: 0, resetTime: now + windowMs };
-  
+
   if (now > record.resetTime) {
     record.count = 0;
     record.resetTime = now + windowMs;
   }
-  
+
   record.count++;
   rateLimit.set(key, record);
-  
+
   if (record.count > maxRequests) {
     const retryAfter = Math.ceil((record.resetTime - now) / 1000);
     res.set('Retry-After', retryAfter);
-    return res.status(429).json({ 
+    return res.status(429).json({
       message: 'Too many requests, please try again later',
       retryAfter: retryAfter
     });
   }
-  
+
   // Add rate limit headers
   res.set('X-RateLimit-Limit', maxRequests);
   res.set('X-RateLimit-Remaining', Math.max(0, maxRequests - record.count));
   res.set('X-RateLimit-Reset', new Date(record.resetTime).toISOString());
-  
+
   next();
 };
 
@@ -119,11 +123,11 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
+
     if (process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
-    
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -148,8 +152,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     message: 'Server is running',
     performance: getPerformanceStats(),
     cache: process.env.REDIS_URL ? 'enabled' : 'disabled'
@@ -161,17 +165,17 @@ app.get('/api/health', (req, res) => {
 // days=1 → "LAST DAY TOMORROW" (red)
 // days=2 → "Only 2 Days Left" (orange)
 app.get('/api/preview/expense-reminder', (req, res) => {
-  const daysLeft   = parseInt(req.query.days) || 1;
-  const now        = new Date();
-  const lastDay    = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysLeft = parseInt(req.query.days) || 1;
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const billingMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [year, month] = billingMonth.split('-');
-  const monthName  = new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+  const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
 
-  const urgencyColor  = daysLeft === 1 ? '#dc2626' : '#ea580c';
-  const urgencyBg     = daysLeft === 1 ? '#fee2e2' : '#ffedd5';
+  const urgencyColor = daysLeft === 1 ? '#dc2626' : '#ea580c';
+  const urgencyBg = daysLeft === 1 ? '#fee2e2' : '#ffedd5';
   const urgencyBorder = daysLeft === 1 ? '#fca5a5' : '#fdba74';
-  const urgencyLabel  = daysLeft === 1 ? '\uD83D\uDEA8 LAST DAY TOMORROW!' : '\u26A0\uFE0F Only 2 Days Left!';
+  const urgencyLabel = daysLeft === 1 ? '\uD83D\uDEA8 LAST DAY TOMORROW!' : '\u26A0\uFE0F Only 2 Days Left!';
 
   res.send(`
     <!DOCTYPE html><html><head><meta charset="UTF-8">
@@ -270,6 +274,11 @@ app.use('/api/field-reports', fieldReportRoutes);
 app.use('/api/fpo-forms', fpoFormRoutes);
 app.use('/api/consent', consentRoutes);
 app.use('/api/attendance-policy', attendancePolicyRoutes);
+app.use('/api/project-tasks', projectTaskRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/subtasks', subtaskRoutes);
+app.use('/api/project-chat', projectDiscussionRoutes);
+
 app.use('/uploads/visit-photos', express.static(require('path').join(__dirname, 'uploads/visit-photos')));
 
 // Error handling middleware
@@ -287,6 +296,45 @@ app.use('*', (req, res) => {
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     logger.info('Connected to MongoDB');
+    
+    // Automatically patch legacy tasks missing 'assignedBy'
+    try {
+      const ProjectTask = mongoose.model('ProjectTask');
+      const User = mongoose.model('User');
+      const adminUser = await User.findOne({ role: 'ADMIN' }) || await User.findOne({});
+      if (adminUser) {
+        const tasks = await ProjectTask.find({ 
+          $or: [
+            { assignedBy: { $exists: false } },
+            { assignedBy: null }
+          ]
+        }).populate('project');
+        
+        for (const t of tasks) {
+          let assignerId = t.project?.leader || adminUser._id;
+          // If the leader is the task owner, default to admin to avoid self-assignment display
+          if (t.owner && assignerId.toString() === t.owner.toString()) {
+            assignerId = adminUser._id;
+          }
+          await ProjectTask.findByIdAndUpdate(t._id, { assignedBy: assignerId });
+        }
+      }
+
+      // Write diagnostic details to file
+      const allUsers = await User.find({});
+      const allTasks = await ProjectTask.find({}).populate('project').populate('owner').populate('assignedBy');
+      let logContent = `LOG DATE: ${new Date().toISOString()}\n`;
+      allUsers.forEach(u => {
+        logContent += `USER: ${u.firstName} ${u.lastName} _id=${u._id} role=${u.role}\n`;
+      });
+      allTasks.forEach(t => {
+        logContent += `TASK: ${t.taskId} title=${t.title} owner_id=${t.owner?._id} owner_name=${t.owner ? `${t.owner.firstName} ${t.owner.lastName}` : 'none'} assignedBy_id=${t.assignedBy?._id} assignedBy_name=${t.assignedBy ? `${t.assignedBy.firstName} ${t.assignedBy.lastName}` : 'none'} project_leader=${t.project?.leader}\n`;
+      });
+      fs.writeFileSync(path.join(__dirname, 'diagnostics.log'), logContent);
+    } catch (err) {
+      console.error('Failed to patch or inspect tasks:', err);
+    }
+
     await seedDefaultOffice();
     await initCache();
   })

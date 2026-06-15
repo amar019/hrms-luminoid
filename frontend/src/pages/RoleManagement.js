@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Modal, Form, Badge, Alert } from 'react-bootstrap';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 import Swal from 'sweetalert2';
 import PermissionGuard from '../components/PermissionGuard';
 
@@ -27,7 +27,7 @@ const RoleManagement = () => {
       const response = await api.get('/api/permissions/roles');
       setRoles(response.data);
     } catch (error) {
-      toast.error('Failed to fetch roles');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to fetch roles' });
     }
   };
 
@@ -36,7 +36,7 @@ const RoleManagement = () => {
       const response = await api.get('/api/permissions/permissions');
       setPermissions(response.data);
     } catch (error) {
-      toast.error('Failed to fetch permissions');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to fetch permissions' });
     }
   };
 
@@ -45,16 +45,16 @@ const RoleManagement = () => {
     try {
       if (editingRole) {
         await api.put(`/api/permissions/roles/${editingRole._id}`, formData);
-        toast.success('Role updated successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Role updated successfully', timer: 2000, showConfirmButton: false });
       } else {
         await api.post('/api/permissions/roles', formData);
-        toast.success('Role created successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Role created successfully', timer: 2000, showConfirmButton: false });
       }
       setShowModal(false);
       fetchRoles();
       resetForm();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Operation failed');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Operation failed' });
     }
   };
 
@@ -72,10 +72,10 @@ const RoleManagement = () => {
     if (result.isConfirmed) {
       try {
         await api.delete(`/api/permissions/roles/${roleId}`);
-        toast.success('Role deleted successfully');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Role deleted successfully', timer: 2000, showConfirmButton: false });
         fetchRoles();
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Delete failed');
+        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Delete failed' });
       }
     }
   };

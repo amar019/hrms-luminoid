@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Badge, Modal, Form, Row, Col } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import LocationConsentModal from '../components/LocationConsentModal';
 import './FieldVisits.css';
 
@@ -79,12 +79,12 @@ const FieldVisits = () => {
     // Network status listeners
     const handleOnline = () => {
       setIsOnline(true);
-      toast.success('Back online!');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Back online!', timer: 2000, showConfirmButton: false });
       fetchTodayData();
     };
     const handleOffline = () => {
       setIsOnline(false);
-      toast.warning('You are offline.');
+      Swal.fire({ icon: 'warning', title: 'Warning', text: 'You are offline.' });
     };
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -115,21 +115,21 @@ const FieldVisits = () => {
     try {
       await api.post('/api/consent/location/grant');
       setShowConsentModal(false);
-      toast.success('Location consent granted');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Location consent granted', timer: 2000, showConfirmButton: false });
     } catch (err) {
-      toast.error('Failed to grant consent');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to grant consent' });
     }
   };
 
   // Handle consent decline
   const handleConsentDecline = () => {
     setShowConsentModal(false);
-    toast.warning('Location consent is required for field visits');
+    Swal.fire({ icon: 'warning', title: 'Warning', text: 'Location consent is required for field visits' });
   };
 
   const fetchTodayData = async () => {
     if (!isOnline) {
-      toast.error('No internet connection. Please check your network.');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'No internet connection. Please check your network.' });
       setLoading(false);
       return;
     }
@@ -152,11 +152,11 @@ const FieldVisits = () => {
         const visitsData = results[1].value.data;
         setVisits(visitsData);
       } else {
-        toast.error('Failed to load visits. Please refresh the page.');
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load visits. Please refresh the page.' });
       }
     } catch (err) {
       console.error('Fetch error:', err);
-      toast.error('Unable to load data. Please check your connection and try again.');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Unable to load data. Please check your connection and try again.' });
     } finally {
       setLoading(false);
     }
@@ -166,7 +166,7 @@ const FieldVisits = () => {
 
   const handleCheckIn = async (visit) => {
     if (!isOnline) {
-      toast.error('Cannot check in while offline.');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Cannot check in while offline.' });
       return;
     }
     
@@ -176,7 +176,7 @@ const FieldVisits = () => {
       const address = await getAddress(pos.lat, pos.lng);
       await api.post(`/api/field-visits/${visit._id}/checkin`, { ...pos, address });
       
-      toast.success(`Checked in at ${visit.clientId?.name}`);
+      Swal.fire({ icon: 'success', title: 'Success', text: `Checked in at ${visit.clientId?.name}`, timer: 2000, showConfirmButton: false });
       fetchTodayData();
     } catch (e) {
       let errorMsg = 'Check-in failed';
@@ -184,7 +184,7 @@ const FieldVisits = () => {
       else if (e.code === 2) errorMsg = 'Location unavailable. Check your GPS.';
       else if (e.code === 3) errorMsg = 'Location timeout. Try again.';
       else if (e.response) errorMsg = e.response.data?.message || 'Server error.';
-      toast.error(errorMsg);
+      Swal.fire({ icon: 'error', title: 'Error', text: errorMsg });
     } finally {
       setGpsLoading(p => ({ ...p, [`checkin-${visit._id}`]: false }));
     }
@@ -192,7 +192,7 @@ const FieldVisits = () => {
 
   const handleCheckOut = async (visit) => {
     if (!isOnline) {
-      toast.error('Cannot check out while offline.');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Cannot check out while offline.' });
       return;
     }
     
@@ -201,7 +201,7 @@ const FieldVisits = () => {
       const pos = await getLocation();
       const address = await getAddress(pos.lat, pos.lng);
       await api.post(`/api/field-visits/${visit._id}/checkout`, { ...pos, address });
-      toast.success('Checked out successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Checked out successfully', timer: 2000, showConfirmButton: false });
       fetchTodayData();
     } catch (e) {
       let errorMsg = 'Check-out failed';
@@ -209,7 +209,7 @@ const FieldVisits = () => {
       else if (e.code === 2) errorMsg = 'Location unavailable. Check your GPS.';
       else if (e.code === 3) errorMsg = 'Location timeout. Try again.';
       else if (e.response) errorMsg = e.response.data?.message || 'Server error.';
-      toast.error(errorMsg);
+      Swal.fire({ icon: 'error', title: 'Error', text: errorMsg });
     } finally {
       setGpsLoading(p => ({ ...p, [`checkout-${visit._id}`]: false }));
     }
@@ -236,12 +236,12 @@ const FieldVisits = () => {
     
     // Check if geolocation is supported
     if (!navigator.geolocation) {
-      toast.error('Geolocation not supported on this device');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Geolocation not supported on this device' });
       return;
     }
     
     // Try to get location first
-    const loadingToast = toast.info('📍 Getting location...', { autoClose: 2000 });
+    const loadingToast = Swal.fire({ icon: 'info', title: 'Info', text: '📍 Getting location...', showConfirmButton: false });
     
     try {
       const position = await new Promise((resolve, reject) => {
@@ -260,20 +260,20 @@ const FieldVisits = () => {
       };
       setCapturedLocation(locationData);
       
-      toast.dismiss(loadingToast);
-      toast.success('Location captured!', { autoClose: 1000 });
+      Swal.close();
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Location captured!', timer: 2000, showConfirmButton: false });
       
       // Open camera
       setTimeout(() => photoInputRef.current.click(), 300);
     } catch (error) {
-      toast.dismiss(loadingToast);
+      Swal.close();
       
       let errorMsg = 'Location access failed';
       if (error.code === 1) errorMsg = 'Location denied. Enable in browser settings.';
       else if (error.code === 2) errorMsg = 'Location unavailable. Check GPS.';
       else if (error.code === 3) errorMsg = 'Location timeout. Try again.';
       
-      toast.error(errorMsg);
+      Swal.fire({ icon: 'error', title: 'Error', text: errorMsg });
     }
   };
 
@@ -290,7 +290,7 @@ const FieldVisits = () => {
     
     // Auto-recapture location if expired (within last 2 minutes)
     if (!capturedLocation || (Date.now() - capturedLocation.timestamp) > 120000) {
-      toast.info('Location expired. Recapturing location...');
+      Swal.fire({ icon: 'info', title: 'Info', text: 'Location expired. Recapturing location...' });
       try {
         const position = await new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -308,7 +308,7 @@ const FieldVisits = () => {
         };
         setCapturedLocation(locationData);
       } catch (error) {
-        toast.error('❌ Failed to get location. Please try capturing the photo again.');
+        Swal.fire({ icon: 'error', title: 'Error', text: '❌ Failed to get location. Please try capturing the photo again.' });
         e.target.value = '';
         setPhotoVisitId(null);
         setCapturedLocation(null);
@@ -316,7 +316,7 @@ const FieldVisits = () => {
       }
     }
     
-    const loadingToast = toast.info('📤 Uploading photo with location...', { autoClose: false });
+    const loadingToast = Swal.fire({ icon: 'info', title: 'Info', text: '📤 Uploading photo with location...', showConfirmButton: false });
     
     try {
       const address = await getAddress(capturedLocation.lat, capturedLocation.lng);
@@ -333,11 +333,11 @@ const FieldVisits = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
-      toast.dismiss(loadingToast);
-      toast.success('✅ Photo uploaded with GPS location!', { autoClose: 3000 });
+      Swal.close();
+      Swal.fire({ icon: 'success', title: 'Success', text: '✅ Photo uploaded with GPS location!', timer: 2000, showConfirmButton: false });
       fetchTodayData();
     } catch (e) {
-      toast.dismiss(loadingToast);
+      Swal.close();
       
       console.error('Photo upload error:', e);
       
@@ -349,7 +349,7 @@ const FieldVisits = () => {
         errorMsg = '❌ No internet connection. Please try again when online.';
       }
       
-      toast.error(errorMsg, { autoClose: 7000 });
+      Swal.fire({ icon: 'error', title: 'Error', text: errorMsg });
     }
     
     e.target.value = '';
@@ -373,25 +373,25 @@ const FieldVisits = () => {
     e.preventDefault();
     
     if (!validateOutcomeForm()) {
-      toast.error('Please fix the form errors');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Please fix the form errors' });
       return;
     }
     
     if (!isOnline) {
-      toast.error('Cannot save outcome while offline.');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Cannot save outcome while offline.' });
       return;
     }
     
     try {
       await api.post(`/api/field-visits/${activeVisit || visits.find(v => v.status === 'CHECKED_IN')?._id}/outcome`, outcomeForm);
-      toast.success('Outcome saved!');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Outcome saved!', timer: 2000, showConfirmButton: false });
       setShowOutcomeModal(false);
       setOutcomeForm({ status: 'NEUTRAL', notes: '', dealValue: '' });
       setFormErrors({});
       fetchTodayData();
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to save outcome.';
-      toast.error(errorMsg);
+      Swal.fire({ icon: 'error', title: 'Error', text: errorMsg });
     }
   };
 

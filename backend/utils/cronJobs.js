@@ -75,10 +75,6 @@ cron.schedule('0 10 * * *', async () => {
     for (const leaveRequest of pendingLeaves) {
       await sendLeaveReminderNotification(leaveRequest);
     }
-    
-    if (pendingLeaves.length > 0) {
-      
-    }
   } catch (error) {
     console.error('Error in leave reminder job:', error);
   }
@@ -166,10 +162,6 @@ cron.schedule('*/30 18-23 * * *', async () => {
         await record.save();
         checkedOutCount++;
       }
-    }
-    
-    if (checkedOutCount > 0) {
-      
     }
   } catch (error) {
     console.error('Error in auto checkout job:', error);

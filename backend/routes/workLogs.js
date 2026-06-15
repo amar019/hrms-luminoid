@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
-const { createWorkLog, createBulkWorkLog, getMyWorkLogs, getAllWorkLogs, exportWorkLogs, checkTodayLog, updateWorkLog, deleteWorkLog, addComment, getWorkLogById } = require('../controllers/workLogController');
+const { createWorkLog, createBulkWorkLog, getMyWorkLogs, getAllWorkLogs, exportWorkLogs, checkTodayLog, updateWorkLog, deleteWorkLog, addComment, getWorkLogById, approveWorkLog } = require('../controllers/workLogController');
 
 router.post('/', auth, createWorkLog);
 router.post('/bulk', auth, createBulkWorkLog);
@@ -13,5 +13,6 @@ router.get('/:id', auth, getWorkLogById);
 router.put('/:id', auth, updateWorkLog);
 router.delete('/:id', auth, deleteWorkLog);
 router.post('/:id/comments', auth, addComment);
+router.put('/:id/approve', auth, approveWorkLog);
 
 module.exports = router;

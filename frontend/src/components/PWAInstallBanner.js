@@ -1,7 +1,7 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect } from "react";
 import { Alert, Button, Container, Spinner } from "react-bootstrap";
 import { Download, X, CheckCircle } from "react-feather";
-import { toast } from "react-toastify";
 import "./PWAInstallBanner.css";
 
 const PWAInstallBanner = () => {
@@ -55,13 +55,13 @@ const PWAInstallBanner = () => {
     if (!deferredPrompt) {
       // No beforeinstallprompt event - show error
       console.error("[PWA] No deferredPrompt available. beforeinstallprompt event did not fire.");
-      toast.error(
-        "⚠️ Installation not available yet. Try:\n1. Ensure HTTPS connection\n2. Refresh page\n3. Check browser compatibility",
-        {
-          autoClose: 5000,
-          closeButton: true,
-        }
-      );
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: "⚠️ Installation not available yet. Try:\n1. Ensure HTTPS connection\n2. Refresh page\n3. Check browser compatibility",
+        timer: 5000,
+        showConfirmButton: true
+      });
       return;
     }
 
@@ -69,9 +69,12 @@ const PWAInstallBanner = () => {
     console.log("[PWA] Showing install prompt...");
     
     // Show toast that installation is starting
-    toast.info("📲 Opening installation...", {
-      autoClose: 3000,
-      closeButton: false,
+    Swal.fire({
+      icon: 'info',
+      title: 'Info',
+      text: "📲 Opening installation...",
+      timer: 3000,
+      showConfirmButton: false
     });
 
     try {
@@ -86,9 +89,12 @@ const PWAInstallBanner = () => {
         setIsInstalling(false);
         
         // Show success toast
-        toast.success("✅ HRMS Luminoid is installing! Check your app drawer.", {
-          autoClose: 4000,
-          closeButton: false,
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: "✅ HRMS Luminoid is installing! Check your app drawer.",
+          timer: 4000,
+          showConfirmButton: false
         });
 
         // Close banner after 2 seconds
@@ -99,18 +105,24 @@ const PWAInstallBanner = () => {
         console.log("[PWA] Installation declined");
         setIsInstalling(false);
         
-        toast.warning("Installation cancelled.", {
-          autoClose: 2000,
-          closeButton: false,
+        Swal.fire({
+          icon: 'warning',
+          title: 'Warning',
+          text: "Installation cancelled.",
+          timer: 2000,
+          showConfirmButton: false
         });
       }
     } catch (error) {
       console.error("[PWA] Installation error:", error);
       setIsInstalling(false);
       
-      toast.error(`❌ Installation failed: ${error.message}`, {
-        autoClose: 3000,
-        closeButton: false,
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `❌ Installation failed: ${error.message}`,
+        timer: 3000,
+        showConfirmButton: false
       });
     }
 

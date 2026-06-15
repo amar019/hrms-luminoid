@@ -1,3 +1,4 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect, useRef } from "react";
 import {
   Row,
@@ -12,13 +13,14 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/api";
-import { toast } from "react-toastify";
+
 import { showAnnouncementNotification } from "../utils/notificationService";
 import { logger } from "../utils/logger";
 import TopPerformers from "../components/TopPerformers";
 import LatestAnnouncements from "../components/LatestAnnouncements";
 import GlobalSpinner from "../components/GlobalSpinner";
 import "../styles/Dashboard.css";
+import "../styles/project-tracker.css";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -29,6 +31,8 @@ const Dashboard = () => {
   const [holidays, setHolidays] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [files, setFiles] = useState([]);
+  const [topPerformer, setTopPerformer] = useState(null);
+  const [topPerformerLoading, setTopPerformerLoading] = useState(false);
   const [journeyData, setJourneyData] = useState(null);
   const [journeyLoading, setJourneyLoading] = useState(false);
   const [showFavoriteModal, setShowFavoriteModal] = useState(false);
@@ -70,6 +74,7 @@ const Dashboard = () => {
     fetchFavorites();
     fetchFiles();
     addDefaultFPOLink();
+    fetchTopPerformer();
     if (user?.isFieldEmployee) {
       api
         .get("/api/journey/today")
@@ -83,6 +88,7 @@ const Dashboard = () => {
       setHolidays([]);
       setFavorites([]);
       setFiles([]);
+      setTopPerformer(null);
     };
   }, [user?.role]);
 
@@ -168,6 +174,24 @@ const Dashboard = () => {
     }
   };
 
+  const fetchTopPerformer = async () => {
+    setTopPerformerLoading(true);
+    try {
+      const res = await api.get("/api/projects/dashboard/employee-performance");
+      if (res.data && res.data.length > 0 && res.data[0].totalTasks > 0) {
+        setTopPerformer(res.data[0]);
+      } else {
+        setTopPerformer(null);
+      }
+    } catch (error) {
+      logger.error("Error fetching top performer for dashboard:", error);
+      setTopPerformer(null);
+    } finally {
+      setTopPerformerLoading(false);
+    }
+  };
+
+
   const handleAddFavorite = async (e) => {
     e.preventDefault();
     try {
@@ -175,9 +199,9 @@ const Dashboard = () => {
       setShowFavoriteModal(false);
       setFavoriteForm({ title: "", url: "", icon: "" });
       fetchFavorites();
-      toast.success("Favorite added successfully");
+      Swal.fire({ icon: 'success', title: 'Success', text: "Favorite added successfully", timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error("Error adding favorite");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Error adding favorite" });
     }
   };
 
@@ -194,9 +218,9 @@ const Dashboard = () => {
         expiryDate: "",
       });
       fetchAnnouncements();
-      toast.success("Announcement added successfully");
+      Swal.fire({ icon: 'success', title: 'Success', text: "Announcement added successfully", timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error("Error adding announcement");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Error adding announcement" });
     }
   };
 
@@ -207,20 +231,20 @@ const Dashboard = () => {
       setShowHolidayModal(false);
       setHolidayForm({ name: "", date: "", type: "FESTIVAL", description: "" });
       fetchHolidays();
-      toast.success("Holiday added successfully");
+      Swal.fire({ icon: 'success', title: 'Success', text: "Holiday added successfully", timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error("Error adding holiday");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Error adding holiday" });
     }
   };
 
   const handleMarkHolidayAttendance = async (date) => {
     try {
       const response = await api.post("/api/attendance/mark-holiday", { date });
-      toast.success(response.data.message);
+      Swal.fire({ icon: 'success', title: 'Success', text: response.data.message, timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error(
+      Swal.fire({ icon: 'error', title: 'Error', text: 
         error.response?.data?.message || "Error marking holiday attendance",
-      );
+       });
     }
   };
 
@@ -246,9 +270,9 @@ const Dashboard = () => {
       });
       setSelectedFile(null);
       fetchFiles();
-      toast.success("File uploaded successfully");
+      Swal.fire({ icon: 'success', title: 'Success', text: "File uploaded successfully", timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error("Error uploading file");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Error uploading file" });
     }
   };
 
@@ -491,9 +515,9 @@ const Dashboard = () => {
                           await api.post("/api/journey/start");
                           const r = await api.get("/api/journey/today");
                           setJourneyData(r.data);
-                          toast.success("🚀 Journey started!");
+                          Swal.fire({ icon: 'success', title: 'Success', text: "🚀 Journey started!", timer: 2000, showConfirmButton: false });
                         } catch (e) {
-                          toast.error(e.response?.data?.message || "Failed");
+                          Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || "Failed" });
                         } finally {
                           setJourneyLoading(false);
                         }
@@ -503,9 +527,9 @@ const Dashboard = () => {
                           await api.post("/api/journey/end");
                           const r = await api.get("/api/journey/today");
                           setJourneyData(r.data);
-                          toast.success("🏁 Journey ended!");
+                          Swal.fire({ icon: 'success', title: 'Success', text: "🏁 Journey ended!", timer: 2000, showConfirmButton: false });
                         } catch (e) {
-                          toast.error(e.response?.data?.message || "Failed");
+                          Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || "Failed" });
                         } finally {
                           setJourneyLoading(false);
                         }
@@ -653,45 +677,96 @@ const Dashboard = () => {
 
           <Row className="mb-4">
             <Col md={6}>
-              <Card className="modern-card h-100">
-                <Card.Header>
-                  <i className="fas fa-chart-pie me-2"></i>Leave Balances
-                </Card.Header>
-                <Card.Body>
-                  <div className="balance-grid">
-                    {dashboardData.balances
-                      ?.filter((balance) => balance.leaveTypeId !== null)
-                      .map((balance) => (
-                        <div key={balance._id} className="balance-card">
-                          <div className="d-flex align-items-center justify-content-between mb-2">
-                            <div className="balance-type">
-                              {balance.leaveTypeId?.name}
-                            </div>
-                            <div
-                              className="rounded-circle"
-                              style={{
-                                width: "12px",
-                                height: "12px",
-                                backgroundColor: balance.leaveTypeId?.color,
-                              }}
-                            ></div>
-                          </div>
-                          <div className="balance-value">
-                            {balance.available}
-                          </div>
-                          <div className="balance-details">
-                            <span style={{ color: "#64748b" }}>
-                              Used: <strong>{balance.used}</strong>
-                            </span>
-                            <span style={{ color: "#f59e0b" }}>
-                              Pending: <strong>{balance.pending}</strong>
-                            </span>
-                          </div>
+              {topPerformerLoading ? (
+                <div className="perf-skeleton-performer mb-4" style={{ minHeight: "220px" }}></div>
+              ) : topPerformer ? (
+                <div className="top-performer-card mb-4" style={{ height: "100%", minHeight: "220px" }}>
+                  <div className="top-performer-decor-circle"></div>
+                  <div className="top-performer-decor-dots"></div>
+                  <div className="top-performer-decor-wave"></div>
+                  <div className="top-performer-card-content">
+                    <div className="top-performer-badge-wrap">
+                      <div className="top-performer-gold-badge">
+                        <span className="top-performer-badge-icon">
+                          <i className="fas fa-trophy"></i>
+                        </span>
+                        <span className="top-performer-badge-text">Top Performer</span>
+                      </div>
+                    </div>
+                    <div className="top-performer-profile-section">
+                      <div className="top-performer-avatar-container">
+                        <span className="sparkle sparkle-left">✦</span>
+                        <div className="top-performer-avatar-ring">
+                          <img
+                            src={topPerformer.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(topPerformer.name)}&background=F59E0B&color=fff&size=256`}
+                            alt=""
+                            className="top-performer-avatar"
+                            onError={(e) => {
+                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(topPerformer.name)}&background=F59E0B&color=fff&size=256`;
+                            }}
+                          />
                         </div>
-                      ))}
+                        <span className="sparkle sparkle-right">✦</span>
+                      </div>
+                      <div className="top-performer-info">
+                        <h3 className="top-performer-name-text">{topPerformer.name}</h3>
+                        <div className="top-performer-name-underline"></div>
+                        <p className="top-performer-designation-text">{topPerformer.designation}</p>
+                      </div>
+                    </div>
+                    <div className="top-performer-stats-row">
+                      <div className="top-performer-stat-box">
+                        <div className="top-performer-stat-icon-box">
+                          <i className="fas fa-clipboard-check"></i>
+                        </div>
+                        <div className="top-performer-stat-info">
+                          <div className="top-performer-stat-num">{topPerformer.completedTasks}</div>
+                          <div className="top-performer-stat-lbl">Completed</div>
+                        </div>
+                      </div>
+                      <div className="top-performer-stat-box">
+                        <div className="top-performer-stat-icon-box bg-list">
+                          <i className="fas fa-list-ul"></i>
+                        </div>
+                        <div className="top-performer-stat-info">
+                          <div className="top-performer-stat-num">{topPerformer.totalTasks}</div>
+                          <div className="top-performer-stat-lbl">Total Tasks</div>
+                        </div>
+                      </div>
+                      <div className="top-performer-stat-box">
+                        <div className="top-performer-circle-progress">
+                          <svg viewBox="0 0 36 36" className="circular-chart-gold">
+                            <path className="circle-bg"
+                              d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                            <path className="circle"
+                              strokeDasharray={`${topPerformer.completionPercentage || 0}, 100`}
+                              d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                            <text x="18" y="20.35" className="percentage-text">{Math.round(topPerformer.completionPercentage || 0)}%</text>
+                          </svg>
+                        </div>
+                        <div className="top-performer-stat-info">
+                          <div className="top-performer-stat-num">{Math.round(topPerformer.completionPercentage || 0)}%</div>
+                          <div className="top-performer-stat-lbl">Completion</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </Card.Body>
-              </Card>
+                </div>
+              ) : (
+                <div className="card p-4 text-center shadow-sm border rounded bg-white mb-4" style={{ minHeight: "220px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                  <div style={{ fontSize: "48px", marginBottom: "12px", opacity: 0.3 }}>🏆</div>
+                  <h6 className="fw-bold" style={{ color: "#334155" }}>No task activity tracked yet</h6>
+                  <p className="text-muted small mb-0" style={{ maxWidth: "280px", margin: "0 auto" }}>
+                    Assign tasks to employees to start tracking performance metrics and highlights.
+                  </p>
+                </div>
+              )}
             </Col>
           </Row>
 

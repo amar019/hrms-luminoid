@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Form, Badge, InputGroup } from 'react-bootstrap';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 import Swal from 'sweetalert2';
 
 const EMPTY_FORM = { name: '', contactPerson: '', phone: '', email: '', address: '', industry: '', notes: '', priority: 'MEDIUM', status: 'PROSPECT', assignedTo: [], location: { lat: '', lng: '' } };
@@ -30,7 +30,7 @@ const ClientDirectory = () => {
       const [cRes, eRes] = await Promise.all([api.get('/api/field-clients'), api.get('/api/employees')]);
       setClients(cRes.data);
       setEmployees(eRes.data.filter(e => e.role === 'EMPLOYEE'));
-    } catch { toast.error('Failed to load data'); }
+    } catch { Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load data' }); }
     finally { setLoading(false); }
   };
 
@@ -59,26 +59,26 @@ const ClientDirectory = () => {
       const payload = { ...form, location: { lat: parseFloat(form.location.lat) || null, lng: parseFloat(form.location.lng) || null } };
       if (panel !== 'add') await api.put(`/api/field-clients/${panel}`, payload);
       else await api.post('/api/field-clients', payload);
-      toast.success(panel !== 'add' ? 'Client updated' : 'Client added');
+      Swal.fire({ icon: 'success', title: 'Success', text: panel !== 'add' ? 'Client updated' : 'Client added', timer: 2000, showConfirmButton: false });
       setPanel(null);
       fetchData();
-    } catch (err) { toast.error(err.response?.data?.message || 'Save failed'); }
+    } catch (err) { Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Save failed' }); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({ title: 'Delete client?', text: 'This cannot be undone', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' });
     if (!result.isConfirmed) return;
-    try { await api.delete(`/api/field-clients/${id}`); toast.success('Client deleted'); if (panel === id) setPanel(null); fetchData(); }
-    catch { toast.error('Delete failed'); }
+    try { await api.delete(`/api/field-clients/${id}`); Swal.fire({ icon: 'success', title: 'Success', text: 'Client deleted', timer: 2000, showConfirmButton: false }); if (panel === id) setPanel(null); fetchData(); }
+    catch { Swal.fire({ icon: 'error', title: 'Error', text: 'Delete failed' }); }
   };
 
   const getGPS = async () => {
     try {
       const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true }));
       setForm(p => ({ ...p, location: { lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) } }));
-      toast.success('GPS location captured');
-    } catch { toast.error('Location access denied'); }
+      Swal.fire({ icon: 'success', title: 'Success', text: 'GPS location captured', timer: 2000, showConfirmButton: false });
+    } catch { Swal.fire({ icon: 'error', title: 'Error', text: 'Location access denied' }); }
   };
 
   const filtered = clients.filter(c => {

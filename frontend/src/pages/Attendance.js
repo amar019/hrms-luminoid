@@ -1,7 +1,8 @@
+import Swal from 'sweetalert2';
 import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Row, Col, Card, Button, Table, Badge, Form, Modal } from "react-bootstrap";
-import { toast } from "react-toastify";
+
 import moment from "moment-timezone";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
@@ -323,11 +324,11 @@ const Attendance = () => {
     setPolicySaving(true);
     try {
       await api.put('/api/attendance-policy', policyForm);
-      toast.success('Attendance policy updated successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Attendance policy updated successfully', timer: 2000, showConfirmButton: false });
       setShowPolicyEditModal(false);
       fetchAttendancePolicy();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update policy');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to update policy' });
     } finally {
       setPolicySaving(false);
     }
@@ -338,11 +339,11 @@ const Attendance = () => {
     setPolicySaving(true);
     try {
       await api.post('/api/attendance-policy/reset');
-      toast.success('Policy reset to defaults');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Policy reset to defaults', timer: 2000, showConfirmButton: false });
       setShowPolicyEditModal(false);
       fetchAttendancePolicy();
     } catch (error) {
-      toast.error('Failed to reset policy');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to reset policy' });
     } finally {
       setPolicySaving(false);
     }
@@ -352,10 +353,10 @@ const Attendance = () => {
     setJourneyLoading(true);
     try {
       await api.post('/api/journey/start');
-      toast.success('🚀 Journey started! GPS tracking active.');
+      Swal.fire({ icon: 'success', title: 'Success', text: '🚀 Journey started! GPS tracking active.', timer: 2000, showConfirmButton: false });
       await fetchJourneyStatus();
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to start journey');
+      Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || 'Failed to start journey' });
     } finally { setJourneyLoading(false); }
   };
 
@@ -363,10 +364,10 @@ const Attendance = () => {
     setJourneyLoading(true);
     try {
       await api.post('/api/journey/end');
-      toast.success('🏁 Journey ended!');
+      Swal.fire({ icon: 'success', title: 'Success', text: '🏁 Journey ended!', timer: 2000, showConfirmButton: false });
       await fetchJourneyStatus();
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to end journey');
+      Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || 'Failed to end journey' });
     } finally { setJourneyLoading(false); }
   };
 
@@ -389,7 +390,7 @@ const Attendance = () => {
   };
 
   const useCurrentLocationForOffice = () => {
-    if (!navigator.geolocation) return toast.error('Geolocation not supported');
+    if (!navigator.geolocation) return Swal.fire({ icon: 'error', title: 'Error', text: 'Geolocation not supported' });
     setFetchingGPS(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -402,9 +403,9 @@ const Attendance = () => {
           setMapAddress(data.display_name || '');
         } catch { setMapAddress(''); }
         setFetchingGPS(false);
-        toast.success('Current location captured!');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Current location captured!', timer: 2000, showConfirmButton: false });
       },
-      () => { toast.error('Could not get location. Allow location access.'); setFetchingGPS(false); },
+      () => { Swal.fire({ icon: 'error', title: 'Error', text: 'Could not get location. Allow location access.' }); setFetchingGPS(false); },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
@@ -420,10 +421,10 @@ const Attendance = () => {
       const data = await res.json();
       setSearchResults(data);
       if (data.length === 0) {
-        toast.info('No locations found. Try a different search term.');
+        Swal.fire({ icon: 'info', title: 'Info', text: 'No locations found. Try a different search term.' });
       }
     } catch (error) {
-      toast.error('Failed to search location');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to search location' });
       setSearchResults([]);
     } finally {
       setSearchingLocation(false);
@@ -437,29 +438,29 @@ const Attendance = () => {
     setMapAddress(result.display_name);
     setSearchResults([]);
     setSearchQuery('');
-    toast.success('Location selected!');
+    Swal.fire({ icon: 'success', title: 'Success', text: 'Location selected!', timer: 2000, showConfirmButton: false });
   };
 
   const handleSaveOffice = async () => {
     if (!officeForm.name || !officeForm.latitude || !officeForm.longitude) {
-      return toast.error('Name, latitude and longitude are required');
+      return Swal.fire({ icon: 'error', title: 'Error', text: 'Name, latitude and longitude are required' });
     }
     if (officeForm.endTime <= officeForm.startTime) {
-      return toast.error('End time must be after start time');
+      return Swal.fire({ icon: 'error', title: 'Error', text: 'End time must be after start time' });
     }
     setOfficeSaving(true);
     try {
       if (editingOffice) {
         await api.put(`/api/office-locations/${editingOffice._id}`, officeForm);
-        toast.success('Office location updated');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Office location updated', timer: 2000, showConfirmButton: false });
       } else {
         await api.post('/api/office-locations', officeForm);
-        toast.success('Office location added');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Office location added', timer: 2000, showConfirmButton: false });
       }
       setShowOfficeModal(false);
       fetchOfficeLocations();
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to save');
+      Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || 'Failed to save' });
     } finally {
       setOfficeSaving(false);
     }
@@ -469,10 +470,10 @@ const Attendance = () => {
     if (!window.confirm('Delete this office location?')) return;
     try {
       await api.delete(`/api/office-locations/${id}`);
-      toast.success('Office location deleted');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Office location deleted', timer: 2000, showConfirmButton: false });
       fetchOfficeLocations();
     } catch (e) {
-      toast.error('Failed to delete');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete' });
     }
   };
 
@@ -481,6 +482,81 @@ const Attendance = () => {
     const hour = h % 12 || 12;
     const minute = String(m).padStart(2, '0');
     return `${hour}:${minute} ${suffix}`;
+  };
+
+  const requestLocationWithUX = async (actionText) => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        Swal.fire({ icon: 'error', title: 'Error', text: "Geolocation is not supported by your browser." });
+        return reject(new Error("Not supported"));
+      }
+
+      Swal.fire({
+        title: 'Location Required',
+        html: `We need to access your location to <b>${actionText}</b>.<br><br>Please click "Allow" when your browser prompts you.`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Proceed',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#10B981',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'Fetching Location...',
+            text: 'Please wait while we acquire your GPS coordinates.',
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            }
+          });
+
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              Swal.close();
+              resolve(position);
+            },
+            (error) => {
+              Swal.close();
+              let errorMsg = "Unable to fetch location.";
+              let guidance = "";
+              
+              if (error.code === error.PERMISSION_DENIED) {
+                errorMsg = "Location Permission Denied";
+                guidance = `
+                  <div style="text-align: left; font-size: 14px;">
+                    <p>You have denied location access. To enable it:</p>
+                    <ol>
+                      <li>Open Browser <b>Settings</b> → <b>Privacy and Security</b> → <b>Site Settings</b> → <b>Location</b>.</li>
+                      <li>Find this website and set its location permission to <b>Allow</b>.</li>
+                      <li>Refresh the page and try again.</li>
+                    </ol>
+                  </div>
+                `;
+              } else if (error.code === error.POSITION_UNAVAILABLE) {
+                errorMsg = "Location information is unavailable.";
+              } else if (error.code === error.TIMEOUT) {
+                errorMsg = "The request to get user location timed out.";
+              }
+
+              Swal.fire({
+                icon: 'error',
+                title: errorMsg,
+                html: guidance || error.message,
+                confirmButtonColor: '#10B981',
+              });
+              reject(error);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 15000,
+              maximumAge: 0,
+            }
+          );
+        } else {
+          reject(new Error("User cancelled"));
+        }
+      });
+    });
   };
 
   const fetchEmployees = async () => {
@@ -496,24 +572,13 @@ const Attendance = () => {
 
   const handleCheckIn = async () => {
     if (selectedUser && selectedUser !== user?.id) {
-      return toast.error("Cannot check in for another user");
+      return Swal.fire({ icon: 'error', title: 'Error', text: "Cannot check in for another user" });
     }
 
-    setLoading(true);
-
     try {
-      if (!navigator.geolocation) {
-        toast.error("Geolocation not supported by your browser");
-        return;
-      }
-
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0,
-        });
-      });
+      const position = await requestLocationWithUX('check in');
+      
+      setLoading(true);
 
       const location = {
         latitude: position.coords.latitude,
@@ -523,7 +588,7 @@ const Attendance = () => {
 
       await api.post("/api/attendance/checkin", { location, workMode, officeLocationId: workMode === 'OFFICE' ? selectedOfficeId : undefined });
 
-      toast.success(`Checked in successfully (${workMode === 'OFFICE' ? '🏢 Office' : workMode === 'REMOTE' ? '🏠 Remote' : '🔄 Hybrid/Field'})`);
+      Swal.fire({ icon: 'success', title: 'Success', text: `Checked in successfully (${workMode === 'OFFICE' ? '🏢 Office' : workMode === 'REMOTE' ? '🏠 Remote' : '🔄 Hybrid/Field'})`, timer: 2000, showConfirmButton: false });
       
       // Instant UI update
       fetchTodayStatus(selectedUser);
@@ -532,10 +597,11 @@ const Attendance = () => {
         fetchAttendanceHistory(selectedUser, currentPage);
       }, 100);
     } catch (error) {
-      toast.error(
-        error.response?.data?.message ||
-          "Unable to check in. Please enable location.",
-      );
+      if (error.response) {
+        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || "Unable to check in." });
+      } else {
+        console.error(error);
+      }
     } finally {
       setLoading(false);
     }
@@ -546,33 +612,21 @@ const Attendance = () => {
     if (loading) return;
 
     if (selectedUser && selectedUser !== user?.id) {
-      return toast.error("Cannot check out for another user");
+      return Swal.fire({ icon: 'error', title: 'Error', text: "Cannot check out for another user" });
     }
 
     if (!todayStatus?.hasCheckedIn) {
-      return toast.error("Please check in first");
+      return Swal.fire({ icon: 'error', title: 'Error', text: "Please check in first" });
     }
 
     if (todayStatus?.hasCheckedOut) {
-      return toast.error("Already checked out");
+      return Swal.fire({ icon: 'error', title: 'Error', text: "Already checked out" });
     }
 
-    setLoading(true);
-
     try {
-      if (!navigator.geolocation) {
-        toast.error("Geolocation not supported by your browser");
-        setLoading(false);
-        return;
-      }
-
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0,
-        });
-      });
+      const position = await requestLocationWithUX('check out');
+      
+      setLoading(true);
 
       const location = {
         latitude: position.coords.latitude,
@@ -582,7 +636,7 @@ const Attendance = () => {
 
       const { data } = await api.post("/api/attendance/checkout", { location });
 
-      toast.success(data.message || "Checked out successfully");
+      Swal.fire({ icon: 'success', title: 'Success', text: data.message || "Checked out successfully", timer: 2000, showConfirmButton: false });
 
       // Instant UI update
       fetchTodayStatus(selectedUser);
@@ -591,12 +645,11 @@ const Attendance = () => {
         fetchAttendanceHistory(selectedUser, currentPage);
       }, 100);
     } catch (error) {
-      console.error(error);
-
-      toast.error(
-        error.response?.data?.message ||
-          "Unable to check out. Please enable location.",
-      );
+      if (error.response) {
+        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || "Unable to check out." });
+      } else {
+        console.error(error);
+      }
     } finally {
       setLoading(false);
     }
@@ -788,9 +841,9 @@ const Attendance = () => {
       a.click();
       URL.revokeObjectURL(url);
       setShowDownloadModal(false);
-      toast.success("Report downloaded successfully");
+      Swal.fire({ icon: 'success', title: 'Success', text: "Report downloaded successfully", timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error("Error generating report");
+      Swal.fire({ icon: 'error', title: 'Error', text: "Error generating report" });
       console.error(error);
     }
   };
@@ -845,17 +898,17 @@ const Attendance = () => {
   // Handler: Save edited attendance
   const handleSaveEdit = async () => {
     if (!editForm.editReason || editForm.editReason.trim().length < 10) {
-      return toast.error("Please provide a reason (minimum 10 characters)");
+      return Swal.fire({ icon: 'error', title: 'Error', text: "Please provide a reason (minimum 10 characters)" });
     }
 
     setSaveLoading(true);
     try {
       await api.put(`/api/attendance/${editingRecord._id}`, editForm);
-      toast.success("Attendance updated successfully");
+      Swal.fire({ icon: 'success', title: 'Success', text: "Attendance updated successfully", timer: 2000, showConfirmButton: false });
       setShowEditModal(false);
       fetchAttendanceHistory(selectedUser);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update attendance");
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || "Failed to update attendance" });
     } finally {
       setSaveLoading(false);
     }
@@ -871,18 +924,18 @@ const Attendance = () => {
   // Handler: Confirm delete
   const handleConfirmDelete = async () => {
     if (!deleteReason || deleteReason.trim().length < 10) {
-      return toast.error("Please provide a reason (minimum 10 characters)");
+      return Swal.fire({ icon: 'error', title: 'Error', text: "Please provide a reason (minimum 10 characters)" });
     }
 
     try {
       await api.delete(`/api/attendance/${editingRecord._id}`, {
         data: { deletionReason: deleteReason },
       });
-      toast.success("Attendance deleted successfully");
+      Swal.fire({ icon: 'success', title: 'Success', text: "Attendance deleted successfully", timer: 2000, showConfirmButton: false });
       setShowDeleteModal(false);
       fetchAttendanceHistory(selectedUser);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to delete attendance");
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || "Failed to delete attendance" });
     }
   };
 

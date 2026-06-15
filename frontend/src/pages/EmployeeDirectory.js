@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Form, InputGroup, Badge, Button, Modal, Table, Offcanvas, Nav } from 'react-bootstrap';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { toast } from 'react-toastify';
+
 import Swal from 'sweetalert2';
 import './EmployeeDirectory.css';
 
@@ -62,7 +62,7 @@ const EmployeeDirectory = () => {
       }
     } catch (error) {
       console.error('Error fetching employees:', error);
-      toast.error('Unable to load employees');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Unable to load employees' });
       setEmployees([]);
     } finally {
       setLoading(false);
@@ -91,7 +91,7 @@ const EmployeeDirectory = () => {
       setSelectedEmployee(profile);
     } catch (error) {
       console.error('Error fetching profile:', error);
-      toast.error(error.response?.data?.message || 'Failed to load profile');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to load profile' });
       setShowProfileModal(false);
     } finally {
       setProfileLoading(false);
@@ -172,10 +172,10 @@ const EmployeeDirectory = () => {
       setEditableProfile(refreshedProfile);
       setEmployees(prev => prev.map(emp => (emp.userId?._id === userId ? { ...emp, userId: { ...emp.userId, ...userPayload } } : emp)));
       setShowEditModal(false);
-      toast.success('Profile updated successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Profile updated successfully', timer: 2000, showConfirmButton: false });
     } catch (err) {
       console.error('Error saving profile:', err);
-      toast.error(err.response?.data?.message || 'Failed to save profile');
+      Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Failed to save profile' });
     }
   };
 
@@ -325,7 +325,7 @@ const EmployeeDirectory = () => {
   const handleToggleFieldEmployee = async (empId, currentValue) => {
     try {
       await api.put(`/api/employee-management/${empId}/toggle-field-employee`);
-      toast.success(`Field tracking ${!currentValue ? 'enabled' : 'disabled'}`);
+      Swal.fire({ icon: 'success', title: 'Success', text: `Field tracking ${!currentValue ? 'enabled' : 'disabled'}`, timer: 2000, showConfirmButton: false });
       fetchEmployees();
       // refresh selected employee if profile modal is open
       if (selectedEmployee) {
@@ -336,7 +336,7 @@ const EmployeeDirectory = () => {
         setSelectedEmployee(res.data);
       }
     } catch {
-      toast.error('Failed to update field employee status');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update field employee status' });
     }
   };
 
@@ -556,7 +556,7 @@ const EmployeeDirectory = () => {
     e.preventDefault();
     
     if (!formData.email || !formData.firstName || !formData.lastName) {
-      toast.error('Please fill all required fields');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Please fill all required fields' });
       return;
     }
     
@@ -593,7 +593,7 @@ const EmployeeDirectory = () => {
           confirmButtonColor: '#0d6efd'
         });
       } else {
-        toast.success(response.data.message || 'Employee created successfully!');
+        Swal.fire({ icon: 'success', title: 'Success', text: response.data.message || 'Employee created successfully!', timer: 2000, showConfirmButton: false });
       }
       
       setShowAddModal(false);
@@ -602,7 +602,7 @@ const EmployeeDirectory = () => {
     } catch (error) {
       console.error('Create employee error:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Error creating employee';
-      toast.error(errorMsg);
+      Swal.fire({ icon: 'error', title: 'Error', text: errorMsg });
     } finally {
       setLoading(false);
     }
@@ -699,9 +699,9 @@ const EmployeeDirectory = () => {
       const wb = window.XLSX?.utils.book_new();
       window.XLSX?.utils.book_append_sheet(wb, ws, 'Employees');
       window.XLSX?.writeFile(wb, `employees_detailed_${new Date().toISOString().split('T')[0]}.xlsx`);
-      toast.success('Employee data exported successfully!');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Employee data exported successfully!', timer: 2000, showConfirmButton: false });
     } catch (error) {
-      toast.error('Failed to export employee data');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to export employee data' });
     }
   };
 
@@ -972,9 +972,9 @@ const EmployeeDirectory = () => {
                         setSelectedEmployee(response.data);
                         setEditableProfile(response.data);
                         fetchEmployees();
-                        toast.success('Profile photo updated successfully');
+                        Swal.fire({ icon: 'success', title: 'Success', text: 'Profile photo updated successfully', timer: 2000, showConfirmButton: false });
                       } catch (error) {
-                        toast.error('Failed to upload photo');
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to upload photo' });
                       }
                     }
                   }}
@@ -1247,7 +1247,7 @@ const EmployeeDirectory = () => {
                       onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
-                          toast.info('Photo upload functionality will be implemented');
+                          Swal.fire({ icon: 'info', title: 'Info', text: 'Photo upload functionality will be implemented' });
                         }
                       }}
                     />

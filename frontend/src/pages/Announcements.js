@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Modal, Form, Badge } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { toast } from 'react-toastify';
+
 import Swal from 'sweetalert2';
 import GlobalSpinner from '../components/GlobalSpinner';
 
@@ -29,7 +29,7 @@ const Announcements = () => {
       console.log('Loaded announcements:', response.data.length);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Failed to load announcements');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load announcements' });
     } finally {
       setLoading(false);
     }
@@ -83,12 +83,12 @@ const Announcements = () => {
     
     // Validation
     if (!formData.title.trim()) {
-      toast.error('Please enter a title');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Please enter a title' });
       return;
     }
     
     if (!formData.content.trim()) {
-      toast.error('Please enter content');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Please enter content' });
       return;
     }
     
@@ -124,7 +124,7 @@ const Announcements = () => {
       });
       
       // Show success message
-      toast.success('Announcement created successfully');
+      Swal.fire({ icon: 'success', title: 'Success', text: 'Announcement created successfully', timer: 2000, showConfirmButton: false });
       
       // Refresh announcements
       fetchAnnouncements();
@@ -132,7 +132,7 @@ const Announcements = () => {
     } catch (error) {
       console.error('Error creating announcement:', error);
       console.error('Error response:', error.response?.data);
-      toast.error(error.response?.data?.message || 'Failed to create announcement');
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to create announcement' });
     } finally {
       setSubmitting(false);
     }
@@ -153,10 +153,10 @@ const Announcements = () => {
     if (result.isConfirmed) {
       try {
         await api.delete(`/api/announcements/${id}`);
-        toast.success('Announcement deleted');
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Announcement deleted', timer: 2000, showConfirmButton: false });
         fetchAnnouncements();
       } catch (error) {
-        toast.error('Failed to delete announcement');
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete announcement' });
       }
     }
   };
