@@ -7,6 +7,7 @@ const {
   resetPassword,
   getUserById,
   clearRoleNotification,
+  resetWfhLocation,
 } = require("../controllers/userController");
 const { auth, authorize } = require("../middleware/auth");
 
@@ -62,6 +63,14 @@ router.put(
   authorize("ADMIN"),
   [body("newPassword").isLength({ min: 6 })],
   resetPassword,
+);
+
+// Reset WFH/Remote base location (admin & HR only)
+router.put(
+  "/:userId/reset-wfh-location",
+  auth,
+  authorize("ADMIN", "HR"),
+  resetWfhLocation,
 );
 
 // Delete user (admin only)

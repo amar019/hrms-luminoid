@@ -74,6 +74,14 @@ const userSchema = new mongoose.Schema({
     revokedAt: { type: Date },
     ipAddress: String,
     userAgent: String
+  },
+  wfhLocation: {
+    latitude: { type: Number },
+    longitude: { type: Number },
+    address: { type: String },
+    pinnedAt: { type: Date },
+    isPinned: { type: Boolean, default: false },
+    maxRadiusKm: { type: Number, default: 5 }
   }
 }, { 
   timestamps: true,
