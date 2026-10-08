@@ -183,4 +183,15 @@ const resetWfhLocation = async (req, res) => {
   }
 };
 
-module.exports = { updateRole, updateUser, deleteUser, changePassword, resetPassword, getUserById, clearRoleNotification, resetWfhLocation };
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({ isActive: true })
+      .select('_id firstName lastName email role department designation profileImage')
+      .sort({ firstName: 1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = { updateRole, updateUser, deleteUser, changePassword, resetPassword, getUserById, clearRoleNotification, resetWfhLocation, getAllUsers };

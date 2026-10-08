@@ -586,9 +586,27 @@ const Attendance = () => {
         accuracy: position.coords.accuracy,
       };
 
-      await api.post("/api/attendance/checkin", { location, workMode, officeLocationId: workMode === 'OFFICE' ? selectedOfficeId : undefined });
+      const response = await api.post("/api/attendance/checkin", { location, workMode, officeLocationId: workMode === 'OFFICE' ? selectedOfficeId : undefined });
 
-      Swal.fire({ icon: 'success', title: 'Success', text: `Checked in successfully (${workMode === 'OFFICE' ? '🏢 Office' : workMode === 'REMOTE' ? '🏠 Remote' : '🔄 Hybrid/Field'})`, timer: 2000, showConfirmButton: false });
+      const isFirstPin = response.data?.isFirstWfhPin;
+      const responseMsg = response.data?.message || `Checked in successfully (${workMode === 'OFFICE' ? '🏢 Office' : workMode === 'REMOTE' ? '🏠 Remote' : '🔄 Hybrid/Field'})`;
+
+      if (isFirstPin) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Remote Location Pinned! 📍',
+          html: `<b>Checked in successfully!</b><br><br>Your Remote/WFH location has been registered as your base anchor.<br>All future Remote check-ins must be within <b>5 km</b> of this location.`,
+          confirmButtonColor: '#10B981',
+        });
+      } else {
+        Swal.fire({ 
+          icon: 'success', 
+          title: 'Success', 
+          text: responseMsg, 
+          timer: 2500, 
+          showConfirmButton: false 
+        });
+      }
       
       // Instant UI update
       fetchTodayStatus(selectedUser);
@@ -598,7 +616,17 @@ const Attendance = () => {
       }, 100);
     } catch (error) {
       if (error.response) {
-        Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || "Unable to check in." });
+        const errorData = error.response.data;
+        if (errorData?.currentDistanceKm && errorData?.allowedRadiusKm) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Outside 5km Boundary 🚫',
+            html: `<b>${errorData.message}</b><br><br>📍 <b>Current Distance:</b> ${errorData.currentDistanceKm} km<br>📏 <b>Allowed Limit:</b> ${errorData.allowedRadiusKm} km<br><br><span style="font-size: 13px; color: #6b7280;">Please return to your registered Remote/WFH location or contact HR/Admin to reset your base anchor.</span>`,
+            confirmButtonColor: '#EF4444'
+          });
+        } else {
+          Swal.fire({ icon: 'error', title: 'Error', text: errorData?.message || "Unable to check in." });
+        }
       } else {
         console.error(error);
       }

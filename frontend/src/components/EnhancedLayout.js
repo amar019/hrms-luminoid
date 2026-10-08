@@ -37,6 +37,9 @@ import {
   MdDescription,
   MdWork,
   MdGroups,
+  MdCorporateFare,
+  MdKeyboardArrowDown,
+  MdKeyboardArrowUp,
 } from "react-icons/md";
 
 const PAGE_META = {
@@ -50,6 +53,12 @@ const PAGE_META = {
   "/project-tracker/my-tasks": { title: "My Tasks Dashboard", icon: "tasks" },
   "/project-tracker/daily-updates": { title: "Daily Updates", icon: "history" },
   "/project-tracker/chat-rooms": { title: "Project Chat Rooms", icon: "comments" },
+  "/recruitment-tracker/requisitions": { title: "Recruitment Tracker", icon: "briefcase" },
+  "/recruitment-tracker/board": { title: "Candidate Pipeline Board", icon: "columns" },
+  "/recruitment-tracker/my-candidates": { title: "My Assigned Candidates", icon: "user-check" },
+  "/recruitment-tracker/daily-logs": { title: "Daily Task Update", icon: "history" },
+
+  "/recruitment-tracker/chat-rooms": { title: "Requisition Chat Rooms", icon: "comments" },
   "/approvals": { title: "Approvals", icon: "check-circle" },
   "/team-calendar": { title: "Team Calendar", icon: "calendar-alt" },
   "/employee-directory": { title: "Employee Directory", icon: "users" },
@@ -121,9 +130,222 @@ const TopbarGreeting = memo(({ user, meta }) => {
   );
 });
 
+// ── Organization Collapsible Nav Group ──
+const OrganizationNavGroup = memo(
+  ({ location, isExpanded, onToggleExpand, onNavigate }) => {
+    const currentPath = location.pathname;
+    const searchParams = new URLSearchParams(location.search);
+    const activeTab = searchParams.get("tab");
+
+    const isEmployeeDirectoryActive =
+      currentPath === "/employee-directory" ||
+      (currentPath === "/organization" && (!activeTab || activeTab === "employees"));
+
+    const isDepartmentsActive =
+      currentPath.startsWith("/departments") ||
+      (currentPath === "/organization" && activeTab === "departments");
+
+    const isWorkLocationsActive =
+      currentPath === "/organization" && activeTab === "locations";
+
+    const isParentActive =
+      isEmployeeDirectoryActive || isDepartmentsActive || isWorkLocationsActive;
+
+    return (
+      <div className="sidebar-section-group org-section-group">
+        <div className="sidebar-section-header">ORGANIZATION</div>
+
+        <button
+          type="button"
+          className={`org-nav-parent-btn ${isParentActive ? "is-active" : ""} ${
+            isExpanded ? "is-expanded" : ""
+          }`}
+          onClick={onToggleExpand}
+          aria-expanded={isExpanded}
+        >
+          <div className="org-nav-parent-left">
+            <MdCorporateFare className="parent-icon" size={20} />
+            <span>Organization</span>
+          </div>
+          <div className="org-nav-chevron">
+            {isExpanded ? (
+              <MdKeyboardArrowUp size={20} />
+            ) : (
+              <MdKeyboardArrowDown size={20} />
+            )}
+          </div>
+        </button>
+
+        <div className={`org-nav-children-wrapper ${isExpanded ? "expanded" : ""}`}>
+          <div className="org-nav-children-inner">
+            <div className="org-nav-children">
+              <LinkContainer to="/employee-directory">
+                <a
+                  className={`org-nav-child-link ${
+                    isEmployeeDirectoryActive ? "active" : ""
+                  }`}
+                  onClick={onNavigate || undefined}
+                >
+                  <MdPeople size={17} className="child-icon" />
+                  <span>Employee Directory</span>
+                </a>
+              </LinkContainer>
+
+              <LinkContainer to="/departments">
+                <a
+                  className={`org-nav-child-link ${
+                    isDepartmentsActive ? "active" : ""
+                  }`}
+                  onClick={onNavigate || undefined}
+                >
+                  <MdAccountTree size={17} className="child-icon" />
+                  <span>Departments</span>
+                </a>
+              </LinkContainer>
+
+              <LinkContainer to={{ pathname: "/organization", search: "?tab=locations" }}>
+                <a
+                  className={`org-nav-child-link ${
+                    isWorkLocationsActive ? "active" : ""
+                  }`}
+                  onClick={onNavigate || undefined}
+                >
+                  <MdLocationOn size={17} className="child-icon" />
+                  <span>Work Locations</span>
+                </a>
+              </LinkContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  },
+);
+
+// ── Recruitment Collapsible Nav Group ──
+const RecruitmentNavGroup = memo(
+  ({ location, isExpanded, onToggleExpand, onNavigate }) => {
+    const currentPath = location.pathname;
+
+    const isRequisitionsActive = currentPath === "/recruitment-tracker/requisitions";
+    const isBoardActive = currentPath.startsWith("/recruitment-tracker/board");
+    const isMyCandidatesActive = currentPath === "/recruitment-tracker/my-candidates";
+    const isDailyLogsActive = currentPath === "/recruitment-tracker/daily-logs";
+    const isChatRoomsActive = currentPath === "/recruitment-tracker/chat-rooms";
+
+    const isParentActive = currentPath.startsWith("/recruitment-tracker");
+
+    return (
+      <div className="sidebar-section-group recruitment-section-group">
+        <div className="sidebar-section-header">RECRUITMENT</div>
+
+        <button
+          type="button"
+          className={`org-nav-parent-btn ${isParentActive ? "is-active" : ""} ${
+            isExpanded ? "is-expanded" : ""
+          }`}
+          onClick={onToggleExpand}
+          aria-expanded={isExpanded}
+        >
+          <div className="org-nav-parent-left">
+            <MdWork className="parent-icon" size={20} />
+            <span>Recruitment Tracker</span>
+          </div>
+          <div className="org-nav-chevron">
+            {isExpanded ? (
+              <MdKeyboardArrowUp size={20} />
+            ) : (
+              <MdKeyboardArrowDown size={20} />
+            )}
+          </div>
+        </button>
+
+        <div className={`org-nav-children-wrapper ${isExpanded ? "expanded" : ""}`}>
+          <div className="org-nav-children-inner">
+            <div className="org-nav-children">
+              <LinkContainer to="/recruitment-tracker/daily-logs">
+                <a
+                  className={`org-nav-child-link ${
+                    isDailyLogsActive ? "active" : ""
+                  }`}
+                  onClick={onNavigate || undefined}
+                >
+                  <i className="fas fa-history child-icon me-2"></i>
+                  <span>Daily Task Update</span>
+                </a>
+              </LinkContainer>
+
+              <LinkContainer to="/recruitment-tracker/requisitions">
+                <a
+                  className={`org-nav-child-link ${
+                    isRequisitionsActive ? "active" : ""
+                  }`}
+                  onClick={onNavigate || undefined}
+                >
+                  <i className="fas fa-briefcase child-icon me-2"></i>
+                  <span>Requisition Hub</span>
+                </a>
+              </LinkContainer>
+
+              <LinkContainer to="/recruitment-tracker/board/all">
+                <a
+                  className={`org-nav-child-link ${
+                    isBoardActive ? "active" : ""
+                  }`}
+                  onClick={onNavigate || undefined}
+                >
+                  <i className="fas fa-columns child-icon me-2"></i>
+                  <span>Candidate Board</span>
+                </a>
+              </LinkContainer>
+
+              <LinkContainer to="/recruitment-tracker/my-candidates">
+                <a
+                  className={`org-nav-child-link ${
+                    isMyCandidatesActive ? "active" : ""
+                  }`}
+                  onClick={onNavigate || undefined}
+                >
+                  <i className="fas fa-user-check child-icon me-2"></i>
+                  <span>My Candidates</span>
+                </a>
+              </LinkContainer>
+
+              <LinkContainer to="/recruitment-tracker/chat-rooms">
+                <a
+                  className={`org-nav-child-link ${
+                    isChatRoomsActive ? "active" : ""
+                  }`}
+                  onClick={onNavigate || undefined}
+                >
+                  <i className="fas fa-comments child-icon me-2"></i>
+                  <span>Requisition Chat Rooms</span>
+                </a>
+              </LinkContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  },
+);
+
 // ── Sidebar nav — defined OUTSIDE EnhancedLayout so it's a stable component reference ──
 const SidebarNav = memo(
-  ({ user, menuItems, currentPath, onNavigate, onLogout, scrollRef }) => (
+  ({
+    user,
+    menuItems,
+    currentPath,
+    location,
+    isOrgExpanded,
+    onToggleOrg,
+    isRecruitmentExpanded,
+    onToggleRecruitment,
+    onNavigate,
+    onLogout,
+    scrollRef,
+  }) => (
+
     <>
       <div className="sidebar-user-info">
         <div className="user-avatar-large">
@@ -142,11 +364,39 @@ const SidebarNav = memo(
       <div className="sidebar-body" ref={scrollRef}>
         <Nav className="flex-column">
           {menuItems.map((item) => {
+            if (item.path === "/organization") {
+              return (
+                <OrganizationNavGroup
+                  key="organization-section"
+                  location={location}
+                  isExpanded={isOrgExpanded}
+                  onToggleExpand={onToggleOrg}
+                  onNavigate={onNavigate}
+                />
+              );
+            }
+            if (item.path.startsWith("/recruitment-tracker")) {
+              return (
+                <RecruitmentNavGroup
+                  key="recruitment-section"
+                  location={location}
+                  isExpanded={isRecruitmentExpanded}
+                  onToggleExpand={onToggleRecruitment}
+                  onNavigate={onNavigate}
+                />
+              );
+            }
+
             const IconComponent = item.icon;
+            const isItemActive =
+              currentPath === item.path ||
+              (item.path.startsWith("/recruitment-tracker") && currentPath.startsWith("/recruitment-tracker")) ||
+              (item.path.startsWith("/project-tracker") && currentPath.startsWith("/project-tracker"));
+
             return (
               <LinkContainer key={item.path} to={item.path}>
                 <Nav.Link
-                  className={currentPath === item.path ? "active" : ""}
+                  className={isItemActive ? "active" : ""}
                   onClick={onNavigate}
                 >
                   <IconComponent size={20} />
@@ -182,6 +432,51 @@ const EnhancedLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const sidebarScrollRef = useRef(null);
+
+  const [isOrgExpanded, setIsOrgExpanded] = useState(() => {
+    const p = window.location.pathname;
+    return (
+      p === "/organization" ||
+      p.startsWith("/employee-directory") ||
+      p.startsWith("/departments")
+    );
+  });
+
+  const [isRecruitmentExpanded, setIsRecruitmentExpanded] = useState(() => {
+    const p = window.location.pathname;
+    return p.startsWith("/recruitment-tracker");
+  });
+
+  useEffect(() => {
+    const p = location.pathname;
+    if (
+      p === "/organization" ||
+      p.startsWith("/employee-directory") ||
+      p.startsWith("/departments")
+    ) {
+      setIsOrgExpanded(true);
+    }
+    if (p.startsWith("/recruitment-tracker")) {
+      setIsRecruitmentExpanded(true);
+    }
+  }, [location.pathname, location.search]);
+
+  const handleToggleOrg = useCallback((e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsOrgExpanded((prev) => !prev);
+  }, []);
+
+  const handleToggleRecruitment = useCallback((e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsRecruitmentExpanded((prev) => !prev);
+  }, []);
+
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -297,6 +592,12 @@ const EnhancedLayout = ({ children }) => {
           roles: ["MANAGER", "HR", "ADMIN"],
         },
         {
+          path: "/recruitment-tracker/requisitions",
+          label: "Recruitment Tracker",
+          icon: MdWork,
+          roles: ["MANAGER", "HR", "ADMIN"],
+        },
+        {
           path: "/organization",
           label: "Organization",
           icon: MdPeople,
@@ -305,12 +606,20 @@ const EnhancedLayout = ({ children }) => {
       );
     }
     if (user?.role === "EMPLOYEE") {
-      items.push({
-        path: "/project-tracker/my-tasks",
-        label: "Project Tracker",
-        icon: MdTask,
-        roles: ["EMPLOYEE"],
-      });
+      items.push(
+        {
+          path: "/project-tracker/my-tasks",
+          label: "Project Tracker",
+          icon: MdTask,
+          roles: ["EMPLOYEE"],
+        },
+        {
+          path: "/recruitment-tracker/my-candidates",
+          label: "Recruitment Tracker",
+          icon: MdWork,
+          roles: ["EMPLOYEE"],
+        },
+      );
     }
     if (["HR", "ADMIN"].includes(user?.role)) {
       items.push(
@@ -399,7 +708,13 @@ const EnhancedLayout = ({ children }) => {
     { path: "/profile", icon: MdPerson, label: "Profile" },
   ].filter((link) => !link.roles || link.roles.includes(user?.role));
 
-  const meta = PAGE_META[location.pathname] || { title: "HRMS", icon: "home" };
+  const meta =
+    PAGE_META[location.pathname] ||
+    (location.pathname.startsWith("/recruitment-tracker")
+      ? { title: "Recruitment Tracker", icon: "briefcase" }
+      : location.pathname.startsWith("/project-tracker")
+      ? { title: "Project Tracker", icon: "tasks" }
+      : { title: "HRMS", icon: "home" });
   const menuItems = getMenuItems();
 
   return (
@@ -468,8 +783,35 @@ const EnhancedLayout = ({ children }) => {
               {/* Nav Items */}
               <nav className="mobile-sidebar-nav flex-grow-1">
                 {menuItems.map((item) => {
+                  if (item.path === "/organization") {
+                    return (
+                      <OrganizationNavGroup
+                        key="mobile-org-section"
+                        location={location}
+                        isExpanded={isOrgExpanded}
+                        onToggleExpand={handleToggleOrg}
+                        onNavigate={() => setShowSidebar(false)}
+                      />
+                    );
+                  }
+                  if (item.path.startsWith("/recruitment-tracker")) {
+                    return (
+                      <RecruitmentNavGroup
+                        key="mobile-recruitment-section"
+                        location={location}
+                        isExpanded={isRecruitmentExpanded}
+                        onToggleExpand={handleToggleRecruitment}
+                        onNavigate={() => setShowSidebar(false)}
+                      />
+                    );
+                  }
+
                   const IconComponent = item.icon;
-                  const isActive = location.pathname === item.path;
+                  const isActive =
+                    location.pathname === item.path ||
+                    (item.path.startsWith("/recruitment-tracker") && location.pathname.startsWith("/recruitment-tracker")) ||
+                    (item.path.startsWith("/project-tracker") && location.pathname.startsWith("/project-tracker"));
+
                   return (
                     <LinkContainer key={item.path} to={item.path}>
                       <a
@@ -613,10 +955,16 @@ const EnhancedLayout = ({ children }) => {
               user={user}
               menuItems={menuItems}
               currentPath={location.pathname}
+              location={location}
+              isOrgExpanded={isOrgExpanded}
+              onToggleOrg={handleToggleOrg}
+              isRecruitmentExpanded={isRecruitmentExpanded}
+              onToggleRecruitment={handleToggleRecruitment}
               onNavigate={null}
               onLogout={handleLogout}
               scrollRef={sidebarScrollRef}
             />
+
           </div>
 
           <div className="desktop-topbar">

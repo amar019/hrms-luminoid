@@ -23,6 +23,7 @@ import "./styles/modern-spinner.css";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { DataProvider } from "./context/DataContext";
+import { PermissionProvider } from "./hooks/usePermissions";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EnhancedLayout from "./components/EnhancedLayout";
@@ -55,6 +56,12 @@ const ProjectDetail = lazy(() => import("./pages/ProjectTracker/ProjectDetail"))
 const EmployeeDashboard = lazy(() => import("./pages/ProjectTracker/EmployeeDashboard"));
 const DailyUpdatesHistory = lazy(() => import("./pages/ProjectTracker/DailyUpdatesHistory"));
 const ProjectChatRooms = lazy(() => import("./pages/ProjectTracker/ProjectChatRooms"));
+const RecruitmentTrackerLayout = lazy(() => import("./pages/RecruitmentTracker/RecruitmentTrackerLayout"));
+const RequisitionsHub = lazy(() => import("./pages/RecruitmentTracker/RequisitionsHub"));
+const CandidateBoard = lazy(() => import("./pages/RecruitmentTracker/CandidateBoard"));
+const MyCandidatesDashboard = lazy(() => import("./pages/RecruitmentTracker/MyCandidatesDashboard"));
+const RecruiterDailyLogsHistory = lazy(() => import("./pages/RecruitmentTracker/RecruiterDailyLogsHistory"));
+const RequisitionChatRooms = lazy(() => import("./pages/RecruitmentTracker/RequisitionChatRooms"));
 const TrainingMaterials = lazy(() => import("./pages/TrainingMaterials"));
 const FieldVisitsHub = lazy(() => import("./pages/FieldVisitsHub"));
 const MyFieldWork = lazy(() => import("./pages/MyFieldWork"));
@@ -77,8 +84,9 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <DataProvider>
-            <Router>
+          <PermissionProvider>
+            <DataProvider>
+              <Router>
               <div className="App">
                 <Routes>
                   <Route path="/login" element={<Login />} />
@@ -338,6 +346,28 @@ function App() {
                     <Route path="chat-rooms" element={<ProjectChatRooms />} />
                   </Route>
 
+                  <Route
+                    path="/recruitment-tracker"
+                    element={
+                      <ProtectedRoute roles={["MANAGER", "HR", "ADMIN", "EMPLOYEE"]}>
+                        <EnhancedLayout>
+                          <Suspense fallback={<LoadingFallback />}>
+                            <RecruitmentTrackerLayout />
+                          </Suspense>
+                        </EnhancedLayout>
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route index element={<Navigate to="daily-logs" replace />} />
+                    <Route path="daily-logs" element={<RecruiterDailyLogsHistory />} />
+                    <Route path="requisitions" element={<RequisitionsHub />} />
+                    <Route path="board/:id" element={<CandidateBoard />} />
+                    <Route path="board" element={<Navigate to="board/all" replace />} />
+                    <Route path="my-candidates" element={<MyCandidatesDashboard />} />
+                    <Route path="chat-rooms" element={<RequisitionChatRooms />} />
+
+                  </Route>
+
                   {/* Redirect old routes to Project Tracker */}
                   <Route path="/jira" element={<Navigate to="/project-tracker" replace />} />
                   <Route path="/work-management" element={<Navigate to="/project-tracker" replace />} />
@@ -434,7 +464,8 @@ function App() {
               </div>
             </Router>
           </DataProvider>
-        </AuthProvider>
+        </PermissionProvider>
+      </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

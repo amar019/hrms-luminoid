@@ -8,13 +8,18 @@ const {
   getUserById,
   clearRoleNotification,
   resetWfhLocation,
+  getAllUsers,
 } = require("../controllers/userController");
 const { auth, authorize } = require("../middleware/auth");
 
 const router = express.Router();
 
+// Get all users
+router.get("/", auth, getAllUsers);
+
 // Get user by ID
 router.get("/:userId", auth, getUserById);
+
 
 // Clear role change notification
 router.post("/:userId/clear-notification", auth, clearRoleNotification);

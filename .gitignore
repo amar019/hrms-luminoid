@@ -1,5 +1,10 @@
 # Dependencies
 node_modules/
+**/node_modules/
+frontend/node_modules/
+backend/node_modules/
+.cache/
+**/.cache/
 
 # Environment variables - NEVER COMMIT THESE
 .env
