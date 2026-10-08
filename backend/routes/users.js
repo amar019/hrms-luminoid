@@ -7,13 +7,19 @@ const {
   resetPassword,
   getUserById,
   clearRoleNotification,
+  resetWfhLocation,
+  getAllUsers,
 } = require("../controllers/userController");
 const { auth, authorize } = require("../middleware/auth");
 
 const router = express.Router();
 
+// Get all users
+router.get("/", auth, getAllUsers);
+
 // Get user by ID
 router.get("/:userId", auth, getUserById);
+
 
 // Clear role change notification
 router.post("/:userId/clear-notification", auth, clearRoleNotification);
@@ -62,6 +68,14 @@ router.put(
   authorize("ADMIN"),
   [body("newPassword").isLength({ min: 6 })],
   resetPassword,
+);
+
+// Reset WFH/Remote base location (admin & HR only)
+router.put(
+  "/:userId/reset-wfh-location",
+  auth,
+  authorize("ADMIN", "HR"),
+  resetWfhLocation,
 );
 
 // Delete user (admin only)

@@ -38,18 +38,22 @@ const checkIn = async (req, res) => {
     }
 
     // 🔐 GPS accuracy validation
-    const { MAX_GPS_ACCURACY } = require("../config/attendanceConfig");
-    const maxAccuracy = Number(process.env.MAX_GPS_ACCURACY || MAX_GPS_ACCURACY || 50);
+    const { MAX_GPS_ACCURACY, MAX_REMOTE_GPS_ACCURACY } = require("../config/attendanceConfig");
+    const isRemote = (workMode === "REMOTE" || workMode === "WFH" || workMode === "WORK_FROM_HOME");
+    const maxAccuracy = isRemote
+      ? Number(process.env.MAX_REMOTE_GPS_ACCURACY || MAX_REMOTE_GPS_ACCURACY || 50000)
+      : Number(process.env.MAX_GPS_ACCURACY || MAX_GPS_ACCURACY || 1000);
 
     if (location.accuracy && location.accuracy > maxAccuracy) {
       return res.status(403).json({
-        message: `GPS accuracy too low (${Math.round(location.accuracy)}m). Please move to an open area for better signal.`,
+        message: `GPS accuracy too low (${Math.round(location.accuracy)}m). Please enable high-accuracy location or move to an open area.`,
         currentAccuracy: Math.round(location.accuracy),
         requiredAccuracy: maxAccuracy,
       });
     }
 
     let officeLocationDoc = null;
+    let isFirstWfhPin = false;
 
     if (workMode === "OFFICE") {
       if (!officeLocationId) {
@@ -79,6 +83,47 @@ const checkIn = async (req, res) => {
           distance: Math.round(distance),
           allowed: officeLocationDoc.radiusMeters,
         });
+      }
+    } else if (workMode === "REMOTE" || workMode === "WFH" || workMode === "WORK_FROM_HOME") {
+      const userDoc = await User.findById(userId);
+      if (userDoc) {
+        // CASE 1: First time check-in (Pin the base WFH/Remote location)
+        if (!userDoc.wfhLocation || !userDoc.wfhLocation.isPinned) {
+          userDoc.wfhLocation = {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            address: location.address || '',
+            pinnedAt: new Date(),
+            isPinned: true,
+            maxRadiusKm: 5 // Default 5 km boundary limit
+          };
+          await userDoc.save();
+          isFirstWfhPin = true;
+          logger.info(`WFH location pinned for user ${userId} at [${location.latitude}, ${location.longitude}]`);
+        } else {
+          // CASE 2: Subsequent check-in (Validate against 5 km geofence)
+          const baseLat = userDoc.wfhLocation.latitude;
+          const baseLon = userDoc.wfhLocation.longitude;
+          const maxRadiusKm = userDoc.wfhLocation.maxRadiusKm || 5;
+          const maxRadiusMeters = maxRadiusKm * 1000;
+
+          const distanceMeters = getDistanceInMeters(
+            baseLat,
+            baseLon,
+            location.latitude,
+            location.longitude
+          );
+
+          if (distanceMeters > maxRadiusMeters) {
+            const distanceKm = (distanceMeters / 1000).toFixed(2);
+            return res.status(403).json({
+              message: `You are outside your registered WFH/Remote location boundary (${maxRadiusKm} km limit).`,
+              currentDistanceKm: parseFloat(distanceKm),
+              allowedRadiusKm: maxRadiusKm,
+              details: `Your current location is ${distanceKm} km away from your pinned WFH base location.`
+            });
+          }
+        }
       }
     }
 
@@ -110,7 +155,12 @@ const checkIn = async (req, res) => {
     // Clear attendance cache
     await clearPattern(`cache:*/attendance*:${userId}`);
 
-    res.json({ message: "Checked in successfully", attendance });
+    let responseMsg = "Checked in successfully";
+    if (isFirstWfhPin) {
+      responseMsg = "Checked in successfully. Remote/WFH base location pinned (5 km boundary active).";
+    }
+
+    res.json({ message: responseMsg, attendance, isFirstWfhPin });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -190,24 +240,27 @@ const checkOut = async (req, res) => {
       });
     }
 
-    // 🔐 GPS accuracy validation
-    const { MAX_GPS_ACCURACY } = require("../config/attendanceConfig");
-    const maxAccuracy = Number(process.env.MAX_GPS_ACCURACY || MAX_GPS_ACCURACY || 50);
-
-    if (location.accuracy && location.accuracy > maxAccuracy) {
-      return res.status(403).json({
-        message: `GPS accuracy too low (${Math.round(location.accuracy)}m). Please move to an open area for better signal.`,
-        currentAccuracy: Math.round(location.accuracy),
-        requiredAccuracy: maxAccuracy,
-      });
-    }
-
     // 🗂️ Fetch today's attendance
     const attendance = await Attendance.findOne({
       userId,
       date: today,
       isDeleted: { $ne: true },
     });
+
+    // 🔐 GPS accuracy validation
+    const { MAX_GPS_ACCURACY, MAX_REMOTE_GPS_ACCURACY } = require("../config/attendanceConfig");
+    const isRemote = (attendance?.workMode === "REMOTE" || attendance?.workMode === "WFH" || attendance?.workMode === "WORK_FROM_HOME");
+    const maxAccuracy = isRemote
+      ? Number(process.env.MAX_REMOTE_GPS_ACCURACY || MAX_REMOTE_GPS_ACCURACY || 50000)
+      : Number(process.env.MAX_GPS_ACCURACY || MAX_GPS_ACCURACY || 1000);
+
+    if (location.accuracy && location.accuracy > maxAccuracy) {
+      return res.status(403).json({
+        message: `GPS accuracy too low (${Math.round(location.accuracy)}m). Please enable high-accuracy location or move to an open area.`,
+        currentAccuracy: Math.round(location.accuracy),
+        requiredAccuracy: maxAccuracy,
+      });
+    }
 
     if (!attendance || !attendance.checkIn) {
       return res.status(400).json({

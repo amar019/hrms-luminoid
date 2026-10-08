@@ -14,7 +14,8 @@ module.exports = {
   DEFAULT_BREAK_MINUTES: 0, // Break time NOT deducted (employees get full credit for hours worked)
   
   // GPS Accuracy
-  MAX_GPS_ACCURACY: 50, // Maximum allowed GPS accuracy in meters (lower is more accurate)
+  MAX_GPS_ACCURACY: 1000, // Maximum allowed GPS accuracy in meters for Office check-in
+  MAX_REMOTE_GPS_ACCURACY: 50000, // Maximum allowed GPS accuracy in meters for Remote/WFH (handles desktop IP fallback)
   
   // Auto checkout
   AUTO_CHECKOUT_TIME: { hour: 18, minute: 0 }, // 6:00 PM - default checkout time for remote/hybrid

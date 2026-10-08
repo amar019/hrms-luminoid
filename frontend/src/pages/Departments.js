@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Modal, Form, Table, Badge, Container, Row, Col, Pagination } from 'react-bootstrap';
+import { Card, Button, Modal, Form, Table, Badge, Row, Col, Pagination } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import Swal from 'sweetalert2';
 import { SkeletonTable } from '../components/Skeleton';
+import './Departments.css';
 
 const Departments = () => {
   const navigate = useNavigate();
   const [departments, setDepartments] = useState([]);
   const [filteredDepartments, setFilteredDepartments] = useState([]);
   const [employees, setEmployees] = useState([]);
+  
   const [showModal, setShowModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -17,17 +19,21 @@ const Departments = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  
   const [selectedDept, setSelectedDept] = useState(null);
   const [deptEmployees, setDeptEmployees] = useState([]);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterLocation, setFilterLocation] = useState('');
   const [filterHead, setFilterHead] = useState('');
   const [selectedRows, setSelectedRows] = useState([]);
+  
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sortField, setSortField] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
+  
   const [formData, setFormData] = useState({
     name: '', code: '', description: '', departmentHead: '', 
     parentDepartment: '', location: ''
@@ -42,6 +48,7 @@ const Departments = () => {
   useEffect(() => {
     fetchDepartments();
     fetchEmployees();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, sortField, sortOrder, searchTerm, filterStatus, filterLocation, filterHead]);
 
   useEffect(() => {
@@ -73,12 +80,12 @@ const Departments = () => {
       if (filterHead) params.append('departmentHead', filterHead);
       
       const res = await api.get(`/api/departments?${params}`);
-      setDepartments(res.data.data);
-      setFilteredDepartments(res.data.data);
-      setTotalPages(res.data.pagination.pages);
+      setDepartments(res.data.data || []);
+      setFilteredDepartments(res.data.data || []);
+      setTotalPages(res.data.pagination?.pages || 1);
     } catch (error) {
       console.error('Error fetching departments:', error);
-      Swal.fire('Error', 'Failed to load departments', 'error');
+      Swal.fire('Error', 'Failed to load departments list', 'error');
     } finally {
       setLoading(false);
     }
@@ -87,7 +94,7 @@ const Departments = () => {
   const fetchEmployees = async () => {
     try {
       const res = await api.get('/api/departments/employees-for-transfer');
-      setEmployees(res.data.data || res.data);
+      setEmployees(res.data.data || res.data || []);
     } catch (error) {
       console.error('Error fetching employees:', error);
     }
@@ -99,10 +106,10 @@ const Departments = () => {
     try {
       if (selectedDept) {
         await api.put(`/api/departments/${selectedDept._id}`, formData);
-        Swal.fire('Updated!', 'Department updated successfully', 'success');
+        Swal.fire({ icon: 'success', title: 'Updated!', text: 'Department details updated successfully', timer: 1800, showConfirmButton: false });
       } else {
         await api.post('/api/departments', formData);
-        Swal.fire('Created!', 'Department created successfully', 'success');
+        Swal.fire({ icon: 'success', title: 'Created!', text: 'Department created successfully', timer: 1800, showConfirmButton: false });
       }
       fetchDepartments();
       resetForm();
@@ -116,18 +123,18 @@ const Departments = () => {
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: 'Delete Department?',
-      text: 'This action cannot be undone',
+      text: 'This action will remove the department record.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it'
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, delete department'
     });
     
     if (result.isConfirmed) {
       try {
         await api.delete(`/api/departments/${id}`);
-        Swal.fire('Deleted!', 'Department deleted successfully', 'success');
+        Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Department deleted successfully', timer: 1800, showConfirmButton: false });
         fetchDepartments();
       } catch (error) {
         Swal.fire('Error', error.response?.data?.message || 'Error deleting department', 'error');
@@ -140,7 +147,7 @@ const Departments = () => {
     setSubmitting(true);
     try {
       await api.post('/api/departments/assign', assignData);
-      Swal.fire('Success!', 'Employee assigned successfully', 'success');
+      Swal.fire({ icon: 'success', title: 'Assigned!', text: 'Employee assigned to department', timer: 1800, showConfirmButton: false });
       setShowAssignModal(false);
       setAssignData({ employeeId: '', departmentId: '' });
       fetchDepartments();
@@ -156,7 +163,7 @@ const Departments = () => {
     setSubmitting(true);
     try {
       await api.post('/api/departments/bulk-assign', bulkData);
-      Swal.fire('Success!', `${bulkData.employeeIds.length} employees assigned successfully`, 'success');
+      Swal.fire({ icon: 'success', title: 'Bulk Assigned!', text: `${bulkData.employeeIds.length} employees assigned successfully`, timer: 1800, showConfirmButton: false });
       setShowBulkModal(false);
       setBulkData({ employeeIds: [], departmentId: '' });
       fetchDepartments();
@@ -174,7 +181,7 @@ const Departments = () => {
     }
     try {
       await api.post('/api/departments/bulk-status', { departmentIds: selectedRows, status });
-      Swal.fire('Updated!', `${selectedRows.length} departments updated`, 'success');
+      Swal.fire({ icon: 'success', title: 'Updated!', text: `${selectedRows.length} departments updated`, timer: 1800, showConfirmButton: false });
       setSelectedRows([]);
       fetchDepartments();
     } catch (error) {
@@ -189,18 +196,18 @@ const Departments = () => {
     }
     const result = await Swal.fire({
       title: 'Delete Departments?',
-      text: `Delete ${selectedRows.length} departments?`,
+      text: `Are you sure you want to delete ${selectedRows.length} selected departments?`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete them'
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, delete selected'
     });
     
     if (result.isConfirmed) {
       try {
         await api.post('/api/departments/bulk-delete', { departmentIds: selectedRows });
-        Swal.fire('Deleted!', `${selectedRows.length} departments deleted`, 'success');
+        Swal.fire({ icon: 'success', title: 'Deleted!', text: `${selectedRows.length} departments deleted`, timer: 1800, showConfirmButton: false });
         setSelectedRows([]);
         fetchDepartments();
       } catch (error) {
@@ -216,13 +223,13 @@ const Departments = () => {
       return;
     }
     if (transferData.employeeIds.length === 0) {
-      Swal.fire('Error', 'Please select at least one employee', 'error');
+      Swal.fire('Error', 'Please select at least one employee to transfer', 'error');
       return;
     }
     setSubmitting(true);
     try {
       await api.post('/api/departments/transfer', transferData);
-      Swal.fire('Success!', `${transferData.employeeIds.length} employee(s) transferred successfully`, 'success');
+      Swal.fire({ icon: 'success', title: 'Transferred!', text: `${transferData.employeeIds.length} employee(s) transferred successfully`, timer: 1800, showConfirmButton: false });
       setShowTransferModal(false);
       setTransferData({ employeeIds: [], fromDepartmentId: '', toDepartmentId: '' });
       fetchDepartments();
@@ -237,23 +244,20 @@ const Departments = () => {
   const handleImport = async (e) => {
     e.preventDefault();
     if (!importFile) {
-      Swal.fire('Warning', 'Please select a file', 'warning');
+      Swal.fire('Warning', 'Please select a file to import', 'warning');
       return;
     }
     setSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('file', importFile);
-      const res = await api.post('/api/departments/import', formData);
-      Swal.fire('Success!', `Imported ${res.data.results.success.length} departments`, 'success');
-      if (res.data.results.errors.length > 0) {
-        Swal.fire('Warning', `${res.data.results.errors.length} errors occurred`, 'warning');
-      }
+      const form = new FormData();
+      form.append('file', importFile);
+      const res = await api.post('/api/departments/import', form);
+      Swal.fire({ icon: 'success', title: 'Import Complete!', text: `Imported ${res.data.results.success.length} departments` });
       setShowImportModal(false);
       setImportFile(null);
       fetchDepartments();
     } catch (error) {
-      Swal.fire('Error', 'Error importing departments', 'error');
+      Swal.fire('Error', 'Error importing departments file', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -305,8 +309,7 @@ const Departments = () => {
   const viewDepartmentDetails = async (dept) => {
     setSelectedDept(dept);
     setShowDetailsModal(true);
-    setDeptEmployees([]); // Reset employees
-    // Fetch employees in this department
+    setDeptEmployees([]);
     try {
       const response = await api.get(`/api/departments/${dept._id}`);
       if (response.data.success && response.data.data.employees) {
@@ -323,24 +326,21 @@ const Departments = () => {
   const handleRemoveEmployee = async (empId, empName) => {
     const result = await Swal.fire({
       title: 'Remove Employee?',
-      html: `Remove <strong>${empName}</strong> from this department?<br/><small class="text-muted">Employee will remain in the system but won't be assigned to any department.</small>`,
+      html: `Remove <strong>${empName}</strong> from this department?<br/><small class="text-muted">Employee will remain in the system but unassigned from this department.</small>`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Yes, remove',
-      cancelButtonText: 'Cancel'
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, remove employee'
     });
 
     if (result.isConfirmed) {
       try {
         await api.delete(`/api/departments/${selectedDept._id}/employees/${empId}`);
-        Swal.fire('Removed!', 'Employee removed from department successfully', 'success');
-        // Refresh employee list
+        Swal.fire({ icon: 'success', title: 'Removed!', text: 'Employee removed from department', timer: 1800, showConfirmButton: false });
         const response = await api.get(`/api/departments/${selectedDept._id}`);
         if (response.data.success && response.data.data.employees) {
           setDeptEmployees(response.data.data.employees);
-          // Update department employee count in the list
           setDepartments(prev => prev.map(d => 
             d._id === selectedDept._id ? { ...d, employeeCount: response.data.data.employees.length } : d
           ));
@@ -372,339 +372,213 @@ const Departments = () => {
     a.href = url;
     a.download = `departments_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    Swal.fire('Success!', 'Report exported successfully', 'success');
+    Swal.fire({ icon: 'success', title: 'Report Exported 📊', text: 'Department list exported to CSV', timer: 1800, showConfirmButton: false });
     setShowExportModal(false);
   };
 
   const uniqueLocations = [...new Set(departments.map(d => d.location).filter(Boolean))].sort();
 
-  return (
-    <Container fluid className="p-4" style={{ background: '#f0fdf4', minHeight: '100vh' }}>
-      <style>{`
-        .dept-header {
-          background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #10b981 100%);
-          border-radius: 16px;
-          padding: 32px;
-          margin-bottom: 24px;
-          box-shadow: 0 10px 30px rgba(16,185,129,0.3);
-        }
-        .dept-card {
-          border: none;
-          border-radius: 16px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-          overflow: hidden;
-          background: white;
-        }
-        .dept-table thead {
-          background: linear-gradient(135deg, #064e3b 0%, #10b981 100%);
-          color: white;
-        }
-        .dept-table thead th {
-          border: none;
-          padding: 16px;
-          font-weight: 600;
-          text-transform: uppercase;
-          font-size: 0.8rem;
-          letter-spacing: 0.8px;
-        }
-        .dept-table tbody tr {
-          transition: all 0.3s ease;
-          border-bottom: 1px solid #f0fdf4;
-        }
-        .dept-table tbody tr:hover {
-          background: linear-gradient(to right, #f0fdf4 0%, #fff 100%);
-          transform: translateX(4px);
-          box-shadow: -4px 0 0 #10b981;
-        }
-        .dept-table tbody td {
-          padding: 18px 16px;
-          vertical-align: middle;
-        }
-        .btn-add-dept {
-          background: white;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          padding: 10px 20px;
-          border-radius: 10px;
-          font-weight: 600;
-          color: #064e3b;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-        }
-        .btn-add-dept:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(255, 255, 255, 0.4);
-          background: rgba(255, 255, 255, 0.95);
-          border-color: white;
-          color: #064e3b;
-        }
-        .btn-assign-dept {
-          background: white;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          padding: 10px 20px;
-          border-radius: 10px;
-          font-weight: 600;
-          color: #064e3b;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-        }
-        .btn-assign-dept:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(255, 255, 255, 0.4);
-          background: rgba(255, 255, 255, 0.95);
-          border-color: white;
-          color: #064e3b;
-        }
-        .btn-bulk-dept {
-          background: white;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          padding: 10px 20px;
-          border-radius: 10px;
-          font-weight: 600;
-          color: #064e3b;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-        }
-        .btn-bulk-dept:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(255, 255, 255, 0.4);
-          background: rgba(255, 255, 255, 0.95);
-          border-color: white;
-          color: #064e3b;
-        }
-        .btn-transfer-dept {
-          background: white;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          padding: 10px 20px;
-          border-radius: 10px;
-          font-weight: 600;
-          color: #064e3b;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-        }
-        .btn-transfer-dept:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(255, 255, 255, 0.4);
-          background: rgba(255, 255, 255, 0.95);
-          border-color: white;
-          color: #064e3b;
-        }
-        .btn-import-dept {
-          background: white;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          padding: 10px 20px;
-          border-radius: 10px;
-          font-weight: 600;
-          color: #064e3b;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-        }
-        .btn-import-dept:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(255, 255, 255, 0.4);
-          background: rgba(255, 255, 255, 0.95);
-          border-color: white;
-          color: #064e3b;
-        }
-        .btn-export-dept {
-          background: white;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          padding: 10px 20px;
-          border-radius: 10px;
-          font-weight: 600;
-          color: #064e3b;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-        }
-        .btn-export-dept:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(255, 255, 255, 0.4);
-          background: rgba(255, 255, 255, 0.95);
-          border-color: white;
-          color: #064e3b;
-        }
-        .badge-code {
-          background: linear-gradient(135deg, #064e3b 0%, #10b981 100%);
-          padding: 8px 14px;
-          border-radius: 8px;
-          font-weight: 600;
-          font-size: 0.85rem;
-        }
-        .badge-count {
-          background: linear-gradient(135deg, #059669 0%, #34d399 100%);
-          padding: 8px 14px;
-          border-radius: 8px;
-          font-weight: 600;
-          font-size: 0.85rem;
-        }
-        .action-btn-view {
-          background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
-          border: none;
-          padding: 8px 16px;
-          border-radius: 8px;
-          color: white;
-          transition: all 0.3s ease;
-        }
-        .action-btn-view:hover {
-          transform: scale(1.1);
-          box-shadow: 0 4px 15px rgba(8, 145, 178, 0.4);
-        }
-        .action-btn-edit {
-          background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-          border: none;
-          padding: 8px 16px;
-          border-radius: 8px;
-          color: white;
-          transition: all 0.3s ease;
-        }
-        .action-btn-edit:hover {
-          transform: scale(1.1);
-          box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
-        }
-        .action-btn-delete {
-          background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-          border: none;
-          padding: 8px 16px;
-          border-radius: 8px;
-          color: white;
-          transition: all 0.3s ease;
-        }
-        .action-btn-delete:hover {
-          transform: scale(1.1);
-          box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
-        }
-        .filter-card {
-          background: linear-gradient(to right, #f0fdf4 0%, #ffffff 100%);
-          border: 1px solid #d1fae5;
-          border-radius: 12px;
-        }
-      `}</style>
+  // Metrics
+  const totalEmployeesCount = departments.reduce((acc, curr) => acc + (curr.employeeCount || 0), 0);
+  const activeDeptsCount = departments.filter(d => d.status === 'ACTIVE').length;
+  const headedDeptsCount = departments.filter(d => d.departmentHead).length;
 
-      <div className="dept-header text-white">
-        <Row className="align-items-center">
-          <Col md={8}>
-            <h2 className="mb-2 fw-bold">
-              <i className="fas fa-sitemap me-3"></i>Department Management
-            </h2>
-            <p className="mb-0 opacity-90">
-              <i className="fas fa-building me-2"></i>
-              {filteredDepartments.length} of {departments.length} Departments
-            </p>
-          </Col>
-          <Col md={4} className="text-md-end">
-            <div className="d-flex flex-wrap gap-2 justify-content-md-end">
-              <Button className="btn-add-dept" size="sm" onClick={() => setShowModal(true)}>
-                <i className="fas fa-plus me-2"></i>Add
-              </Button>
-              <Button className="btn-assign-dept" size="sm" onClick={() => setShowAssignModal(true)}>
-                <i className="fas fa-user-plus me-2"></i>Assign
-              </Button>
-              <Button className="btn-bulk-dept" size="sm" onClick={() => setShowBulkModal(true)}>
-                <i className="fas fa-users me-2"></i>Bulk
-              </Button>
-              <Button className="btn-transfer-dept" size="sm" onClick={() => setShowTransferModal(true)}>
-                <i className="fas fa-exchange-alt me-2"></i>Transfer
-              </Button>
-              <Button className="btn-import-dept" size="sm" onClick={() => setShowImportModal(true)}>
-                <i className="fas fa-file-import me-2"></i>Import
-              </Button>
-              <Button className="btn-export-dept" size="sm" onClick={() => setShowExportModal(true)}>
-                <i className="fas fa-download me-2"></i>Export
-              </Button>
+  return (
+    <div className="departments-page-container">
+      {/* Page Header */}
+      <div className="dept-page-header">
+        <div>
+          <h1 className="dept-header-title">
+            <div className="dept-header-icon">
+              <i className="fas fa-sitemap"></i>
             </div>
-          </Col>
-        </Row>
+            Department Management
+          </h1>
+          <p className="dept-header-subtitle">
+            <span>Organizational structure & team alignment</span>
+            <Badge bg="success" className="bg-emerald-light text-emerald border border-emerald px-2 py-1 rounded-pill">
+              {filteredDepartments.length} Departments
+            </Badge>
+          </p>
+        </div>
+
+        <div className="dept-header-actions">
+          <Button className="btn-dept-action btn-dept-primary" onClick={() => setShowModal(true)}>
+            <i className="fas fa-plus"></i> Add Department
+          </Button>
+          <Button className="btn-dept-action" onClick={() => setShowAssignModal(true)}>
+            <i className="fas fa-user-plus text-primary"></i> Assign
+          </Button>
+          <Button className="btn-dept-action" onClick={() => setShowBulkModal(true)}>
+            <i className="fas fa-users text-purple"></i> Bulk Assign
+          </Button>
+          <Button className="btn-dept-action" onClick={() => setShowTransferModal(true)}>
+            <i className="fas fa-exchange-alt text-warning"></i> Transfer
+          </Button>
+          <Button className="btn-dept-action" onClick={() => setShowImportModal(true)}>
+            <i className="fas fa-file-import text-info"></i> Import
+          </Button>
+          <Button className="btn-dept-action" onClick={() => setShowExportModal(true)}>
+            <i className="fas fa-download text-emerald"></i> Export
+          </Button>
+        </div>
       </div>
 
-      <Card className="dept-card mb-3 filter-card">
-        <Card.Body>
-          <Row className="g-3">
-            <Col md={3}>
-              <Form.Control
-                type="text"
-                placeholder="🔍 Search by name or code..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ borderRadius: '10px', border: '2px solid #e8e8e8' }}
-              />
-            </Col>
-            <Col md={2}>
-              <Form.Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ borderRadius: '10px', border: '2px solid #e8e8e8' }}>
-                <option value="">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-              </Form.Select>
-            </Col>
-            <Col md={2}>
-              <Form.Select value={filterLocation} onChange={(e) => setFilterLocation(e.target.value)} style={{ borderRadius: '10px', border: '2px solid #e8e8e8' }}>
-                <option value="">All Locations</option>
-                {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-              </Form.Select>
-            </Col>
-            <Col md={2}>
-              <Form.Select value={filterHead} onChange={(e) => setFilterHead(e.target.value)} style={{ borderRadius: '10px', border: '2px solid #e8e8e8' }}>
-                <option value="">All Heads</option>
-                {employees
-                  .filter(emp => departments.some(d => d.departmentHead?._id === emp._id))
-                  .map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName}</option>)}
-              </Form.Select>
-            </Col>
-            <Col md={3}>
-              <div className="d-flex gap-2">
-                <Button className="btn-secondary-custom" onClick={() => { setSearchTerm(''); setFilterStatus(''); setFilterLocation(''); setFilterHead(''); }}>
-                  <i className="fas fa-redo"></i>
-                </Button>
-                {selectedRows.length > 0 && (
-                  <>
-                    <Button className="btn-success-custom" size="sm" onClick={() => handleBulkStatusChange('ACTIVE')} style={{padding: '6px 12px', fontSize: '0.75rem'}}>
-                      Activate
-                    </Button>
-                    <Button className="btn-warning-custom" size="sm" onClick={() => handleBulkStatusChange('INACTIVE')} style={{padding: '6px 12px', fontSize: '0.75rem'}}>
-                      Disable
-                    </Button>
-                    <Button className="action-btn-delete" size="sm" onClick={handleBulkDelete} style={{padding: '6px 12px', fontSize: '0.75rem'}}>
-                      Delete
-                    </Button>
-                  </>
-                )}
-              </div>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+      {/* Executive KPI Stats Dashboard */}
+      <div className="dept-stats-grid">
+        <div className="dept-stat-card">
+          <div className="dept-stat-icon stat-icon-depts">
+            <i className="fas fa-sitemap"></i>
+          </div>
+          <div className="dept-stat-info">
+            <span className="dept-stat-label">Total Departments</span>
+            <span className="dept-stat-value">{departments.length}</span>
+            <span className="dept-stat-sub">Units registered</span>
+          </div>
+        </div>
 
-      <Card className="dept-card">
-        <Card.Body className="p-0">
-          {loading ? (
-            <SkeletonTable rows={10} columns={8} />
-          ) : (
-          <Table responsive className="dept-table mb-0">
+        <div className="dept-stat-card">
+          <div className="dept-stat-icon stat-icon-active">
+            <i className="fas fa-building-circle-check"></i>
+          </div>
+          <div className="dept-stat-info">
+            <span className="dept-stat-label">Active Units</span>
+            <span className="dept-stat-value">{activeDeptsCount}</span>
+            <span className="dept-stat-sub">Operational status</span>
+          </div>
+        </div>
+
+        <div className="dept-stat-card">
+          <div className="dept-stat-icon stat-icon-staff">
+            <i className="fas fa-users"></i>
+          </div>
+          <div className="dept-stat-info">
+            <span className="dept-stat-label">Assigned Staff</span>
+            <span className="dept-stat-value">{totalEmployeesCount}</span>
+            <span className="dept-stat-sub">Across departments</span>
+          </div>
+        </div>
+
+        <div className="dept-stat-card">
+          <div className="dept-stat-icon stat-icon-heads">
+            <i className="fas fa-user-tie"></i>
+          </div>
+          <div className="dept-stat-info">
+            <span className="dept-stat-label">Headed Units</span>
+            <span className="dept-stat-value">{headedDeptsCount}</span>
+            <span className="dept-stat-sub">With department head</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="dept-filter-bar">
+        <div className="dept-filter-controls">
+          <div className="dept-search-wrapper">
+            <i className="fas fa-search"></i>
+            <input
+              type="text"
+              className="dept-search-input"
+              placeholder="Search by department name or code..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <select
+            className="dept-select-filter"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+
+          <select
+            className="dept-select-filter"
+            value={filterLocation}
+            onChange={(e) => setFilterLocation(e.target.value)}
+          >
+            <option value="">All Locations</option>
+            {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+          </select>
+
+          <select
+            className="dept-select-filter"
+            value={filterHead}
+            onChange={(e) => setFilterHead(e.target.value)}
+          >
+            <option value="">All Department Heads</option>
+            {employees
+              .filter(emp => departments.some(d => d.departmentHead?._id === emp._id))
+              .map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName}</option>)}
+          </select>
+
+          {(searchTerm || filterStatus || filterLocation || filterHead) && (
+            <button 
+              className="btn-reset-dept-filters"
+              onClick={() => { setSearchTerm(''); setFilterStatus(''); setFilterLocation(''); setFilterHead(''); }}
+            >
+              <i className="fas fa-rotate-left"></i> Reset
+            </button>
+          )}
+        </div>
+
+        {/* Bulk Actions Toolbar */}
+        {selectedRows.length > 0 && (
+          <div className="bulk-selection-bar">
+            <span className="fw-semibold text-primary" style={{ fontSize: '0.875rem' }}>
+              <i className="fas fa-check-double me-2"></i>{selectedRows.length} department(s) selected
+            </span>
+            <div className="bulk-action-btns">
+              <Button variant="success" size="sm" onClick={() => handleBulkStatusChange('ACTIVE')} className="px-3">
+                <i className="fas fa-check me-1"></i> Activate
+              </Button>
+              <Button variant="warning" size="sm" onClick={() => handleBulkStatusChange('INACTIVE')} className="px-3">
+                <i className="fas fa-pause me-1"></i> Disable
+              </Button>
+              <Button variant="danger" size="sm" onClick={handleBulkDelete} className="px-3">
+                <i className="fas fa-trash me-1"></i> Delete Selected
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Department Data Grid */}
+      <div className="dept-table-container">
+        {loading ? (
+          <SkeletonTable rows={10} columns={8} />
+        ) : (
+          <Table responsive className="dept-modern-table mb-0">
             <thead>
               <tr>
-                <th>
+                <th style={{ width: '40px' }}>
                   <Form.Check 
                     type="checkbox" 
                     checked={selectedRows.length === filteredDepartments.length && filteredDepartments.length > 0}
                     onChange={toggleSelectAll}
                   />
                 </th>
-                <th onClick={() => handleSort('code')} style={{cursor: 'pointer'}}>
+                <th onClick={() => handleSort('code')} style={{ cursor: 'pointer' }}>
                   Code {sortField === 'code' && <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'}`}></i>}
                 </th>
-                <th onClick={() => handleSort('name')} style={{cursor: 'pointer'}}>
+                <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
                   Department Name {sortField === 'name' && <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'}`}></i>}
                 </th>
                 <th>Department Head</th>
                 <th>Location</th>
-                <th onClick={() => handleSort('employeeCount')} style={{cursor: 'pointer'}}>
+                <th onClick={() => handleSort('employeeCount')} style={{ cursor: 'pointer' }}>
                   Employees {sortField === 'employeeCount' && <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'}`}></i>}
                 </th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th className="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredDepartments.map(dept => (
-                <tr key={dept._id} style={{cursor: 'pointer'}}>
+                <tr key={dept._id}>
                   <td onClick={(e) => e.stopPropagation()}>
                     <Form.Check 
                       type="checkbox" 
@@ -712,62 +586,79 @@ const Departments = () => {
                       onChange={() => toggleRowSelection(dept._id)}
                     />
                   </td>
-                  <td><Badge className="badge-code">{dept.code}</Badge></td>
-                  <td><strong style={{ color: '#065f46' }}>{dept.name}</strong></td>
+                  <td>
+                    <span className="code-pill">{dept.code}</span>
+                  </td>
+                  <td>
+                    <span className="dept-name-cell">{dept.name}</span>
+                    {dept.description && (
+                      <div className="text-muted small text-truncate" style={{ maxWidth: '240px' }}>{dept.description}</div>
+                    )}
+                  </td>
                   <td>
                     {dept.departmentHead ? (
-                      <div style={{ color: '#555' }}>
-                        <i className="fas fa-user-tie me-2" style={{ color: '#059669' }}></i>
-                        {dept.departmentHead.firstName} {dept.departmentHead.lastName}
+                      <div className="head-chip">
+                        <div className="head-avatar">
+                          {dept.departmentHead.firstName?.charAt(0)}{dept.departmentHead.lastName?.charAt(0)}
+                        </div>
+                        <span>{dept.departmentHead.firstName} {dept.departmentHead.lastName}</span>
                       </div>
-                    ) : <span className="text-muted">Not Assigned</span>}
+                    ) : (
+                      <span className="text-muted small">Not Assigned</span>
+                    )}
                   </td>
                   <td>
                     {dept.location ? (
-                      <span>
-                        <i className="fas fa-map-marker-alt me-2" style={{ color: '#059669' }}></i>
-                        {dept.location}
+                      <span className="text-secondary small">
+                        <i className="fas fa-location-dot me-1 text-emerald"></i>{dept.location}
                       </span>
-                    ) : <span className="text-muted">-</span>}
+                    ) : (
+                      <span className="text-muted small">-</span>
+                    )}
                   </td>
                   <td>
-                    <Badge className="badge-count">{dept.employeeCount}</Badge>
+                    <span className="count-pill">
+                      <i className="fas fa-users me-1 text-muted" style={{ fontSize: '0.75rem' }}></i>
+                      {dept.employeeCount || 0}
+                    </span>
                   </td>
                   <td>
-                    <Badge bg={dept.status === 'ACTIVE' ? 'success' : 'danger'} style={{ padding: '6px 12px', borderRadius: '6px' }}>
+                    <span className={`status-badge-pill ${dept.status === 'ACTIVE' ? 'active' : 'inactive'}`}>
                       {dept.status}
-                    </Badge>
+                    </span>
                   </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <Button className="action-btn-view me-2" size="sm" onClick={() => viewDepartmentDetails(dept)} title="View Details">
-                      <i className="fas fa-eye"></i>
-                    </Button>
-                    <Button className="action-btn-edit me-2" size="sm" onClick={() => editDepartment(dept)} title="Edit">
-                      <i className="fas fa-edit"></i>
-                    </Button>
-                    <Button className="action-btn-delete" size="sm" onClick={() => handleDelete(dept._id)} title="Delete">
-                      <i className="fas fa-trash"></i>
-                    </Button>
+                  <td className="text-end">
+                    <div className="table-row-actions justify-content-end">
+                      <button className="table-action-btn btn-view" onClick={() => viewDepartmentDetails(dept)} title="View Details">
+                        <i className="fas fa-eye"></i>
+                      </button>
+                      <button className="table-action-btn btn-edit" onClick={() => editDepartment(dept)} title="Edit Department">
+                        <i className="fas fa-pen"></i>
+                      </button>
+                      <button className="table-action-btn btn-delete" onClick={() => handleDelete(dept._id)} title="Delete Department">
+                        <i className="fas fa-trash"></i>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
+
               {filteredDepartments.length === 0 && (
                 <tr>
                   <td colSpan="8" className="text-center py-5">
-                    <i className="fas fa-inbox fa-3x mb-3" style={{ color: '#10b981', opacity: 0.3 }}></i>
-                    <h5 className="text-muted">No departments found</h5>
-                    <p className="text-muted">Try adjusting your filters</p>
+                    <i className="fas fa-building-circle-exclamation fa-3x mb-3 text-muted" style={{ opacity: 0.3 }}></i>
+                    <h5 className="fw-bold text-dark mb-1">No Departments Found</h5>
+                    <p className="text-muted small mb-0">Try changing your search terms or filter settings</p>
                   </td>
                 </tr>
               )}
             </tbody>
           </Table>
-          )}
-        </Card.Body>
-      </Card>
+        )}
+      </div>
 
       {totalPages > 1 && (
-        <div className="d-flex justify-content-center mt-3">
+        <div className="d-flex justify-content-center mt-4">
           <Pagination>
             <Pagination.First onClick={() => setPage(1)} disabled={page === 1} />
             <Pagination.Prev onClick={() => setPage(page - 1)} disabled={page === 1} />
@@ -782,71 +673,61 @@ const Departments = () => {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
-      <Modal show={showModal} onHide={resetForm} centered size="lg">
-        <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', color: 'white', border: 'none' }}>
+      {/* ADD / EDIT DEPARTMENT MODAL */}
+      <Modal show={showModal} onHide={resetForm} centered size="lg" className="dept-modal-styled">
+        <Modal.Header closeButton>
           <Modal.Title className="fw-bold">
             <i className="fas fa-building me-2"></i>
             {selectedDept ? 'Edit Department' : 'Add New Department'}
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ padding: '40px', background: '#f0fdf4' }}>
-          <Form onSubmit={handleSubmit}>
+        <Form onSubmit={handleSubmit}>
+          <Modal.Body>
             <Row>
               <Col md={6}>
-                <Form.Group className="mb-4">
-                  <Form.Label className="fw-bold" style={{color: '#059669'}}>
-                    <i className="fas fa-tag me-2"></i>Department Name *
-                  </Form.Label>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold">Department Name *</Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="e.g., Human Resources"
+                    placeholder="e.g. Human Resources"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
-                    style={{ borderRadius: '10px', padding: '12px', border: '2px solid #e0e0e0', fontSize: '15px' }}
                   />
                 </Form.Group>
               </Col>
               <Col md={6}>
-                <Form.Group className="mb-4">
-                  <Form.Label className="fw-bold" style={{color: '#059669'}}>
-                    <i className="fas fa-code me-2"></i>Department Code *
-                  </Form.Label>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold">Department Code *</Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="e.g., HR"
+                    placeholder="e.g. HR"
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                     required
-                    style={{ borderRadius: '10px', padding: '12px', border: '2px solid #e0e0e0', fontSize: '15px' }}
                   />
                 </Form.Group>
               </Col>
             </Row>
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-bold" style={{color: '#059669'}}>
-                <i className="fas fa-align-left me-2"></i>Description
-              </Form.Label>
+
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold">Description</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
-                placeholder="Brief description of the department"
+                placeholder="Overview or responsibilities of this department"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                style={{ borderRadius: '10px', padding: '12px', border: '2px solid #e0e0e0', fontSize: '15px' }}
               />
             </Form.Group>
+
             <Row>
               <Col md={6}>
-                <Form.Group className="mb-4">
-                  <Form.Label className="fw-bold" style={{color: '#059669'}}>
-                    <i className="fas fa-user-tie me-2"></i>Department Head
-                  </Form.Label>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold">Department Head</Form.Label>
                   <Form.Select
                     value={formData.departmentHead}
                     onChange={(e) => setFormData({ ...formData, departmentHead: e.target.value })}
-                    style={{ borderRadius: '10px', padding: '12px', border: '2px solid #e0e0e0', fontSize: '15px' }}
                   >
                     <option value="">Select Department Head</option>
                     {employees.map(emp => (
@@ -858,16 +739,13 @@ const Departments = () => {
                 </Form.Group>
               </Col>
               <Col md={6}>
-                <Form.Group className="mb-4">
-                  <Form.Label className="fw-bold" style={{color: '#059669'}}>
-                    <i className="fas fa-sitemap me-2"></i>Parent Department
-                  </Form.Label>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold">Parent Department</Form.Label>
                   <Form.Select
                     value={formData.parentDepartment}
                     onChange={(e) => setFormData({ ...formData, parentDepartment: e.target.value })}
-                    style={{ borderRadius: '10px', padding: '12px', border: '2px solid #e0e0e0', fontSize: '15px' }}
                   >
-                    <option value="">Select Parent Department</option>
+                    <option value="">Select Parent Department (Optional)</option>
                     {departments.filter(d => d._id !== selectedDept?._id).map(dept => (
                       <option key={dept._id} value={dept._id}>{dept.name}</option>
                     ))}
@@ -875,49 +753,53 @@ const Departments = () => {
                 </Form.Group>
               </Col>
             </Row>
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-bold" style={{color: '#059669'}}>
-                <i className="fas fa-map-marker-alt me-2"></i>Location
-              </Form.Label>
+
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold">Location</Form.Label>
               <Form.Select
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                style={{ borderRadius: '10px', padding: '12px', border: '2px solid #e0e0e0', fontSize: '15px' }}
               >
-                <option value="">Select Location</option>
-                <option value="Office">Office</option>
-                <option value="Remote">Remote</option>
+                <option value="">Select Base Location</option>
+                <option value="Office">Main Office</option>
+                <option value="Remote">Remote Base</option>
               </Form.Select>
             </Form.Group>
-            <div className="d-flex gap-3 justify-content-end mt-4">
-              <Button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #868f96 0%, #596164 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white' }}>
-                <i className="fas fa-times me-2"></i>Cancel
-              </Button>
-              <Button type="submit" disabled={submitting} style={{ background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white', boxShadow: '0 4px 15px rgba(16,185,129,0.4)' }}>
-                {submitting ? <><span className="spinner-border spinner-border-sm me-2"></span>Saving...</> : <><i className="fas fa-save me-2"></i>Save Department</>}
-              </Button>
-            </div>
-          </Form>
-        </Modal.Body>
+          </Modal.Body>
+          <Modal.Footer style={{ background: '#f8fafc' }}>
+            <Button variant="secondary" onClick={resetForm}>
+              Cancel
+            </Button>
+            <Button variant="success" type="submit" disabled={submitting} style={{ background: '#10b981', borderColor: '#10b981' }}>
+              {submitting ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2"></span>Saving...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-check me-1"></i> Save Department
+                </>
+              )}
+            </Button>
+          </Modal.Footer>
+        </Form>
       </Modal>
 
-      {/* Assign Employee Modal */}
-      <Modal show={showAssignModal} onHide={() => setShowAssignModal(false)} centered>
-        <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', color: 'white', border: 'none' }}>
-          <Modal.Title>
-            <i className="fas fa-user-plus me-2"></i>
-            Assign Employee to Department
+      {/* ASSIGN EMPLOYEE MODAL */}
+      <Modal show={showAssignModal} onHide={() => setShowAssignModal(false)} centered className="dept-modal-styled">
+        <Modal.Header closeButton>
+          <Modal.Title className="fw-bold">
+            <i className="fas fa-user-plus me-2"></i> Assign Employee to Department
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ padding: '30px' }}>
-          <Form onSubmit={handleAssign}>
+        <Form onSubmit={handleAssign}>
+          <Modal.Body>
             <Form.Group className="mb-3">
               <Form.Label className="fw-semibold">Select Employee *</Form.Label>
               <Form.Select
                 value={assignData.employeeId}
                 onChange={(e) => setAssignData({ ...assignData, employeeId: e.target.value })}
                 required
-                style={{ borderRadius: '8px', padding: '10px' }}
               >
                 <option value="">Choose an employee</option>
                 {employees.map(emp => (
@@ -927,13 +809,12 @@ const Departments = () => {
                 ))}
               </Form.Select>
             </Form.Group>
-            <Form.Group className="mb-4">
+            <Form.Group className="mb-3">
               <Form.Label className="fw-semibold">Select Department *</Form.Label>
               <Form.Select
                 value={assignData.departmentId}
                 onChange={(e) => setAssignData({ ...assignData, departmentId: e.target.value })}
                 required
-                style={{ borderRadius: '8px', padding: '10px' }}
               >
                 <option value="">Choose a department</option>
                 {departments.map(dept => (
@@ -943,136 +824,93 @@ const Departments = () => {
                 ))}
               </Form.Select>
             </Form.Group>
-            <div className="d-flex gap-2 justify-content-end">
-              <Button variant="secondary" onClick={() => setShowAssignModal(false)} style={{ borderRadius: '8px', padding: '10px 24px' }}>
-                <i className="fas fa-times me-2"></i>Cancel
-              </Button>
-              <Button type="submit" disabled={submitting} style={{ background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', border: 'none', borderRadius: '8px', padding: '10px 24px' }}>
-                {submitting ? <><span className="spinner-border spinner-border-sm me-2"></span>Assigning...</> : <><i className="fas fa-check me-2"></i>Assign</>}
-              </Button>
-            </div>
-          </Form>
-        </Modal.Body>
+          </Modal.Body>
+          <Modal.Footer style={{ background: '#f8fafc' }}>
+            <Button variant="secondary" onClick={() => setShowAssignModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="success" type="submit" disabled={submitting} style={{ background: '#10b981', borderColor: '#10b981' }}>
+              {submitting ? 'Assigning...' : 'Assign Employee'}
+            </Button>
+          </Modal.Footer>
+        </Form>
       </Modal>
 
-      {/* Bulk Assign Modal */}
-      <Modal show={showBulkModal} onHide={() => setShowBulkModal(false)} centered size="lg">
-        <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', color: 'white', border: 'none' }}>
+      {/* BULK ASSIGN MODAL */}
+      <Modal show={showBulkModal} onHide={() => setShowBulkModal(false)} centered size="lg" className="dept-modal-styled">
+        <Modal.Header closeButton>
           <Modal.Title className="fw-bold">
-            <i className="fas fa-users me-2"></i>Bulk Assign Employees
+            <i className="fas fa-users me-2"></i> Bulk Assign Employees
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ padding: '40px', background: '#f0fdf4' }}>
-          <Form onSubmit={handleBulkAssign}>
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-bold" style={{color: '#059669'}}>
-                <i className="fas fa-user-check me-2"></i>Select Employees *
-              </Form.Label>
-              <div style={{ 
-                background: 'white',
-                border: '2px solid #10b981',
-                borderRadius: '12px',
-                padding: '8px',
-                maxHeight: '280px',
-                overflowY: 'auto'
-              }}>
+        <Form onSubmit={handleBulkAssign}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold">Select Employees *</Form.Label>
+              <div className="bg-white border rounded-3 p-2" style={{ maxHeight: '240px', overflowY: 'auto' }}>
                 <Form.Select 
                   multiple 
-                  size={8} 
+                  size={6} 
                   value={bulkData.employeeIds}
                   onChange={(e) => setBulkData({...bulkData, employeeIds: Array.from(e.target.selectedOptions, opt => opt.value)})} 
                   required
-                  style={{ 
-                    border: 'none',
-                    fontSize: '15px',
-                    background: 'transparent'
-                  }}
-                  className="custom-multi-select"
+                  style={{ border: 'none' }}
                 >
                   {employees.map(emp => (
-                    <option key={emp._id} value={emp._id} style={{
-                      padding: '12px 16px',
-                      borderRadius: '8px',
-                      margin: '4px 0',
-                      cursor: 'pointer'
-                    }}>
-                      👤 {emp.firstName} {emp.lastName}
+                    <option key={emp._id} value={emp._id} className="py-2 px-3">
+                      👤 {emp.firstName} {emp.lastName} ({emp.email})
                     </option>
                   ))}
                 </Form.Select>
               </div>
-              <Form.Text className="text-muted mt-2 d-block">
-                <i className="fas fa-info-circle me-1"></i>Hold Ctrl/Cmd to select multiple employees
+              <Form.Text className="text-muted mt-1 d-block">
+                Hold Ctrl (Windows) or Cmd (Mac) to select multiple employees
               </Form.Text>
             </Form.Group>
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-bold" style={{color: '#059669'}}>
-                <i className="fas fa-building me-2"></i>Select Department *
-              </Form.Label>
+
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold">Target Department *</Form.Label>
               <Form.Select 
                 value={bulkData.departmentId}
                 onChange={(e) => setBulkData({...bulkData, departmentId: e.target.value})} 
                 required
-                style={{ borderRadius: '10px', padding: '12px', border: '2px solid #e0e0e0', fontSize: '15px' }}
               >
                 <option value="">Choose department</option>
-                {departments.map(dept => <option key={dept._id} value={dept._id}>{dept.name}</option>)}
+                {departments.map(dept => <option key={dept._id} value={dept._id}>{dept.name} ({dept.code})</option>)}
               </Form.Select>
             </Form.Group>
-            <div className="d-flex gap-3 justify-content-end mt-4">
-              <Button onClick={() => setShowBulkModal(false)} style={{ background: 'linear-gradient(135deg, #868f96 0%, #596164 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white' }}>
-                <i className="fas fa-times me-2"></i>Cancel
-              </Button>
-              <Button type="submit" disabled={submitting} style={{ background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white', boxShadow: '0 4px 15px rgba(16,185,129,0.4)' }}>
-                {submitting ? <><span className="spinner-border spinner-border-sm me-2"></span>Assigning...</> : <><i className="fas fa-check me-2"></i>Assign Employees</>}
-              </Button>
-            </div>
-          </Form>
-        </Modal.Body>
+          </Modal.Body>
+          <Modal.Footer style={{ background: '#f8fafc' }}>
+            <Button variant="secondary" onClick={() => setShowBulkModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="success" type="submit" disabled={submitting} style={{ background: '#10b981', borderColor: '#10b981' }}>
+              {submitting ? 'Assigning...' : `Assign ${bulkData.employeeIds.length} Employees`}
+            </Button>
+          </Modal.Footer>
+        </Form>
       </Modal>
-      <style>{`
-        .custom-multi-select option {
-          padding: 12px 16px !important;
-          margin: 4px 0 !important;
-          border-radius: 8px !important;
-          transition: all 0.2s ease !important;
-        }
-        .custom-multi-select option:hover {
-          background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%) !important;
-        }
-        .custom-multi-select option:checked {
-          background: linear-gradient(135deg, #064e3b 0%, #10b981 100%) !important;
-          color: white !important;
-          font-weight: 600 !important;
-        }
-      `}</style>
 
-      {/* Transfer Modal */}
-      <Modal show={showTransferModal} onHide={() => {
-        setShowTransferModal(false);
-        setTransferData({ employeeIds: [], fromDepartmentId: '', toDepartmentId: '' });
-      }} centered size="lg">
-        <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', color: 'white', border: 'none' }}>
+      {/* TRANSFER EMPLOYEES MODAL */}
+      <Modal show={showTransferModal} onHide={() => setShowTransferModal(false)} centered size="lg" className="dept-modal-styled">
+        <Modal.Header closeButton>
           <Modal.Title className="fw-bold">
-            <i className="fas fa-exchange-alt me-2"></i>Transfer Employees Between Departments
+            <i className="fas fa-exchange-alt me-2"></i> Transfer Employees
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ padding: '40px', background: '#f0fdf4' }}>
-          <Form onSubmit={handleTransfer}>
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-bold" style={{color: '#059669'}}>
-                <i className="fas fa-building me-2"></i>From Department *
-              </Form.Label>
+        <Form onSubmit={handleTransfer}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold">From Department *</Form.Label>
               <Form.Select 
                 value={transferData.fromDepartmentId}
                 onChange={(e) => setTransferData({...transferData, fromDepartmentId: e.target.value, employeeIds: []})} 
                 required
-                style={{ borderRadius: '10px', padding: '12px', border: '2px solid #e0e0e0', fontSize: '15px' }}
               >
                 <option value="">Select source department</option>
                 {departments.map(dept => (
                   <option key={dept._id} value={dept._id}>
-                    {dept.name} ({dept.code}) - {dept.employeeCount} employees
+                    {dept.name} ({dept.code}) - {dept.employeeCount || 0} staff
                   </option>
                 ))}
               </Form.Select>
@@ -1085,154 +923,101 @@ const Departments = () => {
               });
               
               return (
-                <Form.Group className="mb-4">
-                  <Form.Label className="fw-bold" style={{color: '#059669'}}>
-                    <i className="fas fa-user-check me-2"></i>Select Employees to Transfer * ({filteredEmployees.length} available)
-                  </Form.Label>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold">Select Employees to Transfer * ({filteredEmployees.length} available)</Form.Label>
                   {filteredEmployees.length === 0 ? (
-                    <div className="alert alert-warning" style={{ borderRadius: '10px' }}>
-                      <i className="fas fa-exclamation-triangle me-2"></i>
-                      No employees found in the selected department
+                    <div className="alert alert-warning py-2 mb-0">
+                      No employees found in selected department
                     </div>
                   ) : (
-                    <>
-                      <div style={{ 
-                        background: 'white',
-                        border: '2px solid #10b981',
-                        borderRadius: '12px',
-                        padding: '8px',
-                        maxHeight: '280px',
-                        overflowY: 'auto'
-                      }}>
-                        <Form.Select 
-                          multiple 
-                          size={8} 
-                          value={transferData.employeeIds}
-                          onChange={(e) => setTransferData({...transferData, employeeIds: Array.from(e.target.selectedOptions, opt => opt.value)})} 
-                          required
-                          style={{ 
-                            border: 'none',
-                            fontSize: '15px',
-                            background: 'transparent'
-                          }}
-                          className="custom-multi-select"
-                        >
-                          {filteredEmployees.map(emp => (
-                            <option key={emp._id} value={emp._id} style={{
-                              padding: '12px 16px',
-                              borderRadius: '8px',
-                              margin: '4px 0',
-                              cursor: 'pointer'
-                            }}>
-                              👤 {emp.firstName} {emp.lastName} {emp.designation ? `- ${emp.designation}` : ''}
-                            </option>
-                          ))}
-                        </Form.Select>
-                      </div>
-                      <Form.Text className="text-muted mt-2 d-block">
-                        <i className="fas fa-info-circle me-1"></i>Hold Ctrl/Cmd to select multiple employees. {transferData.employeeIds.length} selected.
-                      </Form.Text>
-                    </>
+                    <div className="bg-white border rounded-3 p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                      <Form.Select 
+                        multiple 
+                        size={5} 
+                        value={transferData.employeeIds}
+                        onChange={(e) => setTransferData({...transferData, employeeIds: Array.from(e.target.selectedOptions, opt => opt.value)})} 
+                        required
+                        style={{ border: 'none' }}
+                      >
+                        {filteredEmployees.map(emp => (
+                          <option key={emp._id} value={emp._id} className="py-1 px-2">
+                            👤 {emp.firstName} {emp.lastName} {emp.designation ? `- ${emp.designation}` : ''}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </div>
                   )}
                 </Form.Group>
               );
             })()}
             
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-bold" style={{color: '#059669'}}>
-                <i className="fas fa-building me-2"></i>To Department *
-              </Form.Label>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold">To Department *</Form.Label>
               <Form.Select 
                 value={transferData.toDepartmentId}
                 onChange={(e) => setTransferData({...transferData, toDepartmentId: e.target.value})} 
                 required
-                style={{ borderRadius: '10px', padding: '12px', border: '2px solid #e0e0e0', fontSize: '15px' }}
               >
                 <option value="">Select target department</option>
                 {departments
                   .filter(d => d._id !== transferData.fromDepartmentId)
                   .map(dept => (
                     <option key={dept._id} value={dept._id}>
-                      {dept.name} ({dept.code}) - {dept.employeeCount} employees
+                      {dept.name} ({dept.code})
                     </option>
                   ))}
               </Form.Select>
             </Form.Group>
-            
-            {transferData.fromDepartmentId && transferData.toDepartmentId && transferData.employeeIds.length > 0 && (
-              <div className="alert alert-info" style={{ borderRadius: '10px', border: '2px solid #4facfe' }}>
-                <i className="fas fa-info-circle me-2"></i>
-                <strong>Transfer Summary:</strong> Moving {transferData.employeeIds.length} employee(s) from{' '}
-                <strong>{departments.find(d => d._id === transferData.fromDepartmentId)?.name}</strong> to{' '}
-                <strong>{departments.find(d => d._id === transferData.toDepartmentId)?.name}</strong>
-              </div>
-            )}
-            
-            <div className="d-flex gap-3 justify-content-end mt-4">
-              <Button 
-                onClick={() => {
-                  setShowTransferModal(false);
-                  setTransferData({ employeeIds: [], fromDepartmentId: '', toDepartmentId: '' });
-                }} 
-                style={{ background: 'linear-gradient(135deg, #868f96 0%, #596164 100%)', border: 'none', borderRadius: '10px', padding: '12px 30px', fontWeight: '600', color: 'white' }}
-              >
-                <i className="fas fa-times me-2"></i>Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={submitting || !transferData.fromDepartmentId || !transferData.toDepartmentId || transferData.employeeIds.length === 0}
-                style={{ 
-                  background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', 
-                  border: 'none', 
-                  borderRadius: '10px', 
-                  padding: '12px 30px', 
-                  fontWeight: '600', 
-                  color: 'white', 
-                  boxShadow: '0 4px 15px rgba(16,185,129,0.4)',
-                  opacity: (submitting || !transferData.fromDepartmentId || !transferData.toDepartmentId || transferData.employeeIds.length === 0) ? 0.6 : 1
-                }}
-              >
-                {submitting ? <><span className="spinner-border spinner-border-sm me-2"></span>Transferring...</> : <><i className="fas fa-exchange-alt me-2"></i>Transfer Employees</>}
-              </Button>
-            </div>
-          </Form>
-        </Modal.Body>
+          </Modal.Body>
+          <Modal.Footer style={{ background: '#f8fafc' }}>
+            <Button variant="secondary" onClick={() => setShowTransferModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="success" 
+              type="submit" 
+              disabled={submitting || !transferData.fromDepartmentId || !transferData.toDepartmentId || transferData.employeeIds.length === 0}
+              style={{ background: '#10b981', borderColor: '#10b981' }}
+            >
+              {submitting ? 'Transferring...' : 'Transfer Employees'}
+            </Button>
+          </Modal.Footer>
+        </Form>
       </Modal>
 
-      {/* Import Modal */}
-      <Modal show={showImportModal} onHide={() => setShowImportModal(false)} centered>
+      {/* IMPORT MODAL */}
+      <Modal show={showImportModal} onHide={() => setShowImportModal(false)} centered className="dept-modal-styled">
         <Modal.Header closeButton>
-          <Modal.Title><i className="fas fa-file-import me-2"></i>Import Departments</Modal.Title>
+          <Modal.Title className="fw-bold"><i className="fas fa-file-import me-2"></i> Import Departments</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          <Form onSubmit={handleImport}>
+        <Form onSubmit={handleImport}>
+          <Modal.Body>
             <Form.Group className="mb-3">
-              <Form.Label>Upload Excel/CSV File *</Form.Label>
-              <Form.Control type="file" accept=".xlsx,.xls,.csv"
-                onChange={(e) => setImportFile(e.target.files[0])} required />
-              <Form.Text>Required columns: name, code, description, location, status</Form.Text>
+              <Form.Label className="fw-semibold">Upload Excel / CSV File *</Form.Label>
+              <Form.Control type="file" accept=".xlsx,.xls,.csv" onChange={(e) => setImportFile(e.target.files[0])} required />
+              <Form.Text className="text-muted mt-1 d-block">Required headers: name, code, description, location, status</Form.Text>
             </Form.Group>
-            <div className="d-flex gap-2 justify-content-end">
-              <Button variant="secondary" onClick={() => setShowImportModal(false)}>Cancel</Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? <><span className="spinner-border spinner-border-sm me-2"></span>Importing...</> : 'Import'}
-              </Button>
-            </div>
-          </Form>
-        </Modal.Body>
+          </Modal.Body>
+          <Modal.Footer style={{ background: '#f8fafc' }}>
+            <Button variant="secondary" onClick={() => setShowImportModal(false)}>Cancel</Button>
+            <Button variant="success" type="submit" disabled={submitting} style={{ background: '#10b981', borderColor: '#10b981' }}>
+              {submitting ? 'Importing...' : 'Upload & Import'}
+            </Button>
+          </Modal.Footer>
+        </Form>
       </Modal>
 
-      {/* Export Modal */}
-      <Modal show={showExportModal} onHide={() => setShowExportModal(false)} centered>
+      {/* EXPORT MODAL */}
+      <Modal show={showExportModal} onHide={() => setShowExportModal(false)} centered className="dept-modal-styled">
         <Modal.Header closeButton>
-          <Modal.Title><i className="fas fa-download me-2"></i>Export Departments</Modal.Title>
+          <Modal.Title className="fw-bold"><i className="fas fa-download me-2"></i> Export Department Report</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="d-grid gap-3">
-            <Button variant="primary" onClick={() => exportToExcel()}>
-              <i className="fas fa-file-export me-2"></i>Export All Departments ({filteredDepartments.length})
+            <Button variant="outline-primary" className="py-2 font-weight-bold" onClick={() => exportToExcel()}>
+              <i className="fas fa-file-csv me-2"></i> Export All Departments ({filteredDepartments.length})
             </Button>
-            <Button variant="success" onClick={() => {
+            <Button variant="outline-success" className="py-2 font-weight-bold" onClick={() => {
               if (selectedRows.length === 0) {
                 Swal.fire('Warning', 'Please select departments first', 'warning');
                 return;
@@ -1240,347 +1025,125 @@ const Departments = () => {
               const selected = filteredDepartments.filter(d => selectedRows.includes(d._id));
               exportToExcel(selected);
             }}>
-              <i className="fas fa-check-square me-2"></i>Export Selected ({selectedRows.length})
-            </Button>
-            <Button variant="secondary" onClick={() => setShowExportModal(false)}>
-              <i className="fas fa-times me-2"></i>Cancel
+              <i className="fas fa-check-square me-2"></i> Export Selected Departments ({selectedRows.length})
             </Button>
           </div>
         </Modal.Body>
+        <Modal.Footer style={{ background: '#f8fafc' }}>
+          <Button variant="secondary" onClick={() => setShowExportModal(false)}>Cancel</Button>
+        </Modal.Footer>
       </Modal>
 
-      {/* Department Details Modal */}
-      <Modal show={showDetailsModal} onHide={() => setShowDetailsModal(false)} centered size="lg" className="dept-details-modal">
-        <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', color: 'white', border: 'none' }}>
+      {/* DEPARTMENT DETAILS MODAL */}
+      <Modal show={showDetailsModal} onHide={() => setShowDetailsModal(false)} centered size="lg" className="dept-modal-styled">
+        <Modal.Header closeButton>
           <Modal.Title className="fw-bold">
-            <i className="fas fa-building me-2"></i>
-            Department Details
+            <i className="fas fa-building me-2"></i> Department Overview
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ padding: '0', background: '#f0fdf4' }}>
+        <Modal.Body className="p-0">
           {selectedDept && (
-            <>
+            <div>
               {/* Header Section */}
-              <div style={{ 
-                background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', 
-                padding: '30px', 
-                borderBottom: '3px solid #10b981'
-              }}>
-                <Row className="align-items-center">
-                  <Col md={8}>
-                    <div className="d-flex align-items-center gap-3 mb-3">
-                      <div style={{
-                        width: '70px',
-                        height: '70px',
-                        background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)',
-                        borderRadius: '16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '28px',
-                        color: 'white',
-                        boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3)'
-                      }}>
-                        <i className="fas fa-building"></i>
-                      </div>
-                      <div>
-                        <h3 className="mb-1" style={{ color: '#064e3b', fontWeight: '800' }}>{selectedDept.name}</h3>
-                        <Badge className="badge-code" style={{ fontSize: '0.9rem' }}>{selectedDept.code}</Badge>
-                      </div>
+              <div className="p-4 bg-emerald-light border-bottom">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div className="d-flex align-items-center gap-3">
+                    <div className="dept-header-icon">
+                      <i className="fas fa-building"></i>
                     </div>
-                    {selectedDept.description && (
-                      <p style={{ color: '#065f46', marginBottom: '0', fontSize: '0.95rem', lineHeight: '1.6' }}>
-                        <i className="fas fa-info-circle me-2"></i>
-                        {selectedDept.description}
-                      </p>
-                    )}
-                  </Col>
-                  <Col md={4} className="text-end">
-                    <Badge bg={selectedDept.status === 'ACTIVE' ? 'success' : 'danger'} style={{ 
-                      padding: '12px 20px', 
-                      borderRadius: '10px', 
-                      fontSize: '1rem',
-                      fontWeight: '600'
-                    }}>
-                      <i className={`fas fa-${selectedDept.status === 'ACTIVE' ? 'check-circle' : 'times-circle'} me-2`}></i>
-                      {selectedDept.status}
-                    </Badge>
-                  </Col>
-                </Row>
+                    <div>
+                      <h3 className="fw-bold text-dark mb-0">{selectedDept.name}</h3>
+                      <span className="code-pill me-2">{selectedDept.code}</span>
+                      <span className={`status-badge-pill ${selectedDept.status === 'ACTIVE' ? 'active' : 'inactive'}`}>
+                        {selectedDept.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {selectedDept.description && (
+                  <p className="text-secondary small mt-3 mb-0">{selectedDept.description}</p>
+                )}
               </div>
 
-              {/* Info Cards Section */}
-              <div style={{ padding: '30px' }}>
+              {/* Roster & Info Grid */}
+              <div className="p-4">
                 <Row className="g-3 mb-4">
-                  <Col md={6}>
-                    <div style={{
-                      background: 'white',
-                      borderRadius: '12px',
-                      padding: '20px',
-                      border: '2px solid #d1fae5',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                    }}>
-                      <div className="d-flex align-items-center gap-3">
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '20px',
-                          color: 'white'
-                        }}>
-                          <i className="fas fa-user-tie"></i>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Department Head</div>
-                          <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#064e3b', marginTop: '4px' }}>
-                            {selectedDept.departmentHead ? (
-                              `${selectedDept.departmentHead.firstName} ${selectedDept.departmentHead.lastName}`
-                            ) : (
-                              <span style={{ color: '#9ca3af' }}>Not Assigned</span>
-                            )}
-                          </div>
-                        </div>
+                  <Col md={4}>
+                    <div className="bg-white border rounded-3 p-3">
+                      <div className="text-muted small fw-bold text-uppercase">Department Head</div>
+                      <div className="fw-bold text-dark mt-1">
+                        {selectedDept.departmentHead ? `${selectedDept.departmentHead.firstName} ${selectedDept.departmentHead.lastName}` : 'Unassigned'}
                       </div>
                     </div>
                   </Col>
-                  <Col md={6}>
-                    <div style={{
-                      background: 'white',
-                      borderRadius: '12px',
-                      padding: '20px',
-                      border: '2px solid #d1fae5',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                    }}>
-                      <div className="d-flex align-items-center gap-3">
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '20px',
-                          color: 'white'
-                        }}>
-                          <i className="fas fa-map-marker-alt"></i>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Location</div>
-                          <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#064e3b', marginTop: '4px' }}>
-                            {selectedDept.location || <span style={{ color: '#9ca3af' }}>Not Set</span>}
-                          </div>
-                        </div>
+                  <Col md={4}>
+                    <div className="bg-white border rounded-3 p-3">
+                      <div className="text-muted small fw-bold text-uppercase">Location</div>
+                      <div className="fw-bold text-dark mt-1">
+                        {selectedDept.location || 'Not Specified'}
                       </div>
                     </div>
                   </Col>
-                  <Col md={6}>
-                    <div style={{
-                      background: 'white',
-                      borderRadius: '12px',
-                      padding: '20px',
-                      border: '2px solid #d1fae5',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                    }}>
-                      <div className="d-flex align-items-center gap-3">
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '20px',
-                          color: 'white'
-                        }}>
-                          <i className="fas fa-users"></i>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Employees</div>
-                          <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#064e3b', marginTop: '4px' }}>
-                            {selectedDept.employeeCount}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Col>
-                  <Col md={6}>
-                    <div style={{
-                      background: 'white',
-                      borderRadius: '12px',
-                      padding: '20px',
-                      border: '2px solid #d1fae5',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                    }}>
-                      <div className="d-flex align-items-center gap-3">
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '20px',
-                          color: 'white'
-                        }}>
-                          <i className="fas fa-sitemap"></i>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Parent Department</div>
-                          <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#064e3b', marginTop: '4px' }}>
-                            {selectedDept.parentDepartment ? (
-                              selectedDept.parentDepartment.name
-                            ) : (
-                              <span style={{ color: '#9ca3af' }}>None</span>
-                            )}
-                          </div>
-                        </div>
+                  <Col md={4}>
+                    <div className="bg-white border rounded-3 p-3">
+                      <div className="text-muted small fw-bold text-uppercase">Assigned Staff</div>
+                      <div className="fw-bold text-emerald fs-5 mt-1">
+                        {selectedDept.employeeCount || 0} Members
                       </div>
                     </div>
                   </Col>
                 </Row>
 
-                {/* Employees List */}
-                <div style={{
-                  background: 'white',
-                  borderRadius: '12px',
-                  padding: '24px',
-                  border: '2px solid #d1fae5',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                }}>
-                  <h5 style={{ color: '#064e3b', fontWeight: '700', marginBottom: '20px' }}>
-                    <i className="fas fa-users me-2"></i>
-                    Employees in this Department ({deptEmployees.length})
-                  </h5>
+                {/* Staff Roster */}
+                <div className="bg-white border rounded-3 p-3">
+                  <h6 className="fw-bold text-dark mb-3">
+                    <i className="fas fa-users text-emerald me-2"></i> Department Roster ({deptEmployees.length})
+                  </h6>
                   {deptEmployees.length > 0 ? (
-                    <div style={{ maxHeight: '300px', overflowY: 'auto', overflowX: 'hidden' }}>
-                      <style>{`
-                        .employee-card-item * {
-                          text-decoration: none !important;
-                        }
-                      `}</style>
-                      <Row className="g-2" style={{ margin: 0 }}>
-                        {deptEmployees.map((emp, index) => (
-                          <Col md={12} key={index}>
-                            <div className="employee-card-item" style={{
-                              background: 'linear-gradient(to right, #f0fdf4 0%, #ecfdf5 100%)',
-                              padding: '12px 16px',
-                              borderRadius: '10px',
-                              border: '1px solid #d1fae5',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '12px',
-                              transition: 'all 0.2s ease',
-                              overflow: 'hidden'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'translateX(4px)';
-                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.15)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'translateX(0)';
-                              e.currentTarget.style.boxShadow = 'none';
-                            }}>
-                              <div style={{
-                                width: '40px',
-                                height: '40px',
-                                background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)',
-                                borderRadius: '10px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: 'white',
-                                fontWeight: '700',
-                                fontSize: '0.9rem',
-                                flexShrink: 0
-                              }}>
-                                {emp.firstName?.charAt(0)}{emp.lastName?.charAt(0)}
-                              </div>
-                              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                                <div style={{ fontWeight: '600', color: '#064e3b', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {emp.firstName} {emp.lastName}
-                                </div>
-                                <div style={{ fontSize: '0.8rem', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {emp.designation || emp.email}
-                                </div>
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="outline-danger"
-                                onClick={() => handleRemoveEmployee(emp._id, `${emp.firstName} ${emp.lastName}`)}
-                                style={{
-                                  borderRadius: '8px',
-                                  padding: '6px 12px',
-                                  fontSize: '0.8rem',
-                                  fontWeight: '600',
-                                  border: '2px solid #fecaca',
-                                  color: '#dc2626',
-                                  background: 'white',
-                                  transition: 'all 0.2s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = '#dc2626';
-                                  e.currentTarget.style.color = 'white';
-                                  e.currentTarget.style.borderColor = '#dc2626';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = 'white';
-                                  e.currentTarget.style.color = '#dc2626';
-                                  e.currentTarget.style.borderColor = '#fecaca';
-                                }}
-                                title="Remove from department"
-                              >
-                                <i className="fas fa-times me-1"></i>Remove
-                              </Button>
+                    <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                      {deptEmployees.map((emp, idx) => (
+                        <div key={idx} className="d-flex align-items-center justify-content-between p-2 border-bottom hover-bg-light">
+                          <div className="d-flex align-items-center gap-2">
+                            <div className="head-avatar" style={{ width: '32px', height: '32px', fontSize: '0.8rem' }}>
+                              {emp.firstName?.charAt(0)}{emp.lastName?.charAt(0)}
                             </div>
-                          </Col>
-                        ))}
-                      </Row>
+                            <div>
+                              <div className="fw-bold text-dark small">{emp.firstName} {emp.lastName}</div>
+                              <div className="text-muted" style={{ fontSize: '0.75rem' }}>{emp.designation || emp.email}</div>
+                            </div>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline-danger" 
+                            className="py-0 px-2" 
+                            style={{ fontSize: '0.75rem' }}
+                            onClick={() => handleRemoveEmployee(emp._id, `${emp.firstName} ${emp.lastName}`)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
-                      <i className="fas fa-user-slash" style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.3 }}></i>
-                      <p style={{ marginBottom: '0', fontSize: '1rem' }}>No employees assigned to this department</p>
+                    <div className="text-center py-4 text-muted small">
+                      No employees assigned to this department
                     </div>
                   )}
                 </div>
               </div>
-            </>
+            </div>
           )}
         </Modal.Body>
-        <Modal.Footer style={{ background: 'white', borderTop: '2px solid #d1fae5', padding: '20px 30px' }}>
-          <Button 
-            onClick={() => {
-              setShowDetailsModal(false);
-              editDepartment(selectedDept);
-            }}
-            style={{ 
-              background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', 
-              border: 'none', 
-              borderRadius: '10px', 
-              padding: '12px 30px', 
-              fontWeight: '600',
-              boxShadow: '0 4px 15px rgba(16,185,129,0.3)'
-            }}
-          >
-            <i className="fas fa-edit me-2"></i>Edit Department
+        <Modal.Footer style={{ background: '#f8fafc' }}>
+          <Button variant="primary" size="sm" onClick={() => { setShowDetailsModal(false); editDepartment(selectedDept); }}>
+            <i className="fas fa-pen me-1"></i> Edit Department
           </Button>
-          <Button 
-            variant="secondary" 
-            onClick={() => setShowDetailsModal(false)}
-            style={{ borderRadius: '10px', padding: '12px 30px', fontWeight: '600' }}
-          >
-            <i className="fas fa-times me-2"></i>Close
+          <Button variant="secondary" size="sm" onClick={() => setShowDetailsModal(false)}>
+            Close
           </Button>
         </Modal.Footer>
       </Modal>
-    </Container>
+    </div>
   );
 };
 

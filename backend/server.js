@@ -44,6 +44,12 @@ const projectTaskRoutes = require('./routes/projectTasks');
 const projectRoutes = require('./routes/projects');
 const subtaskRoutes = require('./routes/subtasks');
 const projectDiscussionRoutes = require('./routes/projectDiscussions');
+const jobRequisitionRoutes = require('./routes/jobRequisitions');
+const candidateRoutes = require('./routes/candidates');
+const recruitmentDailyUpdateRoutes = require('./routes/recruitmentDailyUpdates');
+const requisitionDiscussionRoutes = require('./routes/requisitionDiscussions');
+const dailySourcingLogRoutes = require('./routes/dailySourcingLogs');
+
 
 const seedDefaultOffice = require('./utils/seedOfficeLocation');
 const sanitizeInput = require('./middleware/sanitize');
@@ -278,6 +284,12 @@ app.use('/api/project-tasks', projectTaskRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/subtasks', subtaskRoutes);
 app.use('/api/project-chat', projectDiscussionRoutes);
+app.use('/api/job-requisitions', jobRequisitionRoutes);
+app.use('/api/candidates', candidateRoutes);
+app.use('/api/recruitment-daily-updates', recruitmentDailyUpdateRoutes);
+app.use('/api/requisition-discussions', requisitionDiscussionRoutes);
+app.use('/api/daily-sourcing-logs', dailySourcingLogRoutes);
+
 
 app.use('/uploads/visit-photos', express.static(require('path').join(__dirname, 'uploads/visit-photos')));
 

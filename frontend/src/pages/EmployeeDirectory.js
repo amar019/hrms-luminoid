@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Row, Col, Card, Form, InputGroup, Badge, Button, Modal, Table, Offcanvas, Nav } from 'react-bootstrap';
+import { Row, Col, Form, Badge, Button, Modal, Table, Dropdown } from 'react-bootstrap';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-
 import Swal from 'sweetalert2';
 import './EmployeeDirectory.css';
 
@@ -14,15 +13,19 @@ const EmployeeDirectory = () => {
   const [filters, setFilters] = useState({ search: '', department: '', role: '' });
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showProfilePage, setShowProfilePage] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState('active');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+  const [activeProfileTab, setActiveProfileTab] = useState('overview'); // 'overview' | 'personal' | 'work' | 'bank' | 'exit'
+  const [activeEditTab, setActiveEditTab] = useState('personal'); // 'personal' | 'address' | 'work' | 'emergency' | 'bank'
+  
   const { user } = useAuth();
   const navigate = useNavigate();
   const [editableProfile, setEditableProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [collapsedSections, setCollapsedSections] = useState({});
+  
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -37,7 +40,7 @@ const EmployeeDirectory = () => {
     fetchEmployees();
     fetchDepartments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, filters]);
+  }, [statusFilter]);
 
   const fetchDepartments = async () => {
     try {
@@ -53,16 +56,15 @@ const EmployeeDirectory = () => {
     setLoading(true);
     try {
       const response = await api.get(`/api/employee-management/all?status=${statusFilter}`);
-      setEmployees(response.data);
+      setEmployees(response.data || []);
       
-      // Fetch all employees for stats (only once or when needed)
       if (allEmployees.length === 0 || statusFilter === 'all') {
         const allResponse = await api.get('/api/employee-management/all?status=all');
-        setAllEmployees(allResponse.data);
+        setAllEmployees(allResponse.data || []);
       }
     } catch (error) {
       console.error('Error fetching employees:', error);
-      Swal.fire({ icon: 'error', title: 'Error', text: 'Unable to load employees' });
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Unable to load employees list' });
       setEmployees([]);
     } finally {
       setLoading(false);
@@ -72,70 +74,71 @@ const EmployeeDirectory = () => {
   const handleViewProfile = async (employeeOrId) => {
     try {
       setSelectedEmployee(null);
-      setShowProfileModal(true);
+      setShowProfilePage(true);
       setProfileLoading(true);
+      setActiveProfileTab('overview');
       
       let id = employeeOrId._id || employeeOrId;
       const response = await api.get(`/api/employees/profile/${id}`);
       const profile = response.data;
       
-      // Fetch user details including exitDetails
+      // Fetch full user details including exitDetails
       const userResponse = await api.get(`/api/users/${profile.userId._id || profile.userId}`);
       profile.userId = userResponse.data;
-      
-      console.log('Profile with user data:', profile);
-      console.log('Exit details:', profile.userId?.exitDetails);
-      console.log('User isActive:', profile.userId?.isActive);
-      console.log('Full userId object:', JSON.stringify(profile.userId, null, 2));
       
       setSelectedEmployee(profile);
     } catch (error) {
       console.error('Error fetching profile:', error);
-      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to load profile' });
-      setShowProfileModal(false);
+      Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to load profile details' });
+      setShowProfilePage(false);
     } finally {
       setProfileLoading(false);
     }
   };
 
+  const handleCloseProfilePage = () => {
+    setShowProfilePage(false);
+    setSelectedEmployee(null);
+  };
+
   const handleEditProfile = () => {
-    setShowProfileModal(false);
-    setEditableProfile(selectedEmployee);
-    setCollapsedSections({});
+    setEditableProfile(JSON.parse(JSON.stringify(selectedEmployee)));
+    setActiveEditTab('personal');
     setShowEditModal(true);
   };
 
   const handleRoleChange = (role) => {
-    setFormData({ ...formData, role });
+    setFormData(prev => ({ ...prev, role }));
   };
 
-  const handlePermissionChange = (permission) => {
-    setFormData({
-      ...formData,
-      permissions: { ...formData.permissions, [permission]: !formData.permissions[permission] }
+  const copyToClipboard = (text, label) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: `${label} copied to clipboard!`,
+      showConfirmButton: false,
+      timer: 1800,
+      timerProgressBar: true
     });
-  };
-
-  const toggleSection = (sectionName) => {
-    setCollapsedSections(prev => ({
-      ...prev,
-      [sectionName]: !prev[sectionName]
-    }));
   };
 
   const handleSaveProfile = async () => {
     const result = await Swal.fire({
-      title: 'Save Changes?',
-      text: 'Are you sure you want to save these changes?',
+      title: 'Save Profile Changes?',
+      text: 'Are you sure you want to update this employee profile?',
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#0d6efd',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Yes, save!'
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, save changes'
     });
 
     if (!result.isConfirmed) return;
     if (!selectedEmployee || !editableProfile) return;
+    
     const userId = selectedEmployee.userId._id || selectedEmployee.userId;
     try {
       const userPayload = {
@@ -170,9 +173,16 @@ const EmployeeDirectory = () => {
       
       setSelectedEmployee(refreshedProfile);
       setEditableProfile(refreshedProfile);
-      setEmployees(prev => prev.map(emp => (emp.userId?._id === userId ? { ...emp, userId: { ...emp.userId, ...userPayload } } : emp)));
+      setEmployees(prev => prev.map(emp => (emp.userId?._id === userId ? { ...emp, userId: { ...emp.userId, ...userPayload }, ...userPayload } : emp)));
       setShowEditModal(false);
-      Swal.fire({ icon: 'success', title: 'Success', text: 'Profile updated successfully', timer: 2000, showConfirmButton: false });
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Employee profile updated successfully',
+        timer: 2000,
+        showConfirmButton: false
+      });
     } catch (err) {
       console.error('Error saving profile:', err);
       Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Failed to save profile' });
@@ -181,15 +191,14 @@ const EmployeeDirectory = () => {
 
   const handleConfirmDelete = async () => {
     setShowEditModal(false);
-    setShowProfileModal(false);
     await new Promise(resolve => setTimeout(resolve, 300));
     
     const { value: formValues } = await Swal.fire({
       title: '<strong>Employee Exit Process</strong>',
       html: `
-        <div style="text-align: left; padding: 1rem;">
+        <div style="text-align: left; padding: 0.5rem;">
           <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 0.875rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.875rem; color: #92400e;">
-            <strong>Important:</strong> Employee will be immediately logged out and unable to access the system.
+            <strong>Important:</strong> Employee will be immediately logged out and system access will be revoked.
           </div>
           
           <div style="margin-bottom: 1.25rem;">
@@ -234,21 +243,16 @@ const EmployeeDirectory = () => {
           
           <div style="margin-bottom: 1.25rem;">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; font-size: 0.9rem;">Additional Notes</label>
-            <textarea id="exitNotes" style="width: 100%; padding: 0.625rem 0.875rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;" rows="3" placeholder="Enter any additional information about the exit (optional)..."></textarea>
+            <textarea id="exitNotes" style="width: 100%; padding: 0.625rem 0.875rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;" rows="3" placeholder="Enter any additional details..."></textarea>
           </div>
         </div>
       `,
-      width: '600px',
+      width: '560px',
       showCancelButton: true,
-      confirmButtonText: '<i class="fas fa-user-slash"></i> Deactivate Employee',
-      cancelButtonText: '<i class="fas fa-times"></i> Cancel',
+      confirmButtonText: '<i class="fas fa-user-slash me-1"></i> Deactivate Employee',
+      cancelButtonText: 'Cancel',
       confirmButtonColor: '#dc2626',
       cancelButtonColor: '#64748b',
-      customClass: {
-        popup: 'exit-modal',
-        confirmButton: 'btn-confirm-exit',
-        cancelButton: 'btn-cancel-exit'
-      },
       preConfirm: () => {
         const exitReason = document.getElementById('exitReason').value;
         const exitDate = document.getElementById('exitDate').value;
@@ -258,29 +262,17 @@ const EmployeeDirectory = () => {
         
         if (!exitReason) {
           Swal.showValidationMessage('⚠️ Please select an exit reason');
+          return false;
         }
-        
         if (!exitDate) {
           Swal.showValidationMessage('⚠️ Please select last working day');
+          return false;
         }
-        
-        if (exitReason && exitDate) {
-          return { exitReason, exitDate, exitInterview, handoverStatus, exitNotes };
-        }
-      },
-      didOpen: () => {
-        // Add custom styling
-        const style = document.createElement('style');
-        style.textContent = `
-          .exit-modal { border-radius: 16px !important; }
-          .btn-confirm-exit, .btn-cancel-exit { padding: 0.75rem 1.5rem !important; font-weight: 600 !important; border-radius: 8px !important; }
-        `;
-        document.head.appendChild(style);
+        return { exitReason, exitDate, exitInterview, handoverStatus, exitNotes };
       }
     });
 
-    if (!formValues) return;
-    if (!selectedEmployee) return;
+    if (!formValues || !selectedEmployee) return;
     const userId = selectedEmployee.userId?._id || selectedEmployee._id;
     
     try {
@@ -289,28 +281,18 @@ const EmployeeDirectory = () => {
       await Swal.fire({
         icon: 'success',
         title: 'Employee Deactivated',
-        html: `
-          <div style="text-align: left; padding: 1rem;">
-            <p><strong>${selectedEmployee.userId?.firstName} ${selectedEmployee.userId?.lastName}</strong> has been successfully deactivated.</p>
-            <ul style="margin-top: 1rem; color: #64748b;">
-              <li>✓ Access revoked immediately</li>
-              <li>✓ Exit details recorded</li>
-              <li>✓ Data preserved for records</li>
-            </ul>
-          </div>
-        `,
+        html: `<strong>${selectedEmployee.userId?.firstName} ${selectedEmployee.userId?.lastName}</strong> has been deactivated successfully.`,
         confirmButtonText: 'Done',
-        confirmButtonColor: '#059669'
+        confirmButtonColor: '#10b981'
       });
       
       await fetchEmployees();
       
-      // Refresh profile to show exit details
+      // Refresh profile view
       const refreshResponse = await api.get(`/api/employees/profile/${userId}`);
       const userResponse = await api.get(`/api/users/${userId}`);
       refreshResponse.data.userId = userResponse.data;
       setSelectedEmployee(refreshResponse.data);
-      setShowProfileModal(true);
     } catch (err) {
       console.error('Deactivate failed', err);
       Swal.fire({
@@ -325,9 +307,15 @@ const EmployeeDirectory = () => {
   const handleToggleFieldEmployee = async (empId, currentValue) => {
     try {
       await api.put(`/api/employee-management/${empId}/toggle-field-employee`);
-      Swal.fire({ icon: 'success', title: 'Success', text: `Field tracking ${!currentValue ? 'enabled' : 'disabled'}`, timer: 2000, showConfirmButton: false });
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `GPS Field Tracking ${!currentValue ? 'enabled' : 'disabled'}`,
+        showConfirmButton: false,
+        timer: 2000
+      });
       fetchEmployees();
-      // refresh selected employee if profile modal is open
       if (selectedEmployee) {
         const uid = selectedEmployee.userId?._id || selectedEmployee.userId;
         const res = await api.get(`/api/employees/profile/${uid}`);
@@ -341,18 +329,14 @@ const EmployeeDirectory = () => {
   };
 
   const handleReactivate = async (userId) => {
-    setShowProfileModal(false);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
     const result = await Swal.fire({
       title: 'Reactivate Employee?',
-      text: 'This will restore full system access for this employee.',
+      text: 'This will restore full system access and active status for this employee.',
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Yes, reactivate',
-      cancelButtonText: 'Cancel'
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, reactivate'
     });
 
     if (!result.isConfirmed) return;
@@ -364,11 +348,17 @@ const EmployeeDirectory = () => {
       await Swal.fire({
         icon: 'success',
         title: 'Employee Reactivated',
-        text: 'Employee has been successfully reactivated.',
+        text: 'Employee has been reactivated successfully.',
         confirmButtonColor: '#10b981'
       });
       
       await fetchEmployees();
+      if (selectedEmployee) {
+        const res = await api.get(`/api/employees/profile/${id}`);
+        const userRes = await api.get(`/api/users/${id}`);
+        res.data.userId = userRes.data;
+        setSelectedEmployee(res.data);
+      }
     } catch (error) {
       Swal.fire({
         icon: 'error',
@@ -380,18 +370,14 @@ const EmployeeDirectory = () => {
   };
 
   const handleDeletePermanently = async () => {
-    setShowProfileModal(false);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
     const result = await Swal.fire({
       title: 'Delete Employee Permanently?',
-      html: '<strong style="color: #dc2626;">WARNING: This action cannot be undone!</strong><br/>All employee data will be permanently deleted.',
+      html: '<strong style="color: #dc2626;">WARNING: This action cannot be undone!</strong><br/>All employee records, history, and user data will be permanently removed.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Yes, delete permanently',
-      cancelButtonText: 'Cancel'
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, delete permanently'
     });
 
     if (!result.isConfirmed) return;
@@ -407,6 +393,7 @@ const EmployeeDirectory = () => {
         confirmButtonColor: '#10b981'
       });
       
+      handleCloseProfilePage();
       await fetchEmployees();
     } catch (error) {
       Swal.fire({
@@ -419,28 +406,24 @@ const EmployeeDirectory = () => {
   };
 
   const handleResetPassword = async () => {
-    setShowProfileModal(false);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
     const { value: newPassword } = await Swal.fire({
-      title: 'Reset Password',
+      title: 'Reset Login Password',
       html: `
         <div style="text-align: left; padding: 0.5rem;">
-          <p>Enter new password for <strong>${selectedEmployee.userId?.firstName} ${selectedEmployee.userId?.lastName}</strong></p>
+          <p>Set a new password for <strong>${selectedEmployee.userId?.firstName} ${selectedEmployee.userId?.lastName}</strong></p>
           <input id="newPassword" type="text" class="swal2-input" placeholder="Enter new password" style="width: 90%; margin: 0.5rem auto;">
-          <p style="color: #6c757d; font-size: 0.85rem; margin-top: 0.5rem;">ℹ️ Password must be at least 6 characters</p>
+          <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.5rem;">ℹ️ Password must be at least 6 characters long</p>
         </div>
       `,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#0d6efd',
-      cancelButtonColor: '#6c757d',
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#64748b',
       confirmButtonText: 'Reset Password',
-      cancelButtonText: 'Cancel',
       preConfirm: () => {
         const password = document.getElementById('newPassword').value;
         if (!password) {
-          Swal.showValidationMessage('Please enter a password');
+          Swal.showValidationMessage('Please enter a new password');
         } else if (password.length < 6) {
           Swal.showValidationMessage('Password must be at least 6 characters');
         }
@@ -456,26 +439,24 @@ const EmployeeDirectory = () => {
       
       await Swal.fire({
         icon: 'success',
-        title: 'Password Reset Successfully',
+        title: 'Password Reset Success 🔐',
         html: `
-          <div style="text-align: left; padding: 1rem;">
-            <p><strong>New Login Credentials:</strong></p>
-            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
-              <p style="margin: 0.5rem 0;"><strong>Email:</strong> ${selectedEmployee.userId?.email}</p>
-              <p style="margin: 0.5rem 0;"><strong>Password:</strong> <code style="background: #e9ecef; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 1.1em;">${newPassword}</code></p>
+          <div style="text-align: left; padding: 0.5rem;">
+            <p><strong>New Credentials:</strong></p>
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; margin: 0.5rem 0;">
+              <p style="margin: 0.3rem 0;"><strong>Email:</strong> ${selectedEmployee.userId?.email}</p>
+              <p style="margin: 0.3rem 0;"><strong>Password:</strong> <code style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: bold;">${newPassword}</code></p>
             </div>
-            <p style="color: #0d6efd; font-size: 0.9rem;">ℹ️ Share these credentials with the employee.</p>
+            <p style="color: #2563eb; font-size: 0.85rem;">Share these credentials securely with the employee.</p>
           </div>
         `,
         confirmButtonText: 'Done',
         confirmButtonColor: '#10b981'
       });
-      
-      setShowProfileModal(true);
     } catch (error) {
       Swal.fire({
         icon: 'error',
-        title: 'Password Reset Failed',
+        title: 'Reset Failed',
         text: error.response?.data?.message || 'Failed to reset password',
         confirmButtonColor: '#dc2626'
       });
@@ -483,31 +464,27 @@ const EmployeeDirectory = () => {
   };
 
   const handleChangeRole = async () => {
-    setShowProfileModal(false);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
     const currentRole = selectedEmployee.userId?.role;
     
     const { value: newRole } = await Swal.fire({
-      title: 'Change Employee Role',
+      title: 'Change Access Role',
       html: `
-        <div style="text-align: left; padding: 1rem;">
-          <p style="margin-bottom: 1rem;">Change role for <strong>${selectedEmployee.userId?.firstName} ${selectedEmployee.userId?.lastName}</strong></p>
-          <p style="margin-bottom: 0.5rem; color: #6c757d; font-size: 0.9rem;">Current Role: <strong>${currentRole}</strong></p>
-          <select id="roleSelect" class="swal2-input" style="width: 90%; padding: 0.75rem;">
-            <option value="EMPLOYEE" ${currentRole === 'EMPLOYEE' ? 'selected' : ''}>Employee - Basic access</option>
-            <option value="MANAGER" ${currentRole === 'MANAGER' ? 'selected' : ''}>Manager - Team management</option>
-            <option value="HR" ${currentRole === 'HR' ? 'selected' : ''}>HR - Full HR access</option>
-            <option value="ADMIN" ${currentRole === 'ADMIN' ? 'selected' : ''}>Admin - Full system access</option>
+        <div style="text-align: left; padding: 0.5rem;">
+          <p style="margin-bottom: 0.75rem;">Change system role for <strong>${selectedEmployee.userId?.firstName} ${selectedEmployee.userId?.lastName}</strong></p>
+          <p style="margin-bottom: 0.5rem; color: #64748b; font-size: 0.875rem;">Current Role: <strong>${currentRole}</strong></p>
+          <select id="roleSelect" class="swal2-input" style="width: 90%; padding: 0.6rem;">
+            <option value="EMPLOYEE" ${currentRole === 'EMPLOYEE' ? 'selected' : ''}>Employee - Standard User</option>
+            <option value="MANAGER" ${currentRole === 'MANAGER' ? 'selected' : ''}>Manager - Team Leader</option>
+            <option value="HR" ${currentRole === 'HR' ? 'selected' : ''}>HR - Human Resources</option>
+            <option value="ADMIN" ${currentRole === 'ADMIN' ? 'selected' : ''}>Admin - Full Administrator</option>
           </select>
         </div>
       `,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#0d6efd',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Change Role',
-      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#8b5cf6',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Update Role',
       preConfirm: () => {
         return document.getElementById('roleSelect').value;
       }
@@ -521,18 +498,8 @@ const EmployeeDirectory = () => {
       
       await Swal.fire({
         icon: 'success',
-        title: 'Role Changed Successfully',
-        html: `
-          <div style="text-align: left; padding: 1rem;">
-            <p><strong>${selectedEmployee.userId?.firstName} ${selectedEmployee.userId?.lastName}</strong> role has been updated.</p>
-            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
-              <p style="margin: 0.5rem 0;"><strong>Previous Role:</strong> ${currentRole}</p>
-              <p style="margin: 0.5rem 0;"><strong>New Role:</strong> ${newRole}</p>
-            </div>
-            <p style="color: #0d6efd; font-size: 0.9rem;">ℹ️ Employee needs to logout and login to see new permissions.</p>
-          </div>
-        `,
-        confirmButtonText: 'Done',
+        title: 'Role Updated!',
+        text: `Role changed from ${currentRole} to ${newRole}`,
         confirmButtonColor: '#10b981'
       });
       
@@ -541,13 +508,51 @@ const EmployeeDirectory = () => {
       const userResponse = await api.get(`/api/users/${userId}`);
       response.data.userId = userResponse.data;
       setSelectedEmployee(response.data);
-      setShowProfileModal(true);
     } catch (error) {
       Swal.fire({
         icon: 'error',
         title: 'Role Change Failed',
         text: error.response?.data?.message || 'Failed to change role',
         confirmButtonColor: '#dc2626'
+      });
+    }
+  };
+
+  const handleResetWfhLocation = async () => {
+    if (!selectedEmployee) return;
+    const rawUserId = selectedEmployee.userId?._id || selectedEmployee.userId || selectedEmployee._id;
+    const userId = typeof rawUserId === 'object' ? rawUserId?._id : rawUserId;
+
+    if (!userId) {
+      return Swal.fire({ icon: 'error', title: 'Error', text: 'Could not resolve target User ID' });
+    }
+
+    const result = await Swal.fire({
+      title: 'Reset Remote/WFH Base Location?',
+      html: `Resetting the Remote/WFH anchor for <strong>${selectedEmployee.userId?.firstName || selectedEmployee.firstName || ''} ${selectedEmployee.userId?.lastName || selectedEmployee.lastName || ''}</strong> will allow them to set a new base GPS location on their next Remote check-in.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, Reset Location'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await api.put(`/api/users/${userId}/reset-wfh-location`);
+      Swal.fire({
+        icon: 'success',
+        title: 'Location Reset Successfully 📍',
+        text: 'The employee can now pin a new Remote/WFH location boundary.',
+        confirmButtonColor: '#10b981'
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Reset Failed',
+        text: error.response?.data?.message || 'Failed to reset WFH location',
+        confirmButtonColor: '#ef4444'
       });
     }
   };
@@ -574,23 +579,22 @@ const EmployeeDirectory = () => {
       
       const response = await api.post('/api/employee-management/create', payload);
       
-      // Show password in alert
       if (response.data.employee?.tempPassword) {
         await Swal.fire({
           icon: 'success',
-          title: 'Employee Created Successfully!',
+          title: 'Employee Created Successfully! 🎉',
           html: `
-            <div style="text-align: left; padding: 1rem;">
+            <div style="text-align: left; padding: 0.5rem;">
               <p><strong>Login Credentials:</strong></p>
-              <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
-                <p style="margin: 0.5rem 0;"><strong>Email:</strong> ${response.data.employee.email}</p>
-                <p style="margin: 0.5rem 0;"><strong>Password:</strong> <code style="background: #e9ecef; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 1.1em;">${response.data.employee.tempPassword}</code></p>
+              <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; margin: 0.5rem 0;">
+                <p style="margin: 0.3rem 0;"><strong>Email:</strong> ${response.data.employee.email}</p>
+                <p style="margin: 0.3rem 0;"><strong>Temporary Password:</strong> <code style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: bold;">${response.data.employee.tempPassword}</code></p>
               </div>
-              <p style="color: #dc3545; font-size: 0.9rem;">⚠️ Save this password - it won't be shown again!</p>
+              <p style="color: #dc2626; font-size: 0.85rem;">⚠️ Save this password now - it won't be shown again!</p>
             </div>
           `,
           confirmButtonText: 'Got it!',
-          confirmButtonColor: '#0d6efd'
+          confirmButtonColor: '#10b981'
         });
       } else {
         Swal.fire({ icon: 'success', title: 'Success', text: response.data.message || 'Employee created successfully!', timer: 2000, showConfirmButton: false });
@@ -622,30 +626,47 @@ const EmployeeDirectory = () => {
 
   const getRoleBadgeClass = (role) => {
     const classes = {
-      ADMIN: 'badge-admin',
-      HR: 'badge-hr',
-      MANAGER: 'badge-manager',
-      EMPLOYEE: 'badge-employee'
+      ADMIN: 'badge-role-admin',
+      HR: 'badge-role-hr',
+      MANAGER: 'badge-role-manager',
+      EMPLOYEE: 'badge-role-employee'
     };
-    return classes[role] || classes.EMPLOYEE;
+    return classes[role] || 'badge-role-employee';
   };
 
+  // Filter Employees
   const filteredEmployees = employees.filter(emp => {
-    const searchLower = filters.search.toLowerCase();
-    const matchesSearch = !filters.search || 
-      emp?.firstName?.toLowerCase().includes(searchLower) ||
-      emp?.lastName?.toLowerCase().includes(searchLower) ||
-      emp?.email?.toLowerCase().includes(searchLower);
-    const matchesDept = !filters.department || emp?.department === filters.department;
-    const matchesRole = !filters.role || emp?.role === filters.role;
+    const searchLower = filters.search.toLowerCase().trim();
+    const fullName = `${emp?.firstName || ''} ${emp?.lastName || ''}`.toLowerCase();
+    const email = (emp?.email || emp?.userId?.email || '').toLowerCase();
+    const empId = (emp?.employeeId || emp?.professionalInfo?.employeeId || '').toLowerCase();
+    const designation = (emp?.designation || emp?.workInfo?.designation || '').toLowerCase();
+    const phone = (emp?.personalInfo?.phone || '').toLowerCase();
+
+    const matchesSearch = !searchLower || 
+      fullName.includes(searchLower) ||
+      email.includes(searchLower) ||
+      empId.includes(searchLower) ||
+      designation.includes(searchLower) ||
+      phone.includes(searchLower);
+
+    const empDept = emp?.department || emp?.workInfo?.department || emp?.userId?.department;
+    const matchesDept = !filters.department || empDept === filters.department;
+    
+    const empRole = emp?.role || emp?.userId?.role;
+    const matchesRole = !filters.role || empRole === filters.role;
+
     return matchesSearch && matchesDept && matchesRole;
   });
 
+  const statsList = allEmployees.length > 0 ? allEmployees : employees;
   const stats = {
-    total: allEmployees.length,
-    active: allEmployees.filter(e => e?.isActive).length,
-    inactive: allEmployees.filter(e => e?.isActive === false).length,
-    departments: [...new Set(allEmployees.map(e => e?.department).filter(Boolean))].length
+    total: statsList.length,
+    active: statsList.filter(e => (e?.isActive !== false && e?.userId?.isActive !== false)).length,
+    inactive: statsList.filter(e => (e?.isActive === false || e?.userId?.isActive === false)).length,
+    departments: Array.isArray(departments) && departments.length > 0 
+      ? departments.length 
+      : [...new Set(statsList.map(e => e?.department || e?.workInfo?.department || e?.userId?.department).filter(Boolean))].length
   };
 
   const exportToExcel = async () => {
@@ -671,13 +692,12 @@ const EmployeeDirectory = () => {
               'Address': profile.personalInfo?.address ? `${profile.personalInfo.address.street || ''}, ${profile.personalInfo.address.city || ''}, ${profile.personalInfo.address.state || ''}, ${profile.personalInfo.address.zipCode || ''}`.trim() : 'N/A',
               'Emergency Contact Name': profile.personalInfo?.emergencyContact?.name || 'N/A',
               'Emergency Contact Phone': profile.personalInfo?.emergencyContact?.phone || 'N/A',
-              'Emergency Contact Relationship': profile.personalInfo?.emergencyContact?.relationship || 'N/A',
               'Work Location': profile.workInfo?.workLocation || profile.professionalInfo?.workLocation || 'N/A',
               'Employment Type': profile.professionalInfo?.employmentType || 'N/A',
               'Bank Name': profile.bankDetails?.bankName || 'N/A',
               'Account Number': profile.bankDetails?.accountNumber || 'N/A',
               'IFSC Code': profile.bankDetails?.ifscCode || 'N/A',
-              'Status': emp.isActive ? 'Active' : 'Inactive'
+              'Status': emp.isActive ? 'Active' : 'Exited'
             };
           } catch (error) {
             return {
@@ -689,7 +709,7 @@ const EmployeeDirectory = () => {
               'Department': emp.department || 'N/A',
               'Designation': emp.designation || 'N/A',
               'Join Date': emp.joinDate ? new Date(emp.joinDate).toLocaleDateString() : 'N/A',
-              'Status': emp.isActive ? 'Active' : 'Inactive'
+              'Status': emp.isActive ? 'Active' : 'Exited'
             };
           }
         })
@@ -698,38 +718,423 @@ const EmployeeDirectory = () => {
       const ws = window.XLSX?.utils.json_to_sheet(detailedEmployees);
       const wb = window.XLSX?.utils.book_new();
       window.XLSX?.utils.book_append_sheet(wb, ws, 'Employees');
-      window.XLSX?.writeFile(wb, `employees_detailed_${new Date().toISOString().split('T')[0]}.xlsx`);
-      Swal.fire({ icon: 'success', title: 'Success', text: 'Employee data exported successfully!', timer: 2000, showConfirmButton: false });
+      window.XLSX?.writeFile(wb, `Employee_Directory_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      Swal.fire({ icon: 'success', title: 'Export Complete 📊', text: 'Employee details exported to Excel file.', timer: 2000, showConfirmButton: false });
     } catch (error) {
       Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to export employee data' });
     }
   };
 
+  // FULL PAGE EMPLOYEE PROFILE VIEW
+  if (showProfilePage) {
+    return (
+      <div className="employee-directory-v2 full-profile-page-container">
+        {/* Top Navigation Bar */}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <Button 
+            variant="light" 
+            className="btn-back-directory shadow-sm"
+            onClick={handleCloseProfilePage}
+          >
+            <i className="fas fa-arrow-left me-2"></i> Back to Employee Directory
+          </Button>
+
+          {['HR', 'ADMIN'].includes(user?.role) && selectedEmployee && (
+            <div className="d-flex gap-2">
+              <Button variant="primary" size="sm" onClick={handleEditProfile} className="px-3">
+                <i className="fas fa-pen me-1"></i> Edit Profile
+              </Button>
+              {selectedEmployee?.userId?.isActive !== false ? (
+                <Button variant="outline-danger" size="sm" onClick={handleConfirmDelete}>
+                  <i className="fas fa-user-slash me-1"></i> Deactivate
+                </Button>
+              ) : (
+                <Button variant="outline-success" size="sm" onClick={() => handleReactivate(selectedEmployee?.userId?._id)}>
+                  <i className="fas fa-user-check me-1"></i> Reactivate
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {profileLoading ? (
+          <div className="loading-container bg-white p-5 rounded-4 shadow-sm">
+            <div className="spinner-border text-emerald"></div>
+            <p className="mt-3">Loading employee profile details...</p>
+          </div>
+        ) : selectedEmployee ? (
+          <div className="full-profile-content-card">
+            {/* Hero Cover Banner */}
+            <div className="profile-modal-banner rounded-4">
+              <div className="profile-banner-bg-glow"></div>
+              
+              <div className="profile-modal-avatar-lg">
+                {selectedEmployee.userId?.profileImage ? (
+                  <img src={selectedEmployee.userId.profileImage} alt="Profile" />
+                ) : (
+                  <div className="initials-lg">
+                    {selectedEmployee.userId?.firstName?.charAt(0)}{selectedEmployee.userId?.lastName?.charAt(0)}
+                  </div>
+                )}
+              </div>
+
+              <div className="profile-banner-info">
+                <h2>{selectedEmployee.userId?.firstName} {selectedEmployee.userId?.lastName}</h2>
+                <div className="banner-title">
+                  {selectedEmployee.workInfo?.designation || selectedEmployee.professionalInfo?.designation || 'No Position Specified'} • {selectedEmployee.userId?.department || 'Unassigned Department'}
+                </div>
+                <div className="profile-banner-badges">
+                  <span className={`card-role-badge ${getRoleBadgeClass(selectedEmployee.userId?.role)}`}>
+                    {selectedEmployee.userId?.role}
+                  </span>
+                  <span className={`status-tag ${(selectedEmployee.userId?.isActive !== false) ? 'active' : 'exited'}`}>
+                    {(selectedEmployee.userId?.isActive !== false) ? 'Active Employee' : 'Exited / Offboarded'}
+                  </span>
+                  {selectedEmployee.userId?.isFieldEmployee && (
+                    <span className="field-tag">
+                      <i className="fas fa-route me-1"></i> Field Personnel
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="modal-tabs-nav mt-3 bg-white rounded-3 border">
+              <button 
+                className={`modal-tab-item ${activeProfileTab === 'overview' ? 'active' : ''}`}
+                onClick={() => setActiveProfileTab('overview')}
+              >
+                <i className="fas fa-id-card"></i> Overview
+              </button>
+              <button 
+                className={`modal-tab-item ${activeProfileTab === 'personal' ? 'active' : ''}`}
+                onClick={() => setActiveProfileTab('personal')}
+              >
+                <i className="fas fa-user"></i> Personal & Address
+              </button>
+              <button 
+                className={`modal-tab-item ${activeProfileTab === 'work' ? 'active' : ''}`}
+                onClick={() => setActiveProfileTab('work')}
+              >
+                <i className="fas fa-briefcase"></i> Work Information
+              </button>
+              <button 
+                className={`modal-tab-item ${activeProfileTab === 'bank' ? 'active' : ''}`}
+                onClick={() => setActiveProfileTab('bank')}
+              >
+                <i className="fas fa-building-columns"></i> Bank & Financial
+              </button>
+              {selectedEmployee.userId?.exitDetails && selectedEmployee.userId?.isActive === false && (
+                <button 
+                  className={`modal-tab-item ${activeProfileTab === 'exit' ? 'active' : ''}`}
+                  onClick={() => setActiveProfileTab('exit')}
+                  style={{ color: '#dc2626' }}
+                >
+                  <i className="fas fa-door-open"></i> Exit Details
+                </button>
+              )}
+            </div>
+
+            {/* Profile Tab Contents */}
+            <div className="profile-tab-content bg-white rounded-4 border p-4 mt-3 shadow-sm">
+              {activeProfileTab === 'overview' && (
+                <div className="info-cards-grid">
+                  <div className="detail-card">
+                    <div className="detail-card-title"><i className="fas fa-address-book text-emerald"></i> Contact Information</div>
+                    <div className="detail-item">
+                      <div className="detail-label">Work Email</div>
+                      <div className="detail-value">
+                        <span>{selectedEmployee.userId?.email}</span>
+                        <button className="copy-btn" onClick={() => copyToClipboard(selectedEmployee.userId?.email, 'Email')}>
+                          <i className="fas fa-copy"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Phone Number</div>
+                      <div className="detail-value">
+                        <span>{selectedEmployee.personalInfo?.phone || 'Not provided'}</span>
+                        {selectedEmployee.personalInfo?.phone && (
+                          <button className="copy-btn" onClick={() => copyToClipboard(selectedEmployee.personalInfo?.phone, 'Phone')}>
+                            <i className="fas fa-copy"></i>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="detail-card">
+                    <div className="detail-card-title"><i className="fas fa-briefcase text-primary"></i> Employment Summary</div>
+                    <div className="detail-item">
+                      <div className="detail-label">Employee ID</div>
+                      <div className="detail-value">{selectedEmployee.employeeId || selectedEmployee.professionalInfo?.employeeId || 'Unassigned'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Base Work Location</div>
+                      <div className="detail-value">{selectedEmployee.workInfo?.workLocation || selectedEmployee.professionalInfo?.workLocation || 'Not set'}</div>
+                    </div>
+                  </div>
+
+                  <div className="detail-card">
+                    <div className="detail-card-title"><i className="fas fa-calendar-check text-purple"></i> Key Dates</div>
+                    <div className="detail-item">
+                      <div className="detail-label">Joining Date</div>
+                      <div className="detail-value">{selectedEmployee.userId?.joinDate ? new Date(selectedEmployee.userId.joinDate).toLocaleDateString() : 'Not set'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Date of Birth</div>
+                      <div className="detail-value">
+                        {(selectedEmployee.userId?.dateOfBirth && selectedEmployee.userId.dateOfBirth !== '1970-01-01T00:00:00.000Z') ? new Date(selectedEmployee.userId.dateOfBirth).toLocaleDateString() : 'Not set'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeProfileTab === 'personal' && (
+                <div className="info-cards-grid">
+                  <div className="detail-card">
+                    <div className="detail-card-title"><i className="fas fa-user-tag text-emerald"></i> Personal Details</div>
+                    <div className="detail-item">
+                      <div className="detail-label">Full Name</div>
+                      <div className="detail-value">{selectedEmployee.userId?.firstName} {selectedEmployee.userId?.lastName}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Blood Group</div>
+                      <div className="detail-value">{selectedEmployee.personalInfo?.bloodGroup || 'Not specified'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Marital Status</div>
+                      <div className="detail-value">{selectedEmployee.personalInfo?.maritalStatus || 'Not specified'}</div>
+                    </div>
+                  </div>
+
+                  <div className="detail-card">
+                    <div className="detail-card-title"><i className="fas fa-house text-primary"></i> Home Address</div>
+                    <div className="detail-item">
+                      <div className="detail-label">Street Address</div>
+                      <div className="detail-value">{selectedEmployee.personalInfo?.address?.street || 'N/A'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">City / State</div>
+                      <div className="detail-value">{selectedEmployee.personalInfo?.address?.city || ''} {selectedEmployee.personalInfo?.address?.state ? `, ${selectedEmployee.personalInfo.address.state}` : ''}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Zip Code / Country</div>
+                      <div className="detail-value">{selectedEmployee.personalInfo?.address?.zipCode || ''} {selectedEmployee.personalInfo?.address?.country ? `, ${selectedEmployee.personalInfo.address.country}` : ''}</div>
+                    </div>
+                  </div>
+
+                  <div className="detail-card">
+                    <div className="detail-card-title"><i className="fas fa-phone-volume text-danger"></i> Emergency Contact</div>
+                    <div className="detail-item">
+                      <div className="detail-label">Contact Name</div>
+                      <div className="detail-value">{selectedEmployee.personalInfo?.emergencyContact?.name || 'N/A'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Relationship</div>
+                      <div className="detail-value">{selectedEmployee.personalInfo?.emergencyContact?.relationship || 'N/A'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Emergency Phone</div>
+                      <div className="detail-value">{selectedEmployee.personalInfo?.emergencyContact?.phone || 'N/A'}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeProfileTab === 'work' && (
+                <div className="info-cards-grid">
+                  <div className="detail-card">
+                    <div className="detail-card-title"><i className="fas fa-sitemap text-emerald"></i> Organizational Structure</div>
+                    <div className="detail-item">
+                      <div className="detail-label">Department</div>
+                      <div className="detail-value">{selectedEmployee.userId?.department || 'Unassigned'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Designation</div>
+                      <div className="detail-value">{selectedEmployee.workInfo?.designation || selectedEmployee.professionalInfo?.designation || 'N/A'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Employment Type</div>
+                      <div className="detail-value">{selectedEmployee.professionalInfo?.employmentType || 'Full Time'}</div>
+                    </div>
+                  </div>
+
+                  <div className="detail-card">
+                    <div className="detail-card-title"><i className="fas fa-location-dot text-primary"></i> Work Location & GPS Tracking</div>
+                    <div className="detail-item">
+                      <div className="detail-label">Base Work Location</div>
+                      <div className="detail-value">{selectedEmployee.workInfo?.workLocation || selectedEmployee.professionalInfo?.workLocation || 'Office Base'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">GPS Field Tracking</div>
+                      <div className="detail-value">
+                        {selectedEmployee.userId?.isFieldEmployee ? (
+                          <Badge bg="info" className="text-dark"><i className="fas fa-route me-1"></i> Field Tracking Active</Badge>
+                        ) : (
+                          <span className="text-muted">Standard Desk Employee</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeProfileTab === 'bank' && (
+                <div className="info-cards-grid">
+                  <div className="detail-card">
+                    <div className="detail-card-title"><i className="fas fa-university text-emerald"></i> Bank Account Information</div>
+                    <div className="detail-item">
+                      <div className="detail-label">Bank Name</div>
+                      <div className="detail-value">{selectedEmployee.bankDetails?.bankName || 'Not Provided'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Account Number</div>
+                      <div className="detail-value">{selectedEmployee.bankDetails?.accountNumber || 'Not Provided'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">IFSC Code</div>
+                      <div className="detail-value">{selectedEmployee.bankDetails?.ifscCode || 'Not Provided'}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Account Type</div>
+                      <div className="detail-value">{selectedEmployee.bankDetails?.accountType || 'SAVINGS'}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeProfileTab === 'exit' && selectedEmployee.userId?.exitDetails && (
+                <div className="detail-card" style={{ borderLeft: '4px solid #dc2626' }}>
+                  <div className="detail-card-title text-danger"><i className="fas fa-door-open"></i> Offboarding & Exit Information</div>
+                  <div className="exit-info-grid mt-2">
+                    <div className="detail-item">
+                      <div className="detail-label">Reason for Exit</div>
+                      <div className="detail-value">{selectedEmployee.userId.exitDetails.reason?.replace(/_/g, ' ')}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Last Working Day</div>
+                      <div className="detail-value">{new Date(selectedEmployee.userId.exitDetails.exitDate).toLocaleDateString()}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Exit Interview</div>
+                      <div className="detail-value">{selectedEmployee.userId.exitDetails.exitInterview}</div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-label">Handover Status</div>
+                      <div className="detail-value">{selectedEmployee.userId.exitDetails.handoverStatus?.replace(/_/g, ' ')}</div>
+                    </div>
+                    {selectedEmployee.userId.exitDetails.notes && (
+                      <div className="detail-item" style={{ gridColumn: '1 / -1' }}>
+                        <div className="detail-label">Exit Notes</div>
+                        <div className="detail-value">{selectedEmployee.userId.exitDetails.notes}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Admin Management Bar */}
+            {['ADMIN', 'HR'].includes(user?.role) && (
+              <div className="profile-actions-bar bg-white rounded-4 border p-4 mt-3 shadow-sm">
+                <div className="field-employee-box w-100 mb-3">
+                  <div className="field-box-info">
+                    <i className="fas fa-street-view"></i>
+                    <div>
+                      <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>GPS Field Tracking Control</div>
+                      <div className="text-muted" style={{ fontSize: '0.785rem' }}>
+                        {selectedEmployee.userId?.isFieldEmployee ? 'Live GPS tracking and visit route logging active' : 'Enable live field visit tracking for this employee'}
+                      </div>
+                    </div>
+                  </div>
+                  <label className="custom-switch">
+                    <input 
+                      type="checkbox" 
+                      checked={!!selectedEmployee.userId?.isFieldEmployee}
+                      onChange={() => handleToggleFieldEmployee(selectedEmployee.userId?._id, selectedEmployee.userId?.isFieldEmployee)}
+                    />
+                    <span className="switch-slider"></span>
+                  </label>
+                </div>
+
+                <button className="action-btn-styled btn-edit" onClick={handleEditProfile}>
+                  <i className="fas fa-user-pen"></i> Edit Profile
+                </button>
+
+                {user?.role === 'ADMIN' && (
+                  <button className="action-btn-styled btn-role" onClick={handleChangeRole}>
+                    <i className="fas fa-user-shield"></i> Change Role
+                  </button>
+                )}
+
+                {user?.role === 'ADMIN' && (
+                  <button className="action-btn-styled btn-password" onClick={handleResetPassword}>
+                    <i className="fas fa-key"></i> Reset Password
+                  </button>
+                )}
+
+                <button className="action-btn-styled btn-wfh" onClick={handleResetWfhLocation}>
+                  <i className="fas fa-location-crosshairs"></i> Reset WFH Location
+                </button>
+
+                {(selectedEmployee.userId?.isActive !== false) ? (
+                  <button className="action-btn-styled btn-deactivate ms-auto" onClick={handleConfirmDelete}>
+                    <i className="fas fa-user-slash"></i> Deactivate
+                  </button>
+                ) : (
+                  <button className="action-btn-styled btn-reactivate ms-auto" onClick={() => handleReactivate(selectedEmployee.userId?._id)}>
+                    <i className="fas fa-user-check"></i> Reactivate
+                  </button>
+                )}
+
+                {user?.role === 'ADMIN' && (
+                  <button className="action-btn-styled btn-delete-perm" onClick={handleDeletePermanently}>
+                    <i className="fas fa-trash"></i> Delete
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="employee-directory-v2">
-      {/* Header */}
+      {/* Directory Header */}
       <div className="directory-header">
         <div className="header-left">
           <h1 className="directory-title">
-            <i className="fas fa-address-book"></i>
+            <div className="title-icon-wrapper">
+              <i className="fas fa-users-gear"></i>
+            </div>
             Employee Directory
           </h1>
-          <p className="directory-subtitle">{filteredEmployees.length} Employees</p>
+          <p className="directory-subtitle">
+            <span>Manage staff, profiles & access roles</span>
+            <span className="count-badge">{filteredEmployees.length} {filteredEmployees.length === 1 ? 'Member' : 'Members'}</span>
+          </p>
         </div>
+        
         <div className="header-actions">
-          <Button variant="outline-secondary" onClick={exportToExcel} className="me-2">
-            <i className="fas fa-file-excel me-2"></i>Export
+          <Button variant="light" onClick={exportToExcel} className="btn-export">
+            <i className="fas fa-file-excel text-success me-1"></i> Export Excel
           </Button>
           {['HR', 'ADMIN'].includes(user?.role) && (
-            <Button className="btn-import" onClick={() => setShowAddModal(true)}>
-              <i className="fas fa-user-plus me-2"></i>Add Employee
+            <Button className="btn-add-emp" onClick={() => setShowAddModal(true)}>
+              <i className="fas fa-plus me-1"></i> Add Employee
             </Button>
           )}
         </div>
       </div>
 
-      {/* Status Cards */}
-      <div className="stats-cards-container mb-4">
+      {/* KPI Stats Cards */}
+      <div className="stats-cards-container">
         <div 
           className={`stats-card stats-card-active ${statusFilter === 'active' ? 'active' : ''}`}
           onClick={() => setStatusFilter('active')}
@@ -738,13 +1143,12 @@ const EmployeeDirectory = () => {
             <i className="fas fa-user-check"></i>
           </div>
           <div className="stats-card-content">
-            <div className="stats-card-label">Active</div>
+            <div className="stats-card-label">Active Employees</div>
             <div className="stats-card-value">{stats.active}</div>
             <div className="stats-card-trend">
-              <i className="fas fa-briefcase"></i> Currently working
+              <i className="fas fa-circle-check text-success"></i> Currently working
             </div>
           </div>
-          <div className="stats-card-glow stats-glow-active"></div>
         </div>
         
         <div 
@@ -752,1058 +1156,763 @@ const EmployeeDirectory = () => {
           onClick={() => setStatusFilter('inactive')}
         >
           <div className="stats-card-icon-wrapper stats-icon-inactive">
-            <i className="fas fa-user-times"></i>
+            <i className="fas fa-user-slash"></i>
           </div>
           <div className="stats-card-content">
-            <div className="stats-card-label">Exited</div>
+            <div className="stats-card-label">Exited Staff</div>
             <div className="stats-card-value">{stats.inactive}</div>
             <div className="stats-card-trend">
-              <i className="fas fa-sign-out-alt"></i> Left company
+              <i className="fas fa-door-open text-danger"></i> Offboarded
             </div>
           </div>
-          <div className="stats-card-glow stats-glow-inactive"></div>
+        </div>
+
+        <div className="stats-card stats-card-depts">
+          <div className="stats-card-icon-wrapper stats-icon-depts">
+            <i className="fas fa-building"></i>
+          </div>
+          <div className="stats-card-content">
+            <div className="stats-card-label">Departments</div>
+            <div className="stats-card-value">{stats.departments}</div>
+            <div className="stats-card-trend">
+              <i className="fas fa-sitemap text-primary"></i> Active units
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Filters Bar */}
+      {/* Filter and Control Toolbar */}
       <div className="filters-bar">
-        <div className="filter-group">
+        <div className="filter-group-left">
           <div className="search-box">
-            <i className="fas fa-search"></i>
+            <i className="fas fa-search search-icon"></i>
             <input
               type="text"
-              placeholder="Search employees..."
+              placeholder="Search by name, email, ID, phone..."
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
             />
+            {filters.search && (
+              <button className="clear-search-btn" onClick={() => setFilters(prev => ({ ...prev, search: '' }))}>
+                <i className="fas fa-times"></i>
+              </button>
+            )}
+          </div>
+
+          <div className="filter-selects">
+            <select
+              className="filter-select"
+              value={filters.department}
+              onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+            >
+              <option value="">All Departments</option>
+              {Array.isArray(departments) && departments.map(dept => (
+                <option key={dept._id || dept.name} value={dept.name}>{dept.name}</option>
+              ))}
+            </select>
+
+            <select
+              className="filter-select"
+              value={filters.role}
+              onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))}
+            >
+              <option value="">All Roles</option>
+              <option value="ADMIN">Admin</option>
+              <option value="HR">HR</option>
+              <option value="MANAGER">Manager</option>
+              <option value="EMPLOYEE">Employee</option>
+            </select>
+
+            {(filters.search || filters.department || filters.role) && (
+              <button 
+                className="btn-reset-filters"
+                onClick={() => setFilters({ search: '', department: '', role: '' })}
+              >
+                <i className="fas fa-filter-circle-xmark"></i> Clear Filters
+              </button>
+            )}
           </div>
         </div>
-        <div className="filter-group">
-          <select
-            className="filter-select"
-            value={filters.department}
-            onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+
+        {/* View Switcher */}
+        <div className="view-switcher-group">
+          <button 
+            className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+            onClick={() => setViewMode('grid')}
+            title="Grid View"
           >
-            <option value="">All Departments</option>
-            {Array.isArray(departments) && departments.map(dept => (
-              <option key={dept._id} value={dept.name}>{dept.name}</option>
-            ))}
-          </select>
-          <select
-            className="filter-select"
-            value={filters.role}
-            onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))}
+            <i className="fas fa-th-large"></i> Grid
+          </button>
+          <button 
+            className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+            onClick={() => setViewMode('list')}
+            title="Table View"
           >
-            <option value="">All Roles</option>
-            <option value="ADMIN">Admin</option>
-            <option value="HR">HR</option>
-            <option value="MANAGER">Manager</option>
-            <option value="EMPLOYEE">Employee</option>
-          </select>
-          {(filters.search || filters.department || filters.role) && (
-            <button 
-              className="btn-reset"
-              onClick={() => setFilters({ search: '', department: '', role: '' })}
-            >
-              <i className="fas fa-times"></i> Clear
-            </button>
-          )}
+            <i className="fas fa-list"></i> Table
+          </button>
         </div>
       </div>
 
-      {/* Content */}
+      {/* Main Content Area */}
       {loading ? (
         <div className="loading-container">
-          <div className="spinner-border text-primary"></div>
-          <p>Loading employees...</p>
+          <div className="spinner-border text-emerald"></div>
+          <p>Loading employee directory...</p>
         </div>
       ) : filteredEmployees.length === 0 ? (
         <div className="empty-container">
           <i className="fas fa-users-slash"></i>
           <h3>No Employees Found</h3>
-          <p>Try adjusting your filters or search criteria</p>
+          <p>We couldn't find any employees matching your current search or filter criteria.</p>
+          {(filters.search || filters.department || filters.role) && (
+            <button className="btn-reset-filters" style={{ margin: '0 auto' }} onClick={() => setFilters({ search: '', department: '', role: '' })}>
+              <i className="fas fa-arrows-rotate me-1"></i> Reset Filters
+            </button>
+          )}
+        </div>
+      ) : viewMode === 'grid' ? (
+        /* GRID VIEW */
+        <div className="grid-view-container">
+          <Row className="g-3">
+            {filteredEmployees.map((employee) => {
+              const isActive = employee?.isActive !== false && employee?.userId?.isActive !== false;
+              const isField = employee?.isFieldEmployee || employee?.userId?.isFieldEmployee;
+              const role = employee?.role || employee?.userId?.role || 'EMPLOYEE';
+              const name = `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim() || 'Employee';
+              const profileImg = employee?.profileImage || employee?.userId?.profileImage;
+              const designation = employee?.designation || employee?.workInfo?.designation || employee?.professionalInfo?.designation;
+              const department = employee?.department || employee?.workInfo?.department || employee?.userId?.department;
+
+              return (
+                <Col key={employee?._id} xs={12} sm={6} md={4} lg={3} xl={2.4} className="mb-3">
+                  <div 
+                    className={`employee-card-v2 ${!isActive ? 'exited-card' : ''}`}
+                    onClick={() => handleViewProfile(employee)}
+                  >
+                    {/* Top Status Tags */}
+                    <div className="card-top-badges">
+                      <span className={`status-tag ${isActive ? 'active' : 'exited'}`}>
+                        <i className={`fas ${isActive ? 'fa-circle' : 'fa-door-open'}`} style={{ fontSize: '0.45rem' }}></i>
+                        {isActive ? 'Active' : 'Exited'}
+                      </span>
+                      {isField && (
+                        <span className="field-tag" title="GPS Field Tracking Enabled">
+                          <i className="fas fa-route"></i> Field
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Avatar */}
+                    <div className="card-avatar-wrapper">
+                      {profileImg ? (
+                        <img
+                          src={profileImg}
+                          alt={name}
+                          className="card-avatar-img"
+                        />
+                      ) : (
+                        <div className={`card-avatar-initials ${isActive ? 'active-bg' : 'inactive-bg'}`}>
+                          {employee?.firstName?.charAt(0)?.toUpperCase()}{employee?.lastName?.charAt(0)?.toUpperCase()}
+                        </div>
+                      )}
+                      <div className={`avatar-online-dot ${isActive ? 'active' : 'inactive'}`}></div>
+                    </div>
+
+                    {/* Details */}
+                    <div className="card-emp-name">{name}</div>
+                    <div className="card-emp-designation">{designation || 'No Designation'}</div>
+                    <div className="card-emp-dept">
+                      <i className="fas fa-building text-muted"></i>
+                      <span>{department || 'Unassigned'}</span>
+                    </div>
+
+                    <span className={`card-role-badge ${getRoleBadgeClass(role)}`}>
+                      {role}
+                    </span>
+
+                    {/* Quick Action Footer */}
+                    <div className="card-action-bar" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        className="quick-icon-btn btn-profile-view" 
+                        onClick={() => handleViewProfile(employee)}
+                      >
+                        <i className="fas fa-user me-1"></i> Profile
+                      </button>
+                      {employee?.email && (
+                        <a 
+                          href={`mailto:${employee.email}`} 
+                          className="quick-icon-btn" 
+                          title="Send Email"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <i className="fas fa-envelope"></i>
+                        </a>
+                      )}
+                      {employee?.personalInfo?.phone && (
+                        <a 
+                          href={`tel:${employee.personalInfo.phone}`} 
+                          className="quick-icon-btn" 
+                          title="Call Phone"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <i className="fas fa-phone"></i>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </Col>
+              );
+            })}
+          </Row>
         </div>
       ) : (
-        <div className="grid-view">
-          <Row className="g-3">
-            {filteredEmployees.map((employee) => (
-              <Col key={employee?._id} xs={12} sm={6} md={4} lg={3} xl={2} className="mb-4">
-                <div 
-                  className="employee-card-modern" 
-                  onClick={() => handleViewProfile(employee)}
-                  style={{
-                    background: 'white',
-                    borderRadius: '12px',
-                    padding: '1.25rem',
-                    border: '2px solid #e2e8f0',
-                    transition: 'all 0.3s',
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                    height: '100%',
-                    position: 'relative'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-8px)';
-                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.15)';
-                    e.currentTarget.style.borderColor = employee?.isActive ? '#10b981' : '#ef4444';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.borderColor = '#e2e8f0';
-                  }}
-                >
-                  {!employee?.isActive && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      background: '#ef4444',
-                      color: 'white',
-                      padding: '0.2rem 0.5rem',
-                      borderRadius: '6px',
-                      fontSize: '0.65rem',
-                      fontWeight: '700',
-                      zIndex: 1
-                    }}>
-                      <i className="fas fa-sign-out-alt me-1"></i>
-                      Exited
-                    </div>
-                  )}
-                  <div style={{ marginBottom: '1rem', position: 'relative', display: 'inline-block' }}>
-                    {employee?.profileImage || employee?.userId?.profileImage ? (
-                      <img
-                        src={employee.profileImage || employee.userId.profileImage}
-                        alt={`${employee?.firstName} ${employee?.lastName}`}
-                        style={{
-                          width: '80px',
-                          height: '80px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '3px solid ' + (employee?.isActive ? '#10b981' : '#ef4444')
-                        }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: '80px',
-                        height: '80px',
-                        borderRadius: '50%',
-                        background: employee?.isActive ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: '700',
-                        fontSize: '1.8rem',
-                        margin: '0 auto',
-                        border: '3px solid ' + (employee?.isActive ? '#10b981' : '#ef4444')
-                      }}>
-                        {employee?.firstName?.charAt(0)?.toUpperCase()}{employee?.lastName?.charAt(0)?.toUpperCase()}
+        /* TABLE VIEW */
+        <div className="table-view-container">
+          <Table responsive hover className="directory-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Employee ID</th>
+                <th>Department & Position</th>
+                <th>Role</th>
+                <th>Location</th>
+                <th>Field Tracking</th>
+                <th>Status</th>
+                <th className="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEmployees.map((employee) => {
+                const isActive = employee?.isActive !== false && employee?.userId?.isActive !== false;
+                const isField = employee?.isFieldEmployee || employee?.userId?.isFieldEmployee;
+                const role = employee?.role || employee?.userId?.role || 'EMPLOYEE';
+                const name = `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim() || 'Employee';
+                const profileImg = employee?.profileImage || employee?.userId?.profileImage;
+                const designation = employee?.designation || employee?.workInfo?.designation || employee?.professionalInfo?.designation || 'N/A';
+                const department = employee?.department || employee?.workInfo?.department || employee?.userId?.department || 'Unassigned';
+                const empId = employee?.employeeId || employee?.professionalInfo?.employeeId || 'N/A';
+                const location = employee?.workInfo?.workLocation || employee?.professionalInfo?.workLocation || 'N/A';
+
+                return (
+                  <tr key={employee?._id} onClick={() => handleViewProfile(employee)}>
+                    <td>
+                      <div className="table-emp-cell">
+                        {profileImg ? (
+                          <img src={profileImg} alt={name} className="table-avatar-img" />
+                        ) : (
+                          <div className="table-avatar-initials" style={{ background: isActive ? '#10b981' : '#94a3b8' }}>
+                            {employee?.firstName?.charAt(0)?.toUpperCase()}{employee?.lastName?.charAt(0)?.toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <div className="table-emp-name">{name}</div>
+                          <div className="table-emp-email">{employee?.email}</div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '0.95rem', marginBottom: '0.25rem' }}>
-                    {employee?.firstName} {employee?.lastName}
-                  </div>
-                  {employee?.designation && (
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.75rem' }}>
-                      {employee?.designation}
-                    </div>
-                  )}
-                  {employee?.department && (
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>
-                      <i className="fas fa-building me-1" style={{ fontSize: '0.7rem' }}></i>
-                      {employee?.department}
-                    </div>
-                  )}
-                  <Badge 
-                    bg={employee?.role === 'ADMIN' ? 'danger' : employee?.role === 'HR' ? 'warning' : employee?.role === 'MANAGER' ? 'info' : 'secondary'}
-                    style={{ fontSize: '0.7rem', fontWeight: '600', padding: '0.35rem 0.75rem' }}
-                  >
-                    {employee?.role}
-                  </Badge>
-                </div>
-              </Col>
-            ))}
-          </Row>
+                    </td>
+                    <td>
+                      <span className="fw-semibold text-dark">{empId}</span>
+                    </td>
+                    <td>
+                      <div className="fw-semibold text-dark">{designation}</div>
+                      <div className="text-muted small">{department}</div>
+                    </td>
+                    <td>
+                      <span className={`card-role-badge ${getRoleBadgeClass(role)}`}>
+                        {role}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="text-secondary small">{location}</span>
+                    </td>
+                    <td>
+                      {isField ? (
+                        <Badge bg="info" className="text-dark">
+                          <i className="fas fa-location-dot me-1"></i> Active
+                        </Badge>
+                      ) : (
+                        <span className="text-muted small">Standard</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className={`status-tag ${isActive ? 'active' : 'exited'}`}>
+                        {isActive ? 'Active' : 'Exited'}
+                      </span>
+                    </td>
+                    <td className="text-end" onClick={(e) => e.stopPropagation()}>
+                      <div className="table-actions justify-content-end">
+                        <Button 
+                          size="sm" 
+                          variant="outline-emerald"
+                          className="btn-profile-view me-1"
+                          onClick={() => handleViewProfile(employee)}
+                        >
+                          <i className="fas fa-eye me-1"></i> View
+                        </Button>
+                        
+                        {['ADMIN', 'HR'].includes(user?.role) && (
+                          <Dropdown align="end">
+                            <Dropdown.Toggle variant="light" size="sm" className="no-caret">
+                              <i className="fas fa-ellipsis-v"></i>
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu>
+                              <Dropdown.Item onClick={() => handleViewProfile(employee)}>
+                                <i className="fas fa-user-gear me-2 text-primary"></i> View Details
+                              </Dropdown.Item>
+                              <Dropdown.Item onClick={() => handleToggleFieldEmployee(employee?.userId?._id || employee?._id, isField)}>
+                                <i className="fas fa-route me-2 text-info"></i> {isField ? 'Disable Field GPS' : 'Enable Field GPS'}
+                              </Dropdown.Item>
+                              {user?.role === 'ADMIN' && (
+                                <Dropdown.Item onClick={async () => {
+                                  await handleViewProfile(employee);
+                                  handleResetPassword();
+                                }}>
+                                  <i className="fas fa-key me-2 text-secondary"></i> Reset Password
+                                </Dropdown.Item>
+                              )}
+                            </Dropdown.Menu>
+                          </Dropdown>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
         </div>
       )}
 
-      {/* Edit Employee Modal */}
+      {/* EDIT PROFILE MODAL */}
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="xl" centered className="edit-employee-modal">
         <Modal.Header closeButton className="edit-modal-header">
           <Modal.Title>
-            <i className="fas fa-user-edit me-2"></i>
-            Edit Employee Profile
+            <i className="fas fa-user-gear me-2"></i> Edit Employee Profile
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="edit-modal-body">
           {selectedEmployee && editableProfile && (
-            <div className="edit-form-container">
-              <div className="employee-header-card">
-                <div className="employee-avatar-large">
-                  {selectedEmployee.userId.profileImage ? (
-                    <img src={selectedEmployee.userId.profileImage} alt="Profile" />
+            <div>
+              {/* Profile Photo Header */}
+              <div className="avatar-upload-card">
+                <div className="avatar-preview-wrapper">
+                  {editableProfile.userId?.profileImage ? (
+                    <img src={editableProfile.userId.profileImage} alt="Profile" />
                   ) : (
-                    <span className="avatar-initials-large">
-                      {selectedEmployee.userId.firstName?.charAt(0)}{selectedEmployee.userId.lastName?.charAt(0)}
-                    </span>
+                    <div className="avatar-preview-initials">
+                      {editableProfile.userId?.firstName?.charAt(0)}{editableProfile.userId?.lastName?.charAt(0)}
+                    </div>
                   )}
-                  <div className="avatar-upload-overlay" onClick={() => document.getElementById('profileImageInput').click()}>
+                  <div className="avatar-overlay-icon" onClick={() => document.getElementById('profileImageInput').click()}>
                     <i className="fas fa-camera"></i>
                   </div>
                 </div>
-                <input
-                  id="profileImageInput"
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={async (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      const formData = new FormData();
-                      formData.append('profileImage', file);
-                      try {
-                        const userId = selectedEmployee.userId._id || selectedEmployee.userId;
-                        await api.post(`/api/employees/profile/${userId}/profile-image`, formData, {
-                          headers: { 'Content-Type': 'multipart/form-data' }
-                        });
-                        const response = await api.get(`/api/employees/profile/${userId}`);
-                        setSelectedEmployee(response.data);
-                        setEditableProfile(response.data);
-                        fetchEmployees();
-                        Swal.fire({ icon: 'success', title: 'Success', text: 'Profile photo updated successfully', timer: 2000, showConfirmButton: false });
-                      } catch (error) {
-                        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to upload photo' });
-                      }
-                    }
-                  }}
-                />
-                <div className="employee-header-info">
-                  <h3>{selectedEmployee.userId.firstName} {selectedEmployee.userId.lastName}</h3>
-                  <p>{selectedEmployee.employeeId || 'No ID'} • {selectedEmployee.workInfo?.designation || 'No Position'}</p>
-                </div>
-              </div>
-
-              <Row>
-                <Col md={6}>
-                  <div className="edit-section">
-                    <h5><i className="fas fa-user"></i> Personal Information</h5>
-                    <Form.Group className="mb-3">
-                      <Form.Label>First Name</Form.Label>
-                      <Form.Control type="text" value={editableProfile?.userId?.firstName || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, firstName: e.target.value } }))} />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Last Name</Form.Label>
-                      <Form.Control type="text" value={editableProfile?.userId?.lastName || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, lastName: e.target.value } }))} />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Email</Form.Label>
-                      <Form.Control type="email" value={editableProfile?.userId?.email || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, email: e.target.value } }))} />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Phone</Form.Label>
-                      <Form.Control type="tel" value={editableProfile?.personalInfo?.phone || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, phone: e.target.value } }))} />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Date of Birth</Form.Label>
-                      <Form.Control type="date" value={(editableProfile?.userId?.dateOfBirth && editableProfile.userId.dateOfBirth !== '1970-01-01T00:00:00.000Z' && new Date(editableProfile.userId.dateOfBirth).toISOString().slice(0,10)) || ''}
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, dateOfBirth: e.target.value || null } }))} />
-                    </Form.Group>
-                    <Row>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Blood Group</Form.Label>
-                          <Form.Control type="text" value={editableProfile?.personalInfo?.bloodGroup || ''} 
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, bloodGroup: e.target.value } }))} />
-                        </Form.Group>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Marital Status</Form.Label>
-                          <Form.Select value={editableProfile?.personalInfo?.maritalStatus || 'SINGLE'} 
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, maritalStatus: e.target.value } }))}>
-                            <option value="SINGLE">Single</option>
-                            <option value="MARRIED">Married</option>
-                            <option value="DIVORCED">Divorced</option>
-                            <option value="WIDOWED">Widowed</option>
-                          </Form.Select>
-                        </Form.Group>
-                      </Col>
-                    </Row>
-                  </div>
-
-                  <div className="edit-section">
-                    <h5><i className="fas fa-home"></i> Address</h5>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Street</Form.Label>
-                      <Form.Control type="text" value={editableProfile?.personalInfo?.address?.street || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, street: e.target.value } } }))} />
-                    </Form.Group>
-                    <Row>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>City</Form.Label>
-                          <Form.Control type="text" value={editableProfile?.personalInfo?.address?.city || ''} 
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, city: e.target.value } } }))} />
-                        </Form.Group>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>State</Form.Label>
-                          <Form.Control type="text" value={editableProfile?.personalInfo?.address?.state || ''} 
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, state: e.target.value } } }))} />
-                        </Form.Group>
-                      </Col>
-                    </Row>
-                    <Row>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Zip Code</Form.Label>
-                          <Form.Control type="text" value={editableProfile?.personalInfo?.address?.zipCode || ''} 
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, zipCode: e.target.value } } }))} />
-                        </Form.Group>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Country</Form.Label>
-                          <Form.Control type="text" value={editableProfile?.personalInfo?.address?.country || ''} 
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, country: e.target.value } } }))} />
-                        </Form.Group>
-                      </Col>
-                    </Row>
-                  </div>
-                </Col>
-
-                <Col md={6}>
-                  <div className="edit-section">
-                    <h5><i className="fas fa-briefcase"></i> Work Information</h5>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Employee ID</Form.Label>
-                      <Form.Control type="text" value={editableProfile?.employeeId || editableProfile?.professionalInfo?.employeeId || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, employeeId: e.target.value, professionalInfo: { ...prev.professionalInfo, employeeId: e.target.value } }))} />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Department</Form.Label>
-                      <Form.Control type="text" value={editableProfile?.workInfo?.department || editableProfile?.userId?.department || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, workInfo: { ...prev.workInfo, department: e.target.value }, userId: { ...prev.userId, department: e.target.value } }))} />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Designation</Form.Label>
-                      <Form.Control type="text" value={editableProfile?.workInfo?.designation || editableProfile?.professionalInfo?.designation || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, workInfo: { ...prev.workInfo, designation: e.target.value }, professionalInfo: { ...prev.professionalInfo, designation: e.target.value } }))} />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Work Location</Form.Label>
-                      <Form.Control type="text" value={editableProfile?.workInfo?.workLocation || editableProfile?.professionalInfo?.workLocation || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, workInfo: { ...prev.workInfo, workLocation: e.target.value }, professionalInfo: { ...prev.professionalInfo, workLocation: e.target.value } }))} />
-                    </Form.Group>
-                    <Row>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Join Date</Form.Label>
-                          <Form.Control type="date" value={(editableProfile?.userId?.joinDate && editableProfile.userId.joinDate !== '1970-01-01T00:00:00.000Z' && new Date(editableProfile.userId.joinDate).toISOString().slice(0,10)) || ''}
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, joinDate: e.target.value || null } }))} />
-                        </Form.Group>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Employment Type</Form.Label>
-                          <Form.Select value={editableProfile?.professionalInfo?.employmentType || 'FULL_TIME'} 
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, professionalInfo: { ...prev.professionalInfo, employmentType: e.target.value } }))}>
-                            <option value="FULL_TIME">Full Time</option>
-                            <option value="PART_TIME">Part Time</option>
-                            <option value="CONTRACT">Contract</option>
-                            <option value="INTERN">Intern</option>
-                          </Form.Select>
-                        </Form.Group>
-                      </Col>
-                    </Row>
-                  </div>
-
-                  <div className="edit-section">
-                    <h5><i className="fas fa-phone-alt"></i> Emergency Contact</h5>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Contact Name</Form.Label>
-                      <Form.Control type="text" value={editableProfile?.personalInfo?.emergencyContact?.name || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, emergencyContact: { ...prev.personalInfo?.emergencyContact, name: e.target.value } } }))} />
-                    </Form.Group>
-                    <Row>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Relationship</Form.Label>
-                          <Form.Control type="text" value={editableProfile?.personalInfo?.emergencyContact?.relationship || ''} 
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, emergencyContact: { ...prev.personalInfo?.emergencyContact, relationship: e.target.value } } }))} />
-                        </Form.Group>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Phone</Form.Label>
-                          <Form.Control type="tel" value={editableProfile?.personalInfo?.emergencyContact?.phone || ''} 
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, emergencyContact: { ...prev.personalInfo?.emergencyContact, phone: e.target.value } } }))} />
-                        </Form.Group>
-                      </Col>
-                    </Row>
-                  </div>
-
-                  <div className="edit-section">
-                    <h5><i className="fas fa-university"></i> Bank Details</h5>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Account Number</Form.Label>
-                      <Form.Control type="text" value={editableProfile?.bankDetails?.accountNumber || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountNumber: e.target.value } }))} />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Bank Name</Form.Label>
-                      <Form.Control type="text" value={editableProfile?.bankDetails?.bankName || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, bankName: e.target.value } }))} />
-                    </Form.Group>
-                    <Row>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>IFSC Code</Form.Label>
-                          <Form.Control type="text" value={editableProfile?.bankDetails?.ifscCode || ''} 
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, ifscCode: e.target.value } }))} />
-                        </Form.Group>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Account Type</Form.Label>
-                          <Form.Select value={editableProfile?.bankDetails?.accountType || 'SAVINGS'} 
-                            onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountType: e.target.value } }))}>
-                            <option value="SAVINGS">Savings</option>
-                            <option value="CURRENT">Current</option>
-                          </Form.Select>
-                        </Form.Group>
-                      </Col>
-                    </Row>
-                  </div>
-                </Col>
-              </Row>
-            </div>
-          )}
-        </Modal.Body>
-        <Modal.Footer className="edit-modal-footer">
-          {(selectedEmployee?.userId?.isActive !== false && selectedEmployee?.isActive !== false) ? (
-            <Button variant="danger" onClick={handleConfirmDelete}>
-              <i className="fas fa-user-slash me-2"></i>Deactivate
-            </Button>
-          ) : (
-            <Button variant="success" onClick={() => handleReactivate(selectedEmployee?.userId?._id || selectedEmployee?._id)}>
-              <i className="fas fa-user-check me-2"></i>Reactivate
-            </Button>
-          )}
-          <div className="ms-auto d-flex gap-2">
-            <Button variant="secondary" onClick={() => setShowEditModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={handleSaveProfile}>
-              <i className="fas fa-save me-2"></i>Save Changes
-            </Button>
-          </div>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Side Panel - Remove this entire section */}
-      <Offcanvas show={false} onHide={() => {}} placement="end" className="profile-panel">
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title>
-            <i className="fas fa-user-edit"></i>
-            Edit Employee Profile
-          </Offcanvas.Title>
-        </Offcanvas.Header>
-        <Offcanvas.Body>
-          {profileLoading ? (
-            <div className="loading-container">
-              <div className="spinner-border text-primary"></div>
-              <p>Loading...</p>
-            </div>
-          ) : selectedEmployee && (
-            <div className="profile-content-v2">
-              <div className="profile-header-v2">
-                <div className="profile-avatar-large-v2">
-                  {selectedEmployee.userId.profileImage ? (
-                    <img src={selectedEmployee.userId.profileImage} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                  ) : (
-                    <span className="profile-initials-large">
-                      {selectedEmployee.userId.firstName?.charAt(0)}{selectedEmployee.userId.lastName?.charAt(0)}
-                    </span>
-                  )}
-                </div>
-                {['ADMIN', 'HR'].includes(user?.role) && (
-                  <div className="profile-upload-btn">
-                    <Button size="sm" variant="outline-primary" onClick={() => document.getElementById('profileImageInput').click()}>
-                      <i className="fas fa-camera me-1"></i>Upload Photo
-                    </Button>
-                    <input
-                      id="profileImageInput"
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          Swal.fire({ icon: 'info', title: 'Info', text: 'Photo upload functionality will be implemented' });
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-                <h3 className="profile-name-large">{selectedEmployee.userId.firstName} {selectedEmployee.userId.lastName}</h3>
-                <div className="profile-meta-badges">
-                  <Badge className={`profile-role-badge ${getRoleBadgeClass(selectedEmployee.userId.role)}`}>
-                    {selectedEmployee.userId.role}
-                  </Badge>
-                </div>
-                <div className="profile-quick-stats">
-                  <div className="quick-stat-item">
-                    <i className="fas fa-id-badge"></i>
-                    <span>{selectedEmployee.employeeId || selectedEmployee.professionalInfo?.employeeId || 'No ID'}</span>
-                  </div>
-                  <div className="quick-stat-divider"></div>
-                  <div className="quick-stat-item">
-                    <i className="fas fa-briefcase"></i>
-                    <span>{selectedEmployee.workInfo?.designation || selectedEmployee.professionalInfo?.designation || 'No Position'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="profile-sections-container" style={{ padding: '1.5rem' }}>
-              <div className={`profile-section ${collapsedSections.personal ? 'collapsed' : ''}`}>
-                <h5 onClick={() => toggleSection('personal')}>
-                  <i className="fas fa-user"></i> Personal Information
-                </h5>
-                {!collapsedSections.personal && (
-                <div className="section-content">
-                <div className="info-grid">
-                  <div className="info-field">
-                    <label>First Name</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.userId?.firstName || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, firstName: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.userId.firstName}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Last Name</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.userId?.lastName || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, lastName: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.userId.lastName}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Email</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="email" 
-                        value={editableProfile?.userId?.email || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, email: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.userId.email}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Phone</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="tel" 
-                        value={editableProfile?.personalInfo?.phone || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, phone: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.phone || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Date of Birth</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="date" 
-                        value={(editableProfile?.userId?.dateOfBirth && editableProfile.userId.dateOfBirth !== '1970-01-01T00:00:00.000Z' && new Date(editableProfile.userId.dateOfBirth).toISOString().slice(0,10)) || ''}
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, dateOfBirth: e.target.value || null } }))}
-                      />
-                    ) : (
-                      <p>{(selectedEmployee.userId?.dateOfBirth && selectedEmployee.userId.dateOfBirth !== '1970-01-01T00:00:00.000Z') ? new Date(selectedEmployee.userId.dateOfBirth).toLocaleDateString() : 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Alternate Phone</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="tel" 
-                        value={editableProfile?.personalInfo?.alternatePhone || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, alternatePhone: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.alternatePhone || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Blood Group</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.personalInfo?.bloodGroup || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, bloodGroup: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.bloodGroup || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Marital Status</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <select 
-                        value={editableProfile?.personalInfo?.maritalStatus || 'SINGLE'} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, maritalStatus: e.target.value } }))}
-                      >
-                        <option value="SINGLE">Single</option>
-                        <option value="MARRIED">Married</option>
-                        <option value="DIVORCED">Divorced</option>
-                        <option value="WIDOWED">Widowed</option>
-                      </select>
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.maritalStatus || 'N/A'}</p>
-                    )}
-                  </div>
-                </div>
-                </div>
-                )}
-              </div>
-
-              <div className={`profile-section ${collapsedSections.address ? 'collapsed' : ''}`}>
-                <h5 onClick={() => toggleSection('address')}>
-                  <i className="fas fa-home"></i> Address
-                </h5>
-                {!collapsedSections.address && (
-                <div className="section-content">
-                <div className="info-grid">
-                  <div className="info-field">
-                    <label>Street</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.personalInfo?.address?.street || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, street: e.target.value } } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.address?.street || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>City</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.personalInfo?.address?.city || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, city: e.target.value } } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.address?.city || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>State</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.personalInfo?.address?.state || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, state: e.target.value } } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.address?.state || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Zip Code</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.personalInfo?.address?.zipCode || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, zipCode: e.target.value } } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.address?.zipCode || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Country</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.personalInfo?.address?.country || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, country: e.target.value } } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.address?.country || 'N/A'}</p>
-                    )}
-                  </div>
-                </div>
-                </div>
-                )}
-              </div>
-
-              <div className={`profile-section ${collapsedSections.work ? 'collapsed' : ''}`}>
-                <h5 onClick={() => toggleSection('work')}>
-                  <i className="fas fa-briefcase"></i> Work Information
-                </h5>
-                {!collapsedSections.work && (
-                <div className="section-content">
-                <div className="info-grid">
-                  <div className="info-field">
-                    <label>Employee ID</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.employeeId || editableProfile?.professionalInfo?.employeeId || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, employeeId: e.target.value, professionalInfo: { ...prev.professionalInfo, employeeId: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.employeeId || selectedEmployee.professionalInfo?.employeeId || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Department</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.workInfo?.department || editableProfile?.userId?.department || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, workInfo: { ...prev.workInfo, department: e.target.value }, userId: { ...prev.userId, department: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.workInfo?.department || selectedEmployee.userId?.department || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Designation</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.workInfo?.designation || editableProfile?.professionalInfo?.designation || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, workInfo: { ...prev.workInfo, designation: e.target.value }, professionalInfo: { ...prev.professionalInfo, designation: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.workInfo?.designation || selectedEmployee.professionalInfo?.designation || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Work Location</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.workInfo?.workLocation || editableProfile?.professionalInfo?.workLocation || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, workInfo: { ...prev.workInfo, workLocation: e.target.value }, professionalInfo: { ...prev.professionalInfo, workLocation: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.workInfo?.workLocation || selectedEmployee.professionalInfo?.workLocation || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Join Date</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="date" 
-                        value={(editableProfile?.userId?.joinDate && editableProfile.userId.joinDate !== '1970-01-01T00:00:00.000Z' && new Date(editableProfile.userId.joinDate).toISOString().slice(0,10)) || ''}
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, joinDate: e.target.value || null } }))}
-                      />
-                    ) : (
-                      <p>{(selectedEmployee.userId?.joinDate && selectedEmployee.userId.joinDate !== '1970-01-01T00:00:00.000Z') ? new Date(selectedEmployee.userId.joinDate).toLocaleDateString() : 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Employment Type</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <select 
-                        value={editableProfile?.professionalInfo?.employmentType || 'FULL_TIME'} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, professionalInfo: { ...prev.professionalInfo, employmentType: e.target.value } }))}
-                      >
-                        <option value="FULL_TIME">Full Time</option>
-                        <option value="PART_TIME">Part Time</option>
-                        <option value="CONTRACT">Contract</option>
-                        <option value="INTERN">Intern</option>
-                      </select>
-                    ) : (
-                      <p>{selectedEmployee.professionalInfo?.employmentType || 'N/A'}</p>
-                    )}
-                  </div>
-                </div>
-                </div>
-                )}
-              </div>
-
-              <div className={`profile-section ${collapsedSections.emergency ? 'collapsed' : ''}`}>
-                <h5 onClick={() => toggleSection('emergency')}>
-                  <i className="fas fa-phone-alt"></i> Emergency Contact
-                </h5>
-                {!collapsedSections.emergency && (
-                <div className="section-content">
-                <div className="info-grid">
-                  <div className="info-field">
-                    <label>Contact Name</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.personalInfo?.emergencyContact?.name || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, emergencyContact: { ...prev.personalInfo?.emergencyContact, name: e.target.value } } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.emergencyContact?.name || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Relationship</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.personalInfo?.emergencyContact?.relationship || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, emergencyContact: { ...prev.personalInfo?.emergencyContact, relationship: e.target.value } } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.emergencyContact?.relationship || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Phone</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="tel" 
-                        value={editableProfile?.personalInfo?.emergencyContact?.phone || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, emergencyContact: { ...prev.personalInfo?.emergencyContact, phone: e.target.value } } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.emergencyContact?.phone || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Email</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="email" 
-                        value={editableProfile?.personalInfo?.emergencyContact?.email || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, emergencyContact: { ...prev.personalInfo?.emergencyContact, email: e.target.value } } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.personalInfo?.emergencyContact?.email || 'N/A'}</p>
-                    )}
-                  </div>
-                </div>
-                </div>
-                )}
-              </div>
-
-              <div className={`profile-section ${collapsedSections.bank ? 'collapsed' : ''}`}>
-                <h5 onClick={() => toggleSection('bank')}>
-                  <i className="fas fa-university"></i> Bank Details
-                </h5>
-                {!collapsedSections.bank && (
-                <div className="section-content">
-                <div className="info-grid">
-                  <div className="info-field">
-                    <label>Account Number</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.bankDetails?.accountNumber || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountNumber: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.bankDetails?.accountNumber ? '****' + selectedEmployee.bankDetails.accountNumber.slice(-4) : 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Bank Name</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.bankDetails?.bankName || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, bankName: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.bankDetails?.bankName || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>IFSC Code</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <input 
-                        type="text" 
-                        value={editableProfile?.bankDetails?.ifscCode || ''} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, ifscCode: e.target.value } }))}
-                      />
-                    ) : (
-                      <p>{selectedEmployee.bankDetails?.ifscCode || 'N/A'}</p>
-                    )}
-                  </div>
-                  <div className="info-field">
-                    <label>Account Type</label>
-                    {['ADMIN', 'HR'].includes(user?.role) ? (
-                      <select 
-                        value={editableProfile?.bankDetails?.accountType || 'SAVINGS'} 
-                        onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountType: e.target.value } }))}
-                      >
-                        <option value="SAVINGS">Savings</option>
-                        <option value="CURRENT">Current</option>
-                      </select>
-                    ) : (
-                      <p>{selectedEmployee.bankDetails?.accountType || 'N/A'}</p>
-                    )}
-                  </div>
-                </div>
-                </div>
-                )}
-              </div>
-              </div>
-
-              {['ADMIN', 'HR'].includes(user?.role) && (
-                <div className="profile-actions">
-                  {selectedEmployee?.userId?.isActive ? (
-                    <Button variant="danger" onClick={handleConfirmDelete}>
-                      <i className="fas fa-user-slash me-2"></i>Deactivate
-                    </Button>
-                  ) : (
-                    <Button variant="success" onClick={() => handleReactivate(selectedEmployee?.userId?._id)}>
-                      <i className="fas fa-user-check me-2"></i>Reactivate
-                    </Button>
-                  )}
-                  <Button variant="primary" onClick={handleSaveProfile}>
-                    <i className="fas fa-save me-2"></i>Save Changes
+                <div>
+                  <h5 className="mb-1 text-dark fw-bold">{editableProfile.userId?.firstName} {editableProfile.userId?.lastName}</h5>
+                  <p className="text-muted small mb-2">{editableProfile.employeeId || 'No ID'} • {editableProfile.workInfo?.designation || 'No Position'}</p>
+                  <Button size="sm" variant="outline-primary" onClick={() => document.getElementById('profileImageInput').click()}>
+                    <i className="fas fa-upload me-1"></i> Upload Photo
                   </Button>
+                  <input
+                    id="profileImageInput"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const form = new FormData();
+                        form.append('profileImage', file);
+                        try {
+                          const userId = selectedEmployee.userId._id || selectedEmployee.userId;
+                          await api.post(`/api/employees/profile/${userId}/profile-image`, form, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                          });
+                          const response = await api.get(`/api/employees/profile/${userId}`);
+                          setSelectedEmployee(response.data);
+                          setEditableProfile(response.data);
+                          fetchEmployees();
+                          Swal.fire({ icon: 'success', title: 'Success', text: 'Profile photo updated successfully', timer: 1800, showConfirmButton: false });
+                        } catch (error) {
+                          Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to upload photo' });
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Edit Tabs */}
+              <div className="modal-tabs-nav mb-3">
+                <button className={`modal-tab-item ${activeEditTab === 'personal' ? 'active' : ''}`} onClick={() => setActiveEditTab('personal')}>
+                  <i className="fas fa-user"></i> Personal Info
+                </button>
+                <button className={`modal-tab-item ${activeEditTab === 'address' ? 'active' : ''}`} onClick={() => setActiveEditTab('address')}>
+                  <i className="fas fa-house"></i> Address
+                </button>
+                <button className={`modal-tab-item ${activeEditTab === 'work' ? 'active' : ''}`} onClick={() => setActiveEditTab('work')}>
+                  <i className="fas fa-briefcase"></i> Work & Role
+                </button>
+                <button className={`modal-tab-item ${activeEditTab === 'emergency' ? 'active' : ''}`} onClick={() => setActiveEditTab('emergency')}>
+                  <i className="fas fa-phone-volume"></i> Emergency Contact
+                </button>
+                <button className={`modal-tab-item ${activeEditTab === 'bank' ? 'active' : ''}`} onClick={() => setActiveEditTab('bank')}>
+                  <i className="fas fa-building-columns"></i> Bank Details
+                </button>
+              </div>
+
+              {/* Tab Form Contents */}
+              {activeEditTab === 'personal' && (
+                <div className="form-section-card">
+                  <div className="form-section-title"><i className="fas fa-user text-emerald"></i> Personal Details</div>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">First Name</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.userId?.firstName || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, firstName: e.target.value } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Last Name</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.userId?.lastName || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, lastName: e.target.value } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Email</Form.Label>
+                        <Form.Control type="email" value={editableProfile?.userId?.email || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, email: e.target.value } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Phone Number</Form.Label>
+                        <Form.Control type="tel" value={editableProfile?.personalInfo?.phone || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, phone: e.target.value } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Date of Birth</Form.Label>
+                        <Form.Control type="date" value={(editableProfile?.userId?.dateOfBirth && editableProfile.userId.dateOfBirth !== '1970-01-01T00:00:00.000Z' && new Date(editableProfile.userId.dateOfBirth).toISOString().slice(0, 10)) || ''}
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, dateOfBirth: e.target.value || null } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Blood Group</Form.Label>
+                        <Form.Control type="text" placeholder="e.g. O+" value={editableProfile?.personalInfo?.bloodGroup || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, bloodGroup: e.target.value } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Marital Status</Form.Label>
+                        <Form.Select value={editableProfile?.personalInfo?.maritalStatus || 'SINGLE'} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, maritalStatus: e.target.value } }))}>
+                          <option value="SINGLE">Single</option>
+                          <option value="MARRIED">Married</option>
+                          <option value="DIVORCED">Divorced</option>
+                          <option value="WIDOWED">Widowed</option>
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </div>
+              )}
+
+              {activeEditTab === 'address' && (
+                <div className="form-section-card">
+                  <div className="form-section-title"><i className="fas fa-house text-primary"></i> Address Details</div>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-semibold">Street Address</Form.Label>
+                    <Form.Control type="text" value={editableProfile?.personalInfo?.address?.street || ''} 
+                      onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, street: e.target.value } } }))} />
+                  </Form.Group>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">City</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.personalInfo?.address?.city || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, city: e.target.value } } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">State</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.personalInfo?.address?.state || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, state: e.target.value } } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Zip Code</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.personalInfo?.address?.zipCode || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, zipCode: e.target.value } } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Country</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.personalInfo?.address?.country || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, address: { ...prev.personalInfo?.address, country: e.target.value } } }))} />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </div>
+              )}
+
+              {activeEditTab === 'work' && (
+                <div className="form-section-card">
+                  <div className="form-section-title"><i className="fas fa-briefcase text-purple"></i> Work Information</div>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Employee ID</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.employeeId || editableProfile?.professionalInfo?.employeeId || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, employeeId: e.target.value, professionalInfo: { ...prev.professionalInfo, employeeId: e.target.value } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Department</Form.Label>
+                        <Form.Select 
+                          value={editableProfile?.workInfo?.department || editableProfile?.userId?.department || ''}
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, workInfo: { ...prev.workInfo, department: e.target.value }, userId: { ...prev.userId, department: e.target.value } }))}
+                        >
+                          <option value="">Select Department</option>
+                          {departments.map(d => (
+                            <option key={d._id || d.name} value={d.name}>{d.name}</option>
+                          ))}
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Designation</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.workInfo?.designation || editableProfile?.professionalInfo?.designation || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, workInfo: { ...prev.workInfo, designation: e.target.value }, professionalInfo: { ...prev.professionalInfo, designation: e.target.value } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Work Location</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.workInfo?.workLocation || editableProfile?.professionalInfo?.workLocation || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, workInfo: { ...prev.workInfo, workLocation: e.target.value }, professionalInfo: { ...prev.professionalInfo, workLocation: e.target.value } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Joining Date</Form.Label>
+                        <Form.Control type="date" value={(editableProfile?.userId?.joinDate && editableProfile.userId.joinDate !== '1970-01-01T00:00:00.000Z' && new Date(editableProfile.userId.joinDate).toISOString().slice(0, 10)) || ''}
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, userId: { ...prev.userId, joinDate: e.target.value || null } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Employment Type</Form.Label>
+                        <Form.Select value={editableProfile?.professionalInfo?.employmentType || 'FULL_TIME'} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, professionalInfo: { ...prev.professionalInfo, employmentType: e.target.value } }))}>
+                          <option value="FULL_TIME">Full Time</option>
+                          <option value="PART_TIME">Part Time</option>
+                          <option value="CONTRACT">Contract</option>
+                          <option value="INTERN">Intern</option>
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </div>
+              )}
+
+              {activeEditTab === 'emergency' && (
+                <div className="form-section-card">
+                  <div className="form-section-title"><i className="fas fa-phone-volume text-danger"></i> Emergency Contact</div>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Contact Name</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.personalInfo?.emergencyContact?.name || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, emergencyContact: { ...prev.personalInfo?.emergencyContact, name: e.target.value } } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Relationship</Form.Label>
+                        <Form.Control type="text" placeholder="e.g. Spouse, Parent" value={editableProfile?.personalInfo?.emergencyContact?.relationship || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, emergencyContact: { ...prev.personalInfo?.emergencyContact, relationship: e.target.value } } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Emergency Phone</Form.Label>
+                        <Form.Control type="tel" value={editableProfile?.personalInfo?.emergencyContact?.phone || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, emergencyContact: { ...prev.personalInfo?.emergencyContact, phone: e.target.value } } }))} />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </div>
+              )}
+
+              {activeEditTab === 'bank' && (
+                <div className="form-section-card">
+                  <div className="form-section-title"><i className="fas fa-university text-info"></i> Bank Details</div>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Bank Name</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.bankDetails?.bankName || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, bankName: e.target.value } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Account Number</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.bankDetails?.accountNumber || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountNumber: e.target.value } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">IFSC Code</Form.Label>
+                        <Form.Control type="text" value={editableProfile?.bankDetails?.ifscCode || ''} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, ifscCode: e.target.value } }))} />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Account Type</Form.Label>
+                        <Form.Select value={editableProfile?.bankDetails?.accountType || 'SAVINGS'} 
+                          onChange={(e) => setEditableProfile(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountType: e.target.value } }))}>
+                          <option value="SAVINGS">Savings</option>
+                          <option value="CURRENT">Current</option>
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                  </Row>
                 </div>
               )}
             </div>
           )}
-        </Offcanvas.Body>
-      </Offcanvas>
+        </Modal.Body>
+        <Modal.Footer style={{ background: '#f8fafc' }}>
+          <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="success" onClick={handleSaveProfile} style={{ background: '#10b981', borderColor: '#10b981' }}>
+            <i className="fas fa-check me-1"></i> Save Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
-      {/* Add Employee Modal */}
-      <Modal show={showAddModal} onHide={() => setShowAddModal(false)} size="xl" centered>
-        <Modal.Header closeButton>
+      {/* ADD EMPLOYEE MODAL */}
+      <Modal show={showAddModal} onHide={() => setShowAddModal(false)} size="lg" centered className="add-employee-modal">
+        <Modal.Header closeButton className="add-modal-header">
           <Modal.Title>
-            <i className="fas fa-user-plus me-2"></i>Add New Employee
+            <i className="fas fa-user-plus me-2"></i> Add New Employee
           </Modal.Title>
         </Modal.Header>
         <Form onSubmit={handleAddEmployee}>
-          <Modal.Body>
+          <Modal.Body className="add-modal-body">
             <Row>
               <Col md={6}>
-                <h6 className="mb-3 text-primary"><i className="fas fa-user me-2"></i>Basic Information</h6>
-                <Form.Group className="mb-3">
-                  <Form.Label>First Name *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                    required
-                  />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Label>Last Name *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                    required
-                  />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Label>Email *</Form.Label>
-                  <Form.Control
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    required
-                  />
-                  <Form.Text className="text-muted">
-                    Welcome email with login credentials will be sent
-                  </Form.Text>
-                </Form.Group>
+                <div className="form-section-card">
+                  <div className="form-section-title"><i className="fas fa-user text-primary"></i> Basic Information</div>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-semibold">First Name *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="e.g. John"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      required
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-semibold">Last Name *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="e.g. Doe"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      required
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-semibold">Work Email *</Form.Label>
+                    <Form.Control
+                      type="email"
+                      placeholder="john.doe@company.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                    />
+                  </Form.Group>
+                </div>
               </Col>
 
               <Col md={6}>
-                <h6 className="mb-3 text-success"><i className="fas fa-briefcase me-2"></i>Work Information</h6>
-                <Form.Group className="mb-3">
-                  <Form.Label>Department</Form.Label>
-                  <Form.Select
-                    value={formData.department}
-                    onChange={(e) => setFormData({...formData, department: e.target.value})}
-                  >
-                    <option value="">Select Department</option>
-                    {departments && departments.length > 0 ? (
-                      departments.map(dept => (
-                        <option key={dept._id || dept.name} value={dept.name}>{dept.name}</option>
-                      ))
-                    ) : (
-                      <option disabled>Loading departments...</option>
-                    )}
-                  </Form.Select>
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Label>Designation</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formData.designation}
-                    onChange={(e) => setFormData({...formData, designation: e.target.value})}
-                    placeholder="e.g., Software Developer"
-                  />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Label>Join Date</Form.Label>
-                  <Form.Control
-                    type="date"
-                    value={formData.joinDate}
-                    onChange={(e) => setFormData({...formData, joinDate: e.target.value})}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+                <div className="form-section-card">
+                  <div className="form-section-title"><i className="fas fa-briefcase text-emerald"></i> Job & Role</div>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-semibold">Department</Form.Label>
+                    <Form.Select
+                      value={formData.department}
+                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    >
+                      <option value="">Select Department</option>
+                      {departments && departments.length > 0 ? (
+                        departments.map(dept => (
+                          <option key={dept._id || dept.name} value={dept.name}>{dept.name}</option>
+                        ))
+                      ) : (
+                        <option disabled>Loading departments...</option>
+                      )}
+                    </Form.Select>
+                  </Form.Group>
 
-            <hr className="my-4" />
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-semibold">Designation</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={formData.designation}
+                      onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                      placeholder="e.g. Software Engineer"
+                    />
+                  </Form.Group>
 
-            <Row>
-              <Col md={12}>
-                <h6 className="mb-3 text-warning"><i className="fas fa-shield-alt me-2"></i>Role</h6>
-              </Col>
-              <Col md={12}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Role *</Form.Label>
-                  <Form.Select
-                    value={formData.role}
-                    onChange={(e) => handleRoleChange(e.target.value)}
-                  >
-                    <option value="EMPLOYEE">Employee</option>
-                    <option value="MANAGER">Manager</option>
-                    <option value="HR">HR</option>
-                    {user.role === 'ADMIN' && <option value="ADMIN">Admin</option>}
-                  </Form.Select>
-                  <Form.Text className="text-muted">
-                    {formData.role === 'ADMIN' && 'Full system access'}
-                    {formData.role === 'HR' && 'Access to employee management, leaves, attendance'}
-                    {formData.role === 'MANAGER' && 'Access to team management and approvals'}
-                    {formData.role === 'EMPLOYEE' && 'Basic access to personal dashboard'}
-                  </Form.Text>
-                </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-semibold">Joining Date</Form.Label>
+                    <Form.Control
+                      type="date"
+                      value={formData.joinDate}
+                      onChange={(e) => setFormData({ ...formData, joinDate: e.target.value })}
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-semibold">Access Role *</Form.Label>
+                    <Form.Select
+                      value={formData.role}
+                      onChange={(e) => handleRoleChange(e.target.value)}
+                    >
+                      <option value="EMPLOYEE">Employee (Standard Access)</option>
+                      <option value="MANAGER">Manager (Team Leader)</option>
+                      <option value="HR">HR (HR Portal & Management)</option>
+                      {user?.role === 'ADMIN' && <option value="ADMIN">Admin (Full Administrator)</option>}
+                    </Form.Select>
+                  </Form.Group>
+                </div>
               </Col>
             </Row>
           </Modal.Body>
-          <Modal.Footer>
+          <Modal.Footer style={{ background: '#f8fafc' }}>
             <Button variant="secondary" onClick={() => setShowAddModal(false)}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit" disabled={loading}>
+            <Button variant="success" type="submit" disabled={loading} style={{ background: '#10b981', borderColor: '#10b981' }}>
               {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2"></span>
@@ -1811,223 +1920,12 @@ const EmployeeDirectory = () => {
                 </>
               ) : (
                 <>
-                  <i className="fas fa-user-plus me-2"></i>
-                  Create Employee
+                  <i className="fas fa-user-plus me-1"></i> Create Employee
                 </>
               )}
             </Button>
           </Modal.Footer>
         </Form>
-      </Modal>
-
-      {/* Employee Profile Modal (View Only) */}
-      <Modal show={showProfileModal} onHide={() => setShowProfileModal(false)} size="lg" centered scrollable className="view-profile-modal">
-        <Modal.Body className="p-0">
-          {selectedEmployee && (
-            <>
-              <button className="profile-close-btn" onClick={() => setShowProfileModal(false)}>
-                <i className="fas fa-times"></i>
-              </button>
-              
-              <div className="profile-modal-header">
-                <div className="profile-modal-avatar">
-                  {selectedEmployee.userId?.profileImage ? (
-                    <img src={selectedEmployee.userId.profileImage} alt="Profile" />
-                  ) : (
-                    <div className="profile-modal-initials">
-                      {selectedEmployee.userId?.firstName?.charAt(0)}{selectedEmployee.userId?.lastName?.charAt(0)}
-                    </div>
-                  )}
-                </div>
-                <div className="profile-modal-info">
-                  <h2>{selectedEmployee.userId?.firstName} {selectedEmployee.userId?.lastName}</h2>
-                  <p className="profile-modal-designation">{selectedEmployee.workInfo?.designation || selectedEmployee.professionalInfo?.designation || 'No Position'}</p>
-                  <div className="profile-modal-badges">
-                    <span className={`profile-modal-badge badge-${selectedEmployee.userId?.role?.toLowerCase()}`}>
-                      {selectedEmployee.userId?.role}
-                    </span>
-                    <span className={`profile-modal-badge ${(selectedEmployee.userId?.isActive !== false) ? 'badge-active' : 'badge-inactive'}`}>
-                      {(selectedEmployee.userId?.isActive !== false) ? 'Active' : 'Inactive'}
-                    </span>
-                    {selectedEmployee.userId?.isFieldEmployee && (
-                      <span className="profile-modal-badge badge-field">
-                        <i className="fas fa-route me-1" />Field Employee
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="profile-modal-content">
-                {selectedEmployee.userId?.exitDetails && selectedEmployee.userId?.isActive === false && (
-                  <div className="exit-info-banner">
-                    <div className="exit-info-header">
-                      <i className="fas fa-exclamation-triangle"></i>
-                      <span>Exit Information</span>
-                    </div>
-                    <div className="exit-info-grid">
-                      <div className="exit-info-item">
-                        <span className="exit-label">Exit Reason</span>
-                        <span className="exit-value">{selectedEmployee.userId.exitDetails.reason?.replace(/_/g, ' ')}</span>
-                      </div>
-                      <div className="exit-info-item">
-                        <span className="exit-label">Last Working Day</span>
-                        <span className="exit-value">{new Date(selectedEmployee.userId.exitDetails.exitDate).toLocaleDateString()}</span>
-                      </div>
-                      <div className="exit-info-item">
-                        <span className="exit-label">Exit Interview</span>
-                        <span className="exit-value">{selectedEmployee.userId.exitDetails.exitInterview}</span>
-                      </div>
-                      <div className="exit-info-item">
-                        <span className="exit-label">Handover Status</span>
-                        <span className="exit-value">{selectedEmployee.userId.exitDetails.handoverStatus?.replace(/_/g, ' ')}</span>
-                      </div>
-                      {selectedEmployee.userId.exitDetails.notes && (
-                        <div className="exit-info-item exit-info-full">
-                          <span className="exit-label">Notes</span>
-                          <span className="exit-value">{selectedEmployee.userId.exitDetails.notes}</span>
-                        </div>
-                      )}
-                      <div className="exit-info-item exit-info-full">
-                        <span className="exit-label">Deactivated On</span>
-                        <span className="exit-value">{new Date(selectedEmployee.userId.exitDetails.deactivatedAt).toLocaleString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="profile-info-grid">
-                  <div className="profile-info-section">
-                    <div className="profile-section-header">
-                      <i className="fas fa-envelope"></i>
-                      <span>Contact</span>
-                    </div>
-                    <div className="profile-section-body">
-                      <div className="profile-detail-row">
-                        <span className="detail-label">Email</span>
-                        <span className="detail-value">{selectedEmployee.userId?.email}</span>
-                      </div>
-                      <div className="profile-detail-row">
-                        <span className="detail-label">Phone</span>
-                        <span className="detail-value">{selectedEmployee.personalInfo?.phone || 'Not provided'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="profile-info-section">
-                    <div className="profile-section-header">
-                      <i className="fas fa-briefcase"></i>
-                      <span>Work</span>
-                    </div>
-                    <div className="profile-section-body">
-                      <div className="profile-detail-row">
-                        <span className="detail-label">Department</span>
-                        <span className="detail-value">{selectedEmployee.userId?.department || 'Not assigned'}</span>
-                      </div>
-                      <div className="profile-detail-row">
-                        <span className="detail-label">Employee ID</span>
-                        <span className="detail-value">{selectedEmployee.employeeId || selectedEmployee.professionalInfo?.employeeId || 'Not assigned'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="profile-info-section">
-                    <div className="profile-section-header">
-                      <i className="fas fa-calendar"></i>
-                      <span>Dates</span>
-                    </div>
-                    <div className="profile-section-body">
-                      <div className="profile-detail-row">
-                        <span className="detail-label">Join Date</span>
-                        <span className="detail-value">{selectedEmployee.userId?.joinDate ? new Date(selectedEmployee.userId.joinDate).toLocaleDateString() : 'Not set'}</span>
-                      </div>
-                      <div className="profile-detail-row">
-                        <span className="detail-label">Date of Birth</span>
-                        <span className="detail-value">{selectedEmployee.userId?.dateOfBirth ? new Date(selectedEmployee.userId.dateOfBirth).toLocaleDateString() : 'Not set'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="profile-info-section">
-                    <div className="profile-section-header">
-                      <i className="fas fa-map-marker-alt"></i>
-                      <span>Location</span>
-                    </div>
-                    <div className="profile-section-body">
-                      <div className="profile-detail-row">
-                        <span className="detail-label">Work Location</span>
-                        <span className="detail-value">{selectedEmployee.workInfo?.workLocation || selectedEmployee.professionalInfo?.workLocation || 'Not set'}</span>
-                      </div>
-                      <div className="profile-detail-row">
-                        <span className="detail-label">Employment Type</span>
-                        <span className="detail-value">{selectedEmployee.professionalInfo?.employmentType || 'Full Time'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {['ADMIN', 'HR'].includes(user?.role) && (
-                  <div className="profile-modal-actions">
-                    <div className="field-employee-toggle">
-                      <div className="toggle-content">
-                        <i className="fas fa-route"></i>
-                        <div className="toggle-text">
-                          <span className="toggle-title">Field Employee Tracking</span>
-                          <span className="toggle-desc">{selectedEmployee.userId?.isFieldEmployee ? 'GPS tracking enabled' : 'Enable GPS tracking'}</span>
-                        </div>
-                      </div>
-                      <label className="custom-switch">
-                        <input type="checkbox" checked={!!selectedEmployee.userId?.isFieldEmployee}
-                          onChange={() => handleToggleFieldEmployee(selectedEmployee.userId?._id, selectedEmployee.userId?.isFieldEmployee)} />
-                        <span className="switch-slider"></span>
-                      </label>
-                    </div>
-
-                    <div className="action-buttons">
-                      <button className="action-button action-edit" onClick={handleEditProfile}>
-                        <i className="fas fa-user-edit"></i>
-                        <span>Edit Profile</span>
-                      </button>
-
-                      {user?.role === 'ADMIN' && (
-                        <button className="action-button action-role" onClick={handleChangeRole}>
-                          <i className="fas fa-user-tag"></i>
-                          <span>Change Role</span>
-                        </button>
-                      )}
-
-                      {user?.role === 'ADMIN' && (
-                        <button className="action-button action-password" onClick={handleResetPassword}>
-                          <i className="fas fa-key"></i>
-                          <span>Reset Password</span>
-                        </button>
-                      )}
-
-                      {(selectedEmployee.userId?.isActive !== false) ? (
-                        <button className="action-button action-deactivate" onClick={handleConfirmDelete}>
-                          <i className="fas fa-user-slash"></i>
-                          <span>Deactivate</span>
-                        </button>
-                      ) : (
-                        <button className="action-button action-reactivate" onClick={() => handleReactivate(selectedEmployee.userId?._id)}>
-                          <i className="fas fa-user-check"></i>
-                          <span>Reactivate</span>
-                        </button>
-                      )}
-
-                      {user?.role === 'ADMIN' && (
-                        <button className="action-button action-delete" onClick={handleDeletePermanently}>
-                          <i className="fas fa-trash-alt"></i>
-                          <span>Delete</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </Modal.Body>
       </Modal>
     </div>
   );

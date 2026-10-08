@@ -162,4 +162,36 @@ const clearRoleNotification = async (req, res) => {
   }
 };
 
-module.exports = { updateRole, updateUser, deleteUser, changePassword, resetPassword, getUserById, clearRoleNotification };
+const resetWfhLocation = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user.wfhLocation) {
+      user.wfhLocation.isPinned = false;
+    } else {
+      user.wfhLocation = { isPinned: false, maxRadiusKm: 5 };
+    }
+    await user.save();
+
+    res.json({ 
+      message: `Remote/WFH base location for ${user.firstName} ${user.lastName} has been reset. They will pin a new location on their next Remote check-in.` 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({ isActive: true })
+      .select('_id firstName lastName email role department designation profileImage')
+      .sort({ firstName: 1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = { updateRole, updateUser, deleteUser, changePassword, resetPassword, getUserById, clearRoleNotification, resetWfhLocation, getAllUsers };
